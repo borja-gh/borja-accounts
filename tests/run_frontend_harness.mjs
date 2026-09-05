@@ -17,6 +17,18 @@
 // computeKPIs y se movió (Bloque 4) a domain/services/kpi.py, donde se
 // preserva a propósito igual que aquí. Corregirlo es decisión de un bloque
 // posterior explícito, no de aquí. Ver docs/ARCHITECTURE.md.
+//
+// Las cuentas del fixture se llaman "cash1"/"investment1" (renombradas
+// desde "openbank"/"ibkr" en el commit de generalización N/M), pero las
+// llamadas api.setAccount("openbank")/api.setAccount("ibkr") de más abajo
+// se dejan TAL CUAL a propósito: index.html (vanilla, nunca tocado) compara
+// literalmente `account === 'ibkr'` dentro de chartSaldo() para elegir el
+// color de la línea de saldo. Pasar "investment1" ahí cambiaría el color
+// capturado en investment1_charts_all -- un cambio de comportamiento real,
+// no cosmético, que además rompería SaldoChart.test.tsx (React sigue
+// coloreando por `kind`, correctamente). "openbank"/"ibkr" aquí son un
+// flag interno de presentación del vanilla, no el id de cuenta del modelo
+// N/M -- ver el mismo razonamiento en index.html:1354.
 process.env.TZ = "Europe/Madrid";
 
 import { readFileSync } from "node:fs";
@@ -75,22 +87,22 @@ function loadBackendFixture() {
   const snapshotPath = path.join(HERE, "snapshot_backend.json");
   const snap = JSON.parse(readFileSync(snapshotPath, "utf-8"));
   return {
-    openbank: snap.initial_data_openbank,
-    ibkr: snap.initial_data_ibkr,
+    cash1: snap.initial_data_cash1,
+    investment1: snap.initial_data_investment1,
     // Ya calculado por el backend (Bloque 4) -- el frontend deja de
     // recalcular esto, solo lo pinta.
-    openbankKpisByPeriod: snap.openbank_kpis_by_period,
-    openbankApuestasReport3m: snap.openbank_apuestas_report_3m,
-    ibkrKpisByPeriod: snap.ibkr_kpis_by_period,
-    ibkrCarterasReport3m: snap.ibkr_carteras_report_3m,
-    ibkrTransferenciasReport3m: snap.ibkr_transferencias_report_3m,
-    openbankGastosMesActual: snap.openbank_gastos_mes_actual,
-    openbankGastosRanking3mMedia: snap.openbank_gastos_ranking_3m_media,
-    openbankGastosRankingAllMedia: snap.openbank_gastos_ranking_all_media,
-    openbankSaldoEvolucionAll: snap.openbank_saldo_evolucion_all,
-    openbankMensualEvolucionAll: snap.openbank_mensual_evolucion_all,
-    ibkrSaldoEvolucionAll: snap.ibkr_saldo_evolucion_all,
-    ibkrCarterasRankingAllTotal: snap.ibkr_carteras_ranking_all_total,
+    cash1KpisByPeriod: snap.cash1_kpis_by_period,
+    cash1ApuestasReport3m: snap.cash1_apuestas_report_3m,
+    investment1KpisByPeriod: snap.investment1_kpis_by_period,
+    investment1CarterasReport3m: snap.investment1_carteras_report_3m,
+    investment1TransferenciasReport3m: snap.investment1_transferencias_report_3m,
+    cash1GastosMesActual: snap.cash1_gastos_mes_actual,
+    cash1GastosRanking3mMedia: snap.cash1_gastos_ranking_3m_media,
+    cash1GastosRankingAllMedia: snap.cash1_gastos_ranking_all_media,
+    cash1SaldoEvolucionAll: snap.cash1_saldo_evolucion_all,
+    cash1MensualEvolucionAll: snap.cash1_mensual_evolucion_all,
+    investment1SaldoEvolucionAll: snap.investment1_saldo_evolucion_all,
+    investment1CarterasRankingAllTotal: snap.investment1_carteras_ranking_all_total,
   };
 }
 
@@ -129,41 +141,41 @@ function run() {
   const KPI_TYPES = ["mes", "trimestre", "año"];
   const result = {};
 
-  // ── Openbank ──
-  api.setData(fixture.openbank);
+  // ── Cash1 (cuenta CASH del fixture) ──
+  api.setData(fixture.cash1);
   api.setAccount("openbank");
-  result.openbank_kpis = {};
+  result.cash1_kpis = {};
   for (const t of KPI_TYPES) {
     api.setPanelFilter("kpi", { type: t });
-    result.openbank_kpis[t] = api.kpiCardsHtml(fixture.openbankKpisByPeriod[t]);
+    result.cash1_kpis[t] = api.kpiCardsHtml(fixture.cash1KpisByPeriod[t]);
   }
-  result.openbank_gasto_alert = api.gastoAlertHtml(fixture.openbankGastosMesActual.alert);
-  result.openbank_top_merchants = api.topMerchantsHtml(fixture.openbankGastosMesActual.topMerchants);
-  result.openbank_apuestas_body = api.apuestasBody(fixture.openbankApuestasReport3m);
-  result.openbank_movimientos_default = api.renderMovimientos(api.searchedMovs());
+  result.cash1_gasto_alert = api.gastoAlertHtml(fixture.cash1GastosMesActual.alert);
+  result.cash1_top_merchants = api.topMerchantsHtml(fixture.cash1GastosMesActual.topMerchants);
+  result.cash1_apuestas_body = api.apuestasBody(fixture.cash1ApuestasReport3m);
+  result.cash1_movimientos_default = api.renderMovimientos(api.searchedMovs());
 
-  api.chartSaldo(fixture.openbankSaldoEvolucionAll);
-  api.chartMensual(fixture.openbankMensualEvolucionAll);
-  api.chartGastos(fixture.openbankGastosRankingAllMedia.ranking);
-  api.chartDonut(fixture.openbankGastosRankingAllMedia.donut);
-  result.openbank_charts_all = JSON.parse(JSON.stringify(sandbox.__capturedPlots));
+  api.chartSaldo(fixture.cash1SaldoEvolucionAll);
+  api.chartMensual(fixture.cash1MensualEvolucionAll);
+  api.chartGastos(fixture.cash1GastosRankingAllMedia.ranking);
+  api.chartDonut(fixture.cash1GastosRankingAllMedia.donut);
+  result.cash1_charts_all = JSON.parse(JSON.stringify(sandbox.__capturedPlots));
   for (const k of Object.keys(sandbox.__capturedPlots)) delete sandbox.__capturedPlots[k];
 
-  // ── IBKR ──
-  api.setData(fixture.ibkr);
+  // ── Investment1 (cuenta INVESTMENT del fixture) ──
+  api.setData(fixture.investment1);
   api.setAccount("ibkr");
-  result.ibkr_kpis = {};
+  result.investment1_kpis = {};
   for (const t of KPI_TYPES) {
     api.setPanelFilter("kpi", { type: t });
-    result.ibkr_kpis[t] = api.kpiCardsIbkrHtml(fixture.ibkrKpisByPeriod[t]);
+    result.investment1_kpis[t] = api.kpiCardsIbkrHtml(fixture.investment1KpisByPeriod[t]);
   }
-  result.ibkr_inversiones_body = api.inversionesBody(fixture.ibkrCarterasReport3m);
-  result.ibkr_transferencias_body = api.transferenciasBody(fixture.ibkrTransferenciasReport3m);
-  result.ibkr_movimientos_default = api.renderMovimientos(api.searchedMovs());
+  result.investment1_inversiones_body = api.inversionesBody(fixture.investment1CarterasReport3m);
+  result.investment1_transferencias_body = api.transferenciasBody(fixture.investment1TransferenciasReport3m);
+  result.investment1_movimientos_default = api.renderMovimientos(api.searchedMovs());
 
-  api.chartSaldo(fixture.ibkrSaldoEvolucionAll);
-  api.chartCarteras(fixture.ibkrCarterasRankingAllTotal);
-  result.ibkr_charts_all = JSON.parse(JSON.stringify(sandbox.__capturedPlots));
+  api.chartSaldo(fixture.investment1SaldoEvolucionAll);
+  api.chartCarteras(fixture.investment1CarterasRankingAllTotal);
+  result.investment1_charts_all = JSON.parse(JSON.stringify(sandbox.__capturedPlots));
 
   console.log(JSON.stringify(result, null, 2));
 }

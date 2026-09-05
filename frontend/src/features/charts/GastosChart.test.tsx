@@ -12,10 +12,10 @@ describe('GastosChart', () => {
   beforeEach(() => newPlot.mockClear());
 
   it('coincide con el golden master (mode=media, default de la vista)', () => {
-    const ranking = backendFixture.openbank_gastos_ranking_all_media.ranking;
+    const ranking = backendFixture.cash1_gastos_ranking_all_media.ranking;
     render(<GastosChart ranking={ranking} />);
     const [, traces, layout] = newPlot.mock.calls[0];
-    const expected = rawFrontendSnapshot.openbank_charts_all['c-gastos'];
+    const expected = rawFrontendSnapshot.cash1_charts_all['c-gastos'];
     expect(traces).toEqual(expected.traces);
     expect(layout).toEqual(expected.layout);
   });

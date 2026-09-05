@@ -10,8 +10,8 @@ const noop = () => {};
 
 describe('MovimientosTable', () => {
   it.each([
-    ['openbank' as const, 'initial_data_openbank' as const, 'openbank_movimientos_default' as const],
-    ['ibkr' as const, 'initial_data_ibkr' as const, 'ibkr_movimientos_default' as const],
+    ['cash1' as const, 'initial_data_cash1' as const, 'cash1_movimientos_default' as const],
+    ['investment1' as const, 'initial_data_investment1' as const, 'investment1_movimientos_default' as const],
   ])('coincide con el golden master para %s', (_account, fixtureKey, expectedKey) => {
     const data: Movement[] = backendFixture[fixtureKey];
     const rows = searchedMovs(data, EMPTY_SEARCH);

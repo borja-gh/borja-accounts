@@ -6,8 +6,8 @@ import { TransferenciasBody } from './TransferenciasBody';
 
 describe('TransferenciasBody', () => {
   it('coincide con el golden master (rango 3m del fixture)', () => {
-    const report = backendFixture.ibkr_transferencias_report_3m;
+    const report = backendFixture.investment1_transferencias_report_3m;
     const { container } = render(<TransferenciasBody report={report} />);
-    expect(extractVisibleText(container)).toEqual(expectedValues.ibkr_transferencias_body);
+    expect(extractVisibleText(container)).toEqual(expectedValues.investment1_transferencias_body);
   });
 });

@@ -96,7 +96,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db-path", required=True, help="Ruta del fichero SQLite destino")
     parser.add_argument("--csv-dir", default=REPO_ROOT,
-                         help="Directorio con openbank.csv/ibkr.csv (default: raíz del repo)")
+                         help="Directorio con un <account_id>.csv por cuenta (default: raíz del repo)")
     parser.add_argument("--force", action="store_true",
                          help="Sobrescribe si la cuenta ya tiene movimientos en la DB")
     parser.add_argument("--dry-run", action="store_true",

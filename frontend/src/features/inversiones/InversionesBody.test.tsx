@@ -6,8 +6,8 @@ import { InversionesBody } from './InversionesBody';
 
 describe('InversionesBody', () => {
   it('coincide con el golden master (rango 3m del fixture)', () => {
-    const report = backendFixture.ibkr_carteras_report_3m;
+    const report = backendFixture.investment1_carteras_report_3m;
     const { container } = render(<InversionesBody report={report} onClosePosition={() => {}} />);
-    expect(extractVisibleText(container)).toEqual(expectedValues.ibkr_inversiones_body);
+    expect(extractVisibleText(container)).toEqual(expectedValues.investment1_inversiones_body);
   });
 });

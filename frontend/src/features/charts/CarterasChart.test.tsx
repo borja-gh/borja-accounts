@@ -12,10 +12,10 @@ describe('CarterasChart', () => {
   beforeEach(() => newPlot.mockClear());
 
   it('coincide con el golden master (mode=total, default de la vista)', () => {
-    const report = backendFixture.ibkr_carteras_ranking_all_total;
+    const report = backendFixture.investment1_carteras_ranking_all_total;
     render(<CarterasChart report={report} />);
     const [, traces, layout] = newPlot.mock.calls[0];
-    const expected = rawFrontendSnapshot.ibkr_charts_all['c-carteras'];
+    const expected = rawFrontendSnapshot.investment1_charts_all['c-carteras'];
     expect(traces).toEqual(expected.traces);
     expect(layout).toEqual(expected.layout);
   });

@@ -1,6 +1,6 @@
 """
 Escenario determinista contra la app FastAPI actual (app/main.py), ejecutado
-siempre sobre una copia aislada de openbank.example.csv / ibkr.example.csv,
+siempre sobre una copia aislada de cash1.example.csv / investment1.example.csv,
 importada a una base SQLite temporal — nunca contra los CSV ni la DB
 reales. Dos capas de aislamiento a propósito (ver memoria de proyecto sobre
 el incidente del Bloque 2): os.chdir(tmp) Y una BORJA_ACCOUNTS_DB apuntando
@@ -18,6 +18,12 @@ El snapshot congelado se generó originalmente contra el app.py (Flask) que
 existía hasta el Bloque 1, sobre CSV. Que este escenario siga pasando contra
 FastAPI + SQLite, sin regenerar el snapshot, ES la prueba de paridad entre
 las tres generaciones del backend.
+
+Las cuentas del fixture se llamaban 'openbank'/'ibkr' hasta el commit de
+generalización N/M -- se renombraron a 'cash1'/'investment1' (mismo dataset,
+mismo kind) para que el fixture no dependa de dos IDs de cuenta específicos.
+Ese rename obligó a regenerar los tres snapshots (backend, frontend,
+frontend_values); las claves de este dict cambiaron en el mismo commit.
 """
 import importlib.util
 import os
@@ -31,23 +37,33 @@ from fastapi.testclient import TestClient
 # deben congelar "ahora" en el mismo punto para que sus resultados casen.
 FIXED_REFERENCE_NOW = "2026-07-15T12:00:00+00:00"
 
+# Las cuentas del fixture ya no las siembra ensure_schema() (una DB nueva no
+# debe brotar cuentas que nadie pidió, ver domain/value_objects.py y el
+# modelo de alta dinámica en app/main.py) -- este harness las crea aquí
+# explícitamente, igual que cualquier cuenta real se crea vía POST
+# /api/accounts.
+#
+# `name` se deja como "Openbank"/"IBKR" a propósito (coincide con las
+# cuentas reales tras el rename de id: mismo nombre, id nuevo). Esto no es
+# solo cosmético -- domain/services/transfers.py deriva el `label` del
+# propio Concepto ("Desde OPENBANK" -> "← Openbank"), y ese Concepto es
+# texto libre del CSV del fixture (build_fixture.py), no algo calculado a
+# partir de `name`. Que "← Openbank" siga apareciendo en
+# investment1_transferencias_report_3m es correcto solo porque el dataset
+# sintético dice literalmente "OPENBANK" -- si el `name` de aquí cambiara
+# sin tocar el Concepto del fixture (o viceversa), dejarían de coincidir
+# por accidente, no por diseño.
+_FIXTURE_ACCOUNTS = [
+    ("cash1", "Openbank", "CASH"),
+    ("investment1", "IBKR", "INVESTMENT"),
+]
+
 
 def _load_app_module(repo_root):
     spec = importlib.util.spec_from_file_location("app_under_test", os.path.join(repo_root, "app", "main.py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
-
-
-# Las cuentas del fixture ya no las siembra ensure_schema() (una DB nueva no
-# debe brotar cuentas que nadie pidió, ver domain/value_objects.py y el
-# modelo de alta dinámica en app/main.py) -- este harness las crea aquí
-# explícitamente, igual que cualquier cuenta real se crea vía POST
-# /api/accounts.
-_FIXTURE_ACCOUNTS = [
-    ("openbank", "Openbank", "CASH"),
-    ("ibkr", "IBKR", "INVESTMENT"),
-]
 
 
 def _seed_sqlite_from_fixture(repo_root, csv_dir, db_path):
@@ -69,8 +85,8 @@ def _seed_sqlite_from_fixture(repo_root, csv_dir, db_path):
 def run_scenario(repo_root):
     tmp = tempfile.mkdtemp(prefix="golden_master_")
     try:
-        shutil.copy(os.path.join(repo_root, "openbank.example.csv"), os.path.join(tmp, "openbank.csv"))
-        shutil.copy(os.path.join(repo_root, "ibkr.example.csv"), os.path.join(tmp, "ibkr.csv"))
+        shutil.copy(os.path.join(repo_root, "cash1.example.csv"), os.path.join(tmp, "cash1.csv"))
+        shutil.copy(os.path.join(repo_root, "investment1.example.csv"), os.path.join(tmp, "investment1.csv"))
         db_path = os.path.join(tmp, "test.db")
         _seed_sqlite_from_fixture(repo_root, tmp, db_path)
 
@@ -100,61 +116,61 @@ def run_scenario(repo_root):
 
             # --- Snapshot A: solo lectura sobre el fixture intacto ---
             result["initial_patrimonio"] = client.get("/api/patrimonio").json()
-            result["initial_data_openbank"] = client.get("/api/data/openbank").json()
-            result["initial_data_ibkr"] = client.get("/api/data/ibkr").json()
+            result["initial_data_cash1"] = client.get("/api/data/cash1").json()
+            result["initial_data_investment1"] = client.get("/api/data/investment1").json()
 
             # Endpoints de agregación (Bloque 4): el frontend deja de calcular
             # esto localmente y lo consume de aquí. run_frontend_harness.mjs
             # lee estas mismas claves para alimentar las funciones de
             # presentación (kpiCardsHtml, ...) y comparar contra
             # snapshot_frontend.json, que no se regenera.
-            result["openbank_kpis_by_period"] = {
-                period: client.get(f"/api/accounts/openbank/kpis?period={period}").json()
+            result["cash1_kpis_by_period"] = {
+                period: client.get(f"/api/accounts/cash1/kpis?period={period}").json()
                 for period in ("mes", "trimestre", "año")
             }
             # panelFilters.apuestas por defecto en index.html es {type: '3m'} --
             # coincide con el rango que ya capturó snapshot_frontend.json.
-            result["openbank_apuestas_report_3m"] = client.get(
-                "/api/accounts/openbank/apuestas?range=3m"
+            result["cash1_apuestas_report_3m"] = client.get(
+                "/api/accounts/cash1/apuestas?range=3m"
             ).json()
-            result["ibkr_kpis_by_period"] = {
-                period: client.get(f"/api/accounts/ibkr/ibkr-kpis?period={period}").json()
+            result["investment1_kpis_by_period"] = {
+                period: client.get(f"/api/accounts/investment1/ibkr-kpis?period={period}").json()
                 for period in ("mes", "trimestre", "año")
             }
             # panelFilters.inversiones por defecto en index.html es {type: '3m'}.
-            result["ibkr_carteras_report_3m"] = client.get(
-                "/api/accounts/ibkr/carteras?range=3m"
+            result["investment1_carteras_report_3m"] = client.get(
+                "/api/accounts/investment1/carteras?range=3m"
             ).json()
             # panelFilters.transferencias por defecto en index.html es {type: '3m'}.
-            result["ibkr_transferencias_report_3m"] = client.get(
-                "/api/accounts/ibkr/transferencias?range=3m"
+            result["investment1_transferencias_report_3m"] = client.get(
+                "/api/accounts/investment1/transferencias?range=3m"
             ).json()
-            result["openbank_gastos_mes_actual"] = client.get(
-                "/api/accounts/openbank/gastos-mes-actual"
+            result["cash1_gastos_mes_actual"] = client.get(
+                "/api/accounts/cash1/gastos-mes-actual"
             ).json()
             # panelFilters.gastos por defecto es {type:'3m'}; gastosMode por defecto es 'media'.
-            result["openbank_gastos_ranking_3m_media"] = client.get(
-                "/api/accounts/openbank/gastos-ranking?range=3m&mode=media"
+            result["cash1_gastos_ranking_3m_media"] = client.get(
+                "/api/accounts/cash1/gastos-ranking?range=3m&mode=media"
             ).json()
             # El harness frontend fuerza panelFilters.{saldo,mensual,gastos,carteras}=
             # {type:'all'} solo para las capturas "*_charts_all" (histórico completo)
             # -- ver run_frontend_harness.mjs.
-            result["openbank_gastos_ranking_all_media"] = client.get(
-                "/api/accounts/openbank/gastos-ranking?range=all&mode=media"
+            result["cash1_gastos_ranking_all_media"] = client.get(
+                "/api/accounts/cash1/gastos-ranking?range=all&mode=media"
             ).json()
-            result["openbank_saldo_evolucion_all"] = client.get(
-                "/api/accounts/openbank/saldo-evolucion?range=all"
+            result["cash1_saldo_evolucion_all"] = client.get(
+                "/api/accounts/cash1/saldo-evolucion?range=all"
             ).json()
-            result["openbank_mensual_evolucion_all"] = client.get(
-                "/api/accounts/openbank/mensual-evolucion?range=all"
+            result["cash1_mensual_evolucion_all"] = client.get(
+                "/api/accounts/cash1/mensual-evolucion?range=all"
             ).json()
-            result["ibkr_saldo_evolucion_all"] = client.get(
-                "/api/accounts/ibkr/saldo-evolucion?range=all"
+            result["investment1_saldo_evolucion_all"] = client.get(
+                "/api/accounts/investment1/saldo-evolucion?range=all"
             ).json()
             # carterasMode por defecto en index.html es 'total' (a diferencia de
             # gastosMode, que es 'media').
-            result["ibkr_carteras_ranking_all_total"] = client.get(
-                "/api/accounts/ibkr/carteras-ranking?range=all&mode=total"
+            result["investment1_carteras_ranking_all_total"] = client.get(
+                "/api/accounts/investment1/carteras-ranking?range=all&mode=total"
             ).json()
 
             # --- Snapshot B: secuencia determinista de mutaciones ---
@@ -172,37 +188,37 @@ def run_scenario(repo_root):
                     "response": resp.json(),
                 })
 
-            call("alta_gasto_simple", "post", "/api/movimiento/openbank", {
+            call("alta_gasto_simple", "post", "/api/movimiento/cash1", {
                 "tipo": "Gasto", "concepto": "Test Cafetería", "total": 4.50, "fecha": "2026-07-16",
             })
-            call("alta_gasto_para_devolucion", "post", "/api/movimiento/openbank", {
+            call("alta_gasto_para_devolucion", "post", "/api/movimiento/cash1", {
                 "tipo": "Gasto", "concepto": "Prueba Devolución X", "total": 30.00, "fecha": "2026-07-16",
             })
-            call("alta_devolucion", "post", "/api/movimiento/openbank", {
+            call("alta_devolucion", "post", "/api/movimiento/cash1", {
                 "tipo": "Devolución", "concepto": "Prueba Devolución X", "total": 30.00, "fecha": "2026-07-17",
             })
-            call("cierre_parcial_cartera_global", "post", "/api/movimiento/ibkr", {
+            call("cierre_parcial_cartera_global", "post", "/api/movimiento/investment1", {
                 "tipo": "Inversión_r", "concepto": "Cartera Global", "total": 200.00, "fecha": "2026-07-16",
             })
 
             # idx de "Test Cafetería" tras las altas anteriores: se resuelve leyendo
             # el estado actual en vez de asumir una posición fija.
-            data_ob = client.get("/api/data/openbank").json()
-            idx_cafeteria = next(r["_idx"] for r in data_ob if r["Concepto"] == "Test Cafetería")
-            call("edita_gasto_cafeteria", "put", "/api/movimiento/openbank", {
+            data_cash1 = client.get("/api/data/cash1").json()
+            idx_cafeteria = next(r["_idx"] for r in data_cash1 if r["Concepto"] == "Test Cafetería")
+            call("edita_gasto_cafeteria", "put", "/api/movimiento/cash1", {
                 "idx": idx_cafeteria, "tipo": "Gasto", "concepto": "Test Cafetería", "total": 5.00,
             })
 
-            call("borra_ultimo_openbank", "delete", "/api/movimiento/openbank")
+            call("borra_ultimo_cash1", "delete", "/api/movimiento/cash1")
 
-            call("transferencia_ibkr_a_openbank", "post", "/api/transferencia", {
-                "origen": "ibkr", "destino": "openbank", "total": 100.00, "fecha": "2026-07-18",
+            call("transferencia_investment1_a_cash1", "post", "/api/transferencia", {
+                "origen": "investment1", "destino": "cash1", "total": 100.00, "fecha": "2026-07-18",
             })
 
             result["mutation_steps"] = steps
             result["final_patrimonio"] = client.get("/api/patrimonio").json()
-            result["final_data_openbank"] = client.get("/api/data/openbank").json()
-            result["final_data_ibkr"] = client.get("/api/data/ibkr").json()
+            result["final_data_cash1"] = client.get("/api/data/cash1").json()
+            result["final_data_investment1"] = client.get("/api/data/investment1").json()
 
             return result
         finally:
