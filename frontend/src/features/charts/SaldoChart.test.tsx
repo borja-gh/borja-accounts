@@ -20,7 +20,7 @@ describe('SaldoChart', () => {
 
   it('IBKR: coincide 1:1 con el golden master (sin media móvil, el backend nunca la calcula para IBKR)', () => {
     const report = backendFixture.ibkr_saldo_evolucion_all;
-    render(<SaldoChart account="ibkr" report={report} />);
+    render(<SaldoChart kind="INVESTMENT" report={report} />);
     expect(newPlot).toHaveBeenCalledTimes(1);
     const [, traces, layout] = newPlot.mock.calls[0];
     const expected = rawFrontendSnapshot.ibkr_charts_all['c-saldo'];
@@ -30,7 +30,7 @@ describe('SaldoChart', () => {
 
   it('Openbank: omite a propósito la traza "Media 30d" (limpieza de UI, ver docs/ARCHITECTURE.md §0)', () => {
     const report = backendFixture.openbank_saldo_evolucion_all;
-    render(<SaldoChart account="openbank" report={report} />);
+    render(<SaldoChart kind="CASH" report={report} />);
     const [, traces, layout] = newPlot.mock.calls[0];
     const expected = rawFrontendSnapshot.openbank_charts_all['c-saldo'];
     expect(expected.traces).toHaveLength(2); // el vanilla sí emitía Saldo + Media 30d

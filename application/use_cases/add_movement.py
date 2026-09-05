@@ -15,8 +15,9 @@ class AddMovementUseCase:
         total = parse_total(data)
         fecha = parse_fecha(data)
 
+        account = self.repository.get_account(account_id)
         movements = self.repository.load(account_id)
-        self.ledger.validate_type_and_concept(account_id, movements, tipo, concepto)
+        self.ledger.validate_type_and_concept(account.kind, movements, tipo, concepto)
 
         nuevo = Movement(account_id=account_id, occurred_at=fecha, type=tipo, concept=concepto, amount=total)
         movements = sorted(movements + [nuevo], key=lambda m: m.occurred_at)

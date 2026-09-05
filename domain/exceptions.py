@@ -42,3 +42,11 @@ class InvalidTransferError(DomainError):
 
 class InvalidMovementIndexError(DomainError):
     pass
+
+
+class InvalidAccountError(DomainError):
+    pass
+
+
+class AccountNotFoundError(DomainError):
+    status_code = 404

@@ -1,6 +1,6 @@
 # Cuentas — Panel de control financiero personal
 
-Interfaz web local para llevar el seguimiento de dos cuentas (Openbank e IBKR). Permite añadir movimientos, visualizar estadísticas y analizar apuestas/inversiones, con los datos guardados en SQLite. Los CSV (`openbank.csv`/`ibkr.csv`) siguen existiendo como formato de import/export, pero ya no son la base de datos activa.
+Interfaz web local para llevar el seguimiento de N cuentas de ahorro (CASH) y M cuentas de inversión (INVESTMENT) -- se dan de alta desde la propia interfaz. Permite añadir movimientos, visualizar estadísticas y analizar apuestas/inversiones, con los datos guardados en SQLite. Un CSV por cuenta (nombrado `<id-de-cuenta>.csv`) sigue existiendo como formato de import/export, pero ya no es la base de datos activa.
 
 ---
 
@@ -19,8 +19,7 @@ Cuentas/
 ├── uv.lock              ← Lockfile de dependencias
 ├── run.sh               ← Arranque (build de frontend + uv run uvicorn, puerto 8000)
 ├── accounts.db          ← Base de datos SQLite (en .gitignore, es la que usa la app)
-├── openbank.csv         ← Datos de Openbank (import/export, ya no activo)
-├── ibkr.csv             ← Datos de IBKR (import/export, ya no activo)
+├── <id-cuenta>.csv      ← Un CSV por cuenta (import/export, ya no activo; en .gitignore)
 ├── scripts/migrate_csv_to_sqlite.py ← Importa los CSV a SQLite
 ├── tests/               ← Harness de regresión para el refactor (temporal, ver
 │                          docs/ARCHITECTURE.md §7 -- se retira al cerrar la transición)
@@ -39,12 +38,14 @@ Requiere también Node.js (frontend en `frontend/`, React + TypeScript + Vite).
 uv sync
 (cd frontend && npm install)
 
-# Los CSV con datos reales (openbank.csv, ibkr.csv) están en .gitignore.
+# Los CSV con datos reales están en .gitignore (uno por cuenta, <id-cuenta>.csv).
 # En un clon nuevo, arranca a partir de los ejemplos:
 cp openbank.example.csv openbank.csv
 cp ibkr.example.csv ibkr.csv
 
-# Importa los CSV a SQLite (accounts.db) -- es lo que la app lee/escribe realmente:
+# Las cuentas deben existir ya en accounts.db (alta vía POST /api/accounts, o
+# ya presentes) antes de importar -- el script solo trae movimientos, no crea
+# cuentas. Importa cualquier <id-cuenta>.csv que coincida con una cuenta existente:
 uv run python scripts/migrate_csv_to_sqlite.py --db-path accounts.db
 
 ./run.sh
@@ -60,7 +61,7 @@ El servidor corre con `uvicorn` sin `--reload`, para que el puerto se libere lim
 
 ## Formato de los CSV (import/export)
 
-Ambos CSV tienen las mismas cinco columnas. Es el formato que entiende `scripts/migrate_csv_to_sqlite.py`, no la estructura interna de `accounts.db` (ver `docs/ARCHITECTURE.md` §2.1 para el esquema SQLite real):
+Cada CSV (uno por cuenta) tiene las mismas cinco columnas. Es el formato que entiende `scripts/migrate_csv_to_sqlite.py`, no la estructura interna de `accounts.db` (ver `docs/ARCHITECTURE.md` §2.1 para el esquema SQLite real):
 
 | Columna  | Tipo     | Descripción                               |
 |----------|----------|-------------------------------------------|
@@ -74,7 +75,9 @@ Ambos CSV tienen las mismas cinco columnas. Es el formato que entiende `scripts/
 
 ## Tipos de movimiento
 
-### Openbank
+Válidos por `kind` de cuenta, no por cuenta individual -- cualquier cuenta CASH admite los mismos tipos que cualquier otra cuenta CASH, e igual para INVESTMENT (`domain/value_objects.py:TIPOS_POR_KIND`).
+
+### CASH (cuentas de ahorro)
 
 | Tipo interno  | Nombre en UI      | Efecto sobre saldo | Descripción                                |
 |---------------|-------------------|--------------------|--------------------------------------------|
@@ -86,14 +89,15 @@ Ambos CSV tienen las mismas cinco columnas. Es el formato que entiende `scripts/
 | Apuestas_r    | Cobro apuesta     | Suma               | Retorno recibido de una ronda de apuestas  |
 | Transferencia | Transferencia     | Resta              | Dinero enviado a otra cuenta               |
 
-### IBKR
+### INVESTMENT (cuentas de inversión)
 
-| Tipo interno | Nombre en UI  | Efecto sobre saldo | Descripción                               |
-|--------------|---------------|--------------------|-------------------------------------------|
-| Gasto        | Gasto         | Resta              | Comisiones u otros gastos                 |
-| Ingreso      | Ingreso       | Suma               | Entradas de dinero                        |
-| Inversión    | Inversión     | Resta              | Dinero enviado a una cartera              |
-| Inversión_r  | Retorno inv.  | Suma               | Retorno recibido al cerrar una cartera    |
+| Tipo interno  | Nombre en UI  | Efecto sobre saldo | Descripción                               |
+|---------------|---------------|--------------------|--------------------------------------------|
+| Gasto         | Gasto         | Resta              | Comisiones u otros gastos                 |
+| Ingreso       | Ingreso       | Suma               | Entradas de dinero                        |
+| Inversión     | Inversión     | Resta              | Dinero enviado a una cartera              |
+| Inversión_r   | Retorno inv.  | Suma               | Retorno recibido al cerrar una cartera    |
+| Transferencia | Transferencia | Resta              | Dinero enviado a otra cuenta               |
 
 > El nombre en UI es solo visual. El valor que se guarda en el CSV y se valida en el backend siempre es el tipo interno.
 

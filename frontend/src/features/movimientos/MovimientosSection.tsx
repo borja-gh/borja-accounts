@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { deleteLastMovement } from '../../api/client';
-import type { AccountId, Movement } from '../../api/types';
+import type { AccountId, AccountKind, Movement } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
 import { eur, fd } from '../../lib/format';
 import { AddMovementForm, type AddMovementFormHandle } from './AddMovementForm';
@@ -13,11 +13,12 @@ const ACTION_BTN_STYLE = { fontSize: 12, padding: '5px 12px' };
 
 interface Props {
   account: AccountId;
+  kind: AccountKind;
   data: Movement[];
   onDataChanged: () => void;
 }
 
-export function MovimientosSection({ account, data, onDataChanged }: Props) {
+export function MovimientosSection({ account, kind, data, onDataChanged }: Props) {
   const [search, setSearch] = useState<MovSearch>(EMPTY_SEARCH);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const formRef = useRef<AddMovementFormHandle>(null);
@@ -89,7 +90,7 @@ export function MovimientosSection({ account, data, onDataChanged }: Props) {
             </button>
           </div>
         </div>
-        <MovimientosSearch account={account} data={data} search={search} onChange={setSearch} />
+        <MovimientosSearch kind={kind} data={data} search={search} onChange={setSearch} />
         <div style={{ overflowX: 'auto' }}>
           <MovimientosTable
             rows={movs}
@@ -104,10 +105,17 @@ export function MovimientosSection({ account, data, onDataChanged }: Props) {
         <div className="section-head">
           <span className="section-title">Añadir movimiento</span>
         </div>
-        <AddMovementForm ref={formRef} account={account} data={data} onSaved={afterMutation} />
+        <AddMovementForm ref={formRef} account={account} kind={kind} data={data} onSaved={afterMutation} />
       </div>
 
-      <EditMovementModal idx={editingIdx} account={account} data={data} onClose={() => setEditingIdx(null)} onSaved={afterMutation} />
+      <EditMovementModal
+        idx={editingIdx}
+        account={account}
+        kind={kind}
+        data={data}
+        onClose={() => setEditingIdx(null)}
+        onSaved={afterMutation}
+      />
     </div>
   );
 }

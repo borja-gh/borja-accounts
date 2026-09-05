@@ -11,13 +11,13 @@ from domain.exceptions import (
     InvalidMovementTypeError,
     MissingSourceMovementError,
 )
-from domain.value_objects import TIPOS_POR_CUENTA, TIPOS_POSITIVOS
+from domain.value_objects import AccountKind, TIPOS_POR_KIND, TIPOS_POSITIVOS
 
 
 class LedgerService:
-    def __init__(self, positive_types=TIPOS_POSITIVOS, types_by_account=TIPOS_POR_CUENTA):
+    def __init__(self, positive_types=TIPOS_POSITIVOS, types_by_kind=TIPOS_POR_KIND):
         self.positive_types = positive_types
-        self.types_by_account = types_by_account
+        self.types_by_kind = types_by_kind
 
     def recalculate_balances(self, movements: list[Movement]) -> list[Movement]:
         """Barrido completo desde cero, en el orden dado (el llamador es
@@ -30,12 +30,12 @@ class LedgerService:
             m.balance = round(saldo, 2)
         return movements
 
-    def validate_type_and_concept(self, cuenta: str, movements: list[Movement], tipo: str, concepto: str,
+    def validate_type_and_concept(self, kind: AccountKind, movements: list[Movement], tipo: str, concepto: str,
                                    exclude_id=None) -> None:
         """Lanza una DomainError si la combinación tipo/concepto no es válida
-        para esta cuenta. exclude_id excluye ese movimiento de la comprobación
-        (útil al editar)."""
-        if tipo not in self.types_by_account.get(cuenta, []):
+        para este kind de cuenta. exclude_id excluye ese movimiento de la
+        comprobación (útil al editar)."""
+        if tipo not in self.types_by_kind.get(kind, []):
             raise InvalidMovementTypeError(f"Tipo '{tipo}' no válido para esta cuenta")
         if not concepto:
             raise EmptyConceptError("El concepto no puede estar vacío")
