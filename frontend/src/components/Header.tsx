@@ -1,7 +1,8 @@
 import { eur } from '../lib/format';
-import type { Patrimonio } from '../api/types';
+import type { AccountSummary } from '../api/types';
 
-export function Header({ patrimonio, onOpenTransfer }: { patrimonio: Patrimonio | null; onOpenTransfer: () => void }) {
+export function Header({ accounts, onOpenTransfer }: { accounts: AccountSummary[] | null; onOpenTransfer: () => void }) {
+  const total = accounts?.reduce((sum, a) => sum + a.saldo, 0) ?? null;
   return (
     <header className="header">
       <div className="brand">
@@ -14,9 +15,20 @@ export function Header({ patrimonio, onOpenTransfer }: { patrimonio: Patrimonio 
         <h1>Cuentas</h1>
       </div>
       <div className="patrimonio-pill">
-        {patrimonio ? (
+        {accounts && total !== null ? (
           <>
-            Total <b>{eur(patrimonio.openbank + patrimonio.ibkr)}</b> — OB {eur(patrimonio.openbank)} · IB {eur(patrimonio.ibkr)}
+            Total <b>{eur(total)}</b>
+            {accounts.length > 0 && (
+              <>
+                {' — '}
+                {accounts.map((a, i) => (
+                  <span key={a.id}>
+                    {i > 0 && ' · '}
+                    {a.name} {eur(a.saldo)}
+                  </span>
+                ))}
+              </>
+            )}
           </>
         ) : (
           '—'

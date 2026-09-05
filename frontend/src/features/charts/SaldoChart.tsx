@@ -1,11 +1,11 @@
 import type { Data, Layout } from 'plotly.js-dist-min';
-import type { AccountId, SaldoEvolucionReport } from '../../api/types';
+import type { AccountKind, SaldoEvolucionReport } from '../../api/types';
 import { PlotlyChart } from '../../components/PlotlyChart';
 import { eur } from '../../lib/format';
 import { baseLayout } from './baseLayout';
 
 interface Props {
-  account: AccountId;
+  kind: AccountKind;
   report: SaldoEvolucionReport;
 }
 
@@ -13,9 +13,9 @@ interface Props {
 // propósito -- limpieza de UI acordada en docs/ARCHITECTURE.md §0. El
 // backend la sigue calculando (with_media_movil=True para Openbank) pero
 // ya no se representa.
-export function SaldoChart({ account, report }: Props) {
+export function SaldoChart({ kind, report }: Props) {
   const L = baseLayout();
-  const lineColor = account === 'ibkr' ? '#2F5D50' : '#0969da';
+  const lineColor = kind === 'INVESTMENT' ? '#2F5D50' : '#0969da';
 
   const traces: Data[] = [
     {

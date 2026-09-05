@@ -12,12 +12,13 @@ export interface ClosePositionRequest {
 }
 
 interface Props {
+  account: AccountId;
   request: ClosePositionRequest | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function ClosePositionModal({ request, onClose, onSaved }: Props) {
+export function ClosePositionModal({ account, request, onClose, onSaved }: Props) {
   const [total, setTotal] = useState('');
   const [fecha, setFecha] = useState(localISODate());
   const showToast = useToast();
@@ -54,12 +55,11 @@ export function ClosePositionModal({ request, onClose, onSaved }: Props) {
       return;
     }
     const tipoR = isApuesta ? 'Apuestas_r' : 'Inversión_r';
-    const acc: AccountId = isApuesta ? 'openbank' : 'ibkr';
     const capital = request.monto || 0;
     const bal = r2(totalNum - capital);
     const roi = capital > 0 ? r2((bal / capital) * 100) : 0;
     try {
-      const body = await addMovement(acc, { fecha, tipo: tipoR, concepto: request.concepto, total: totalNum });
+      const body = await addMovement(account, { fecha, tipo: tipoR, concepto: request.concepto, total: totalNum });
       if (!body.ok) {
         showToast(body.error || 'Error al guardar', 'err');
         return;

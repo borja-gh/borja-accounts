@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { addMovement } from '../../api/client';
-import type { AccountId, Movement } from '../../api/types';
-import { TIPOS_POR_CUENTA, displayTipo } from '../../domain/tipos';
+import type { AccountId, AccountKind, Movement } from '../../api/types';
+import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
 import { eur, localISODate } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
 import { candidatesForTipo, rankConcepts, suggestNextApuesta } from './autocomplete';
@@ -16,15 +16,16 @@ export interface AddMovementFormHandle {
 
 interface Props {
   account: AccountId;
+  kind: AccountKind;
   data: Movement[];
   onSaved: () => void;
 }
 
 export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function AddMovementForm(
-  { account, data, onSaved },
+  { account, kind, data, onSaved },
   ref,
 ) {
-  const tipos = TIPOS_POR_CUENTA[account];
+  const tipos = TIPOS_POR_KIND[kind];
   const [fecha, setFecha] = useState(localISODate());
   const [tipo, setTipo] = useState(tipos[0]);
   const [concepto, setConcepto] = useState('');
@@ -34,10 +35,10 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
 
   useEffect(() => {
     setFecha(localISODate());
-    setTipo(TIPOS_POR_CUENTA[account][0]);
+    setTipo(TIPOS_POR_KIND[kind][0]);
     setConcepto('');
     setTotal('');
-  }, [account]);
+  }, [account, kind]);
 
   useImperativeHandle(
     ref,

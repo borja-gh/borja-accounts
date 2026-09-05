@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { editMovement } from '../../api/client';
-import type { AccountId, Movement } from '../../api/types';
-import { TIPOS_POR_CUENTA, displayTipo } from '../../domain/tipos';
+import type { AccountId, AccountKind, Movement } from '../../api/types';
+import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
 import { eur, fd } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
 import { candidatesForTipo, rankConcepts } from './autocomplete';
@@ -10,12 +10,13 @@ import { ConceptAutocomplete } from './ConceptAutocomplete';
 interface Props {
   idx: number | null;
   account: AccountId;
+  kind: AccountKind;
   data: Movement[];
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function EditMovementModal({ idx, account, data, onClose, onSaved }: Props) {
+export function EditMovementModal({ idx, account, kind, data, onClose, onSaved }: Props) {
   const row = idx != null ? data.find((r) => r._idx === idx) : undefined;
   const [tipo, setTipo] = useState('');
   const [concepto, setConcepto] = useState('');
@@ -78,7 +79,7 @@ export function EditMovementModal({ idx, account, data, onClose, onSaved }: Prop
         <div className="fg">
           <label>Tipo</label>
           <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
-            {TIPOS_POR_CUENTA[account].map((t) => (
+            {TIPOS_POR_KIND[kind].map((t) => (
               <option key={t} value={t}>
                 {displayTipo(t)}
               </option>

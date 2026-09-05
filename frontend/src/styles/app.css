@@ -156,6 +156,11 @@
       border-color: var(--border);
       margin-bottom: -1px;
     }
+    .tab-new {
+      margin-left: auto;
+      border: 1px dashed var(--border);
+      border-bottom: 1px dashed var(--border);
+    }
 
     /* ── CONTENT ── */
     .content {

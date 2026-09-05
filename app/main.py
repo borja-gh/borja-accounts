@@ -26,6 +26,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from application.use_cases.add_movement import AddMovementUseCase
+from application.use_cases.create_account import CreateAccountUseCase
 from application.use_cases.delete_movement import DeleteMovementUseCase
 from application.use_cases.edit_movement import EditMovementUseCase
 from application.use_cases.get_account_kpis import GetAccountKPIsUseCase
@@ -41,11 +42,9 @@ from application.use_cases.get_transfers_report import GetTransfersReportUseCase
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
 from domain.exceptions import DomainError
 from domain.services.ledger import LedgerService
-from domain.value_objects import TIPOS_POR_CUENTA
 from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository
 
 BASE_DIR = _REPO_ROOT
-ARCHIVOS = set(TIPOS_POR_CUENTA)  # nombres de cuenta conocidos -- ya no rutas de fichero
 
 # Sin default oculto dentro de SQLiteMovementRepository (exige db_path
 # explícito) -- pero esta capa de configuración sí resuelve uno real, para
@@ -57,6 +56,14 @@ app = FastAPI()
 
 repository = SQLiteMovementRepository(DB_PATH)
 ledger = LedgerService()
+
+
+def _known_account_ids() -> set[str]:
+    """Nombres de cuenta existentes, resuelto en cada request -- con N/M
+    cuentas dadas de alta dinámicamente (POST /api/accounts) esto ya no es
+    un conjunto fijo calculado una sola vez al arrancar."""
+    return {a.id for a in repository.list_accounts()}
+
 
 # Bloque 5: el frontend pasa de index.html (vanilla) a un build de Vite en
 # frontend/dist/, generado con `npm run build` (gitignored, ver CI). No se
@@ -110,7 +117,7 @@ def index():
 @app.get("/api/patrimonio")
 def get_patrimonio():
     result = {}
-    for cuenta in ARCHIVOS:
+    for cuenta in _known_account_ids():
         try:
             movements = repository.load(cuenta)
             result[cuenta] = round(float(movements[-1].balance), 2) if movements else 0.0
@@ -119,9 +126,33 @@ def get_patrimonio():
     return result
 
 
+@app.get("/api/accounts")
+def get_accounts():
+    result = []
+    for account in repository.list_accounts():
+        movements = repository.load(account.id)
+        saldo = round(float(movements[-1].balance), 2) if movements else 0.0
+        result.append({
+            "id": account.id, "name": account.name, "kind": account.kind.value,
+            "currency": account.currency, "saldo": saldo,
+        })
+    return result
+
+
+@app.post("/api/accounts")
+async def create_account(request: Request):
+    data, err = await _read_json(request)
+    if err:
+        return err
+    account, err = _run(CreateAccountUseCase(repository, ledger).execute, data)
+    if err:
+        return err
+    return {"ok": True, "id": account.id, "name": account.name, "kind": account.kind.value}
+
+
 @app.get("/api/data/{cuenta}")
 def get_data(cuenta: str):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     movements, err = _run(repository.load, cuenta)
     if err:
@@ -141,7 +172,7 @@ def get_data(cuenta: str):
 
 @app.get("/api/accounts/{cuenta}/kpis")
 def get_account_kpis(cuenta: str, period: str = "mes"):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     kpi, err = _run(GetAccountKPIsUseCase(repository).execute, cuenta, period, _reference_now())
     if err:
@@ -156,7 +187,7 @@ def get_account_kpis(cuenta: str, period: str = "mes"):
 
 @app.get("/api/accounts/{cuenta}/ibkr-kpis")
 def get_ibkr_kpis(cuenta: str, period: str = "mes"):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     kpi, err = _run(GetIbkrKPIsUseCase(repository).execute, cuenta, period, _reference_now())
     if err:
@@ -171,7 +202,7 @@ def get_ibkr_kpis(cuenta: str, period: str = "mes"):
 
 @app.get("/api/accounts/{cuenta}/saldo-evolucion")
 def get_saldo_evolucion(cuenta: str, range: str = "all", year: int | None = None):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetSaldoEvolucionUseCase(repository).execute, cuenta, range, year, _reference_now())
     if err:
@@ -181,7 +212,7 @@ def get_saldo_evolucion(cuenta: str, range: str = "all", year: int | None = None
 
 @app.get("/api/accounts/{cuenta}/mensual-evolucion")
 def get_mensual_evolucion(cuenta: str, range: str = "all", year: int | None = None):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetMensualEvolucionUseCase(repository).execute, cuenta, range, year, _reference_now())
     if err:
@@ -191,7 +222,7 @@ def get_mensual_evolucion(cuenta: str, range: str = "all", year: int | None = No
 
 @app.get("/api/accounts/{cuenta}/carteras-ranking")
 def get_carteras_ranking(cuenta: str, range: str = "all", year: int | None = None, mode: str = "media"):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(
         GetCarterasRankingUseCase(repository).execute, cuenta, range, year, _reference_now(), mode,
@@ -203,7 +234,7 @@ def get_carteras_ranking(cuenta: str, range: str = "all", year: int | None = Non
 
 @app.get("/api/accounts/{cuenta}/gastos-mes-actual")
 def get_gastos_mes_actual(cuenta: str):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetGastosMesActualUseCase(repository).execute, cuenta, _reference_now())
     if err:
@@ -213,7 +244,7 @@ def get_gastos_mes_actual(cuenta: str):
 
 @app.get("/api/accounts/{cuenta}/gastos-ranking")
 def get_gastos_ranking(cuenta: str, range: str = "all", year: int | None = None, mode: str = "media"):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(
         GetGastosRankingUseCase(repository).execute, cuenta, range, year, _reference_now(), mode,
@@ -225,7 +256,7 @@ def get_gastos_ranking(cuenta: str, range: str = "all", year: int | None = None,
 
 @app.get("/api/accounts/{cuenta}/transferencias")
 def get_transferencias(cuenta: str, range: str = "all", year: int | None = None):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetTransfersReportUseCase(repository).execute, cuenta, range, year, _reference_now())
     if err:
@@ -235,7 +266,7 @@ def get_transferencias(cuenta: str, range: str = "all", year: int | None = None)
 
 @app.get("/api/accounts/{cuenta}/carteras")
 def get_carteras(cuenta: str, range: str = "all", year: int | None = None):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetPortfolioReportUseCase(repository).execute, cuenta, range, year, _reference_now())
     if err:
@@ -245,7 +276,7 @@ def get_carteras(cuenta: str, range: str = "all", year: int | None = None):
 
 @app.get("/api/accounts/{cuenta}/apuestas")
 def get_apuestas(cuenta: str, range: str = "all", year: int | None = None):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetBettingReportUseCase(repository).execute, cuenta, range, year, _reference_now())
     if err:
@@ -255,7 +286,7 @@ def get_apuestas(cuenta: str, range: str = "all", year: int | None = None):
 
 @app.post("/api/movimiento/{cuenta}")
 async def add_movimiento(cuenta: str, request: Request):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     data, err = await _read_json(request)
     if err:
@@ -268,7 +299,7 @@ async def add_movimiento(cuenta: str, request: Request):
 
 @app.put("/api/movimiento/{cuenta}")
 async def edit_movimiento(cuenta: str, request: Request):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     data, err = await _read_json(request)
     if err:
@@ -281,7 +312,7 @@ async def edit_movimiento(cuenta: str, request: Request):
 
 @app.delete("/api/movimiento/{cuenta}")
 def delete_movimiento(cuenta: str):
-    if cuenta not in ARCHIVOS:
+    if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     result, err = _run(DeleteMovementUseCase(repository, ledger).execute, cuenta)
     if err:
@@ -295,7 +326,7 @@ async def transferencia(request: Request):
     data, err = await _read_json(request)
     if err:
         return err
-    result, err = _run(TransferBetweenAccountsUseCase(repository, ledger, ARCHIVOS).execute, data)
+    result, err = _run(TransferBetweenAccountsUseCase(repository, ledger, _known_account_ids()).execute, data)
     if err:
         return err
     saldo_origen, saldo_destino = result

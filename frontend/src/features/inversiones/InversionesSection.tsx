@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { fetchCarteras } from '../../api/client';
+import type { AccountId } from '../../api/types';
 import type { RangeFilter } from '../filters/RangeFilter';
 import { useRangeReport } from '../filters/useRangeReport';
 import { ClosePositionModal, type ClosePositionRequest } from '../positions/ClosePositionModal';
 import { InversionesBody } from './InversionesBody';
 
 interface Props {
+  account: AccountId;
   filter: RangeFilter;
   onDataChanged: () => void;
 }
 
-export function InversionesSection({ filter, onDataChanged }: Props) {
-  const { report, reload } = useRangeReport(fetchCarteras, filter);
+export function InversionesSection({ account, filter, onDataChanged }: Props) {
+  const { report, reload } = useRangeReport((f) => fetchCarteras(account, f), filter, [account]);
   const [closing, setClosing] = useState<ClosePositionRequest | null>(null);
 
   if (!report) return null;
@@ -24,6 +26,7 @@ export function InversionesSection({ filter, onDataChanged }: Props) {
       <InversionesBody report={report} onClosePosition={setClosing} />
 
       <ClosePositionModal
+        account={account}
         request={closing}
         onClose={() => setClosing(null)}
         onSaved={() => {

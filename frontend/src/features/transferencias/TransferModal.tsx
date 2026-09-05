@@ -1,29 +1,31 @@
 import { useEffect, useState } from 'react';
 import { submitTransfer } from '../../api/client';
-import type { AccountId } from '../../api/types';
+import type { AccountId, AccountSummary } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
 import { eur, localISODate } from '../../lib/format';
 
 interface Props {
   open: boolean;
+  accounts: AccountSummary[];
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function TransferModal({ open, onClose, onSaved }: Props) {
-  const [origen, setOrigen] = useState<AccountId>('openbank');
-  const [destino, setDestino] = useState<AccountId>('ibkr');
+export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
+  const [origen, setOrigen] = useState<AccountId>('');
+  const [destino, setDestino] = useState<AccountId>('');
   const [total, setTotal] = useState('');
   const [fecha, setFecha] = useState(localISODate());
   const showToast = useToast();
 
   useEffect(() => {
     if (open) {
-      setOrigen('openbank');
-      setDestino('ibkr');
+      setOrigen(accounts[0]?.id ?? '');
+      setDestino(accounts[1]?.id ?? accounts[0]?.id ?? '');
       setTotal('');
       setFecha(localISODate());
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
@@ -39,7 +41,10 @@ export function TransferModal({ open, onClose, onSaved }: Props) {
 
   function handleOrigenChange(v: AccountId) {
     setOrigen(v);
-    setDestino(v === 'openbank' ? 'ibkr' : 'openbank');
+    if (v === destino) {
+      const other = accounts.find((a) => a.id !== v);
+      if (other) setDestino(other.id);
+    }
   }
 
   async function handleSubmit() {
@@ -76,16 +81,22 @@ export function TransferModal({ open, onClose, onSaved }: Props) {
         <h3>⇄ Transferencia entre cuentas</h3>
         <div className="fg">
           <label>Origen</label>
-          <select value={origen} onChange={(e) => handleOrigenChange(e.target.value as AccountId)}>
-            <option value="openbank">Openbank</option>
-            <option value="ibkr">IBKR</option>
+          <select value={origen} onChange={(e) => handleOrigenChange(e.target.value)}>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
           </select>
         </div>
         <div className="fg">
           <label>Destino</label>
-          <select value={destino} onChange={(e) => setDestino(e.target.value as AccountId)}>
-            <option value="ibkr">IBKR</option>
-            <option value="openbank">Openbank</option>
+          <select value={destino} onChange={(e) => setDestino(e.target.value)}>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
           </select>
         </div>
         <div className="fg">

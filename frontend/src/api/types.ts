@@ -1,5 +1,28 @@
-export type AccountId = 'openbank' | 'ibkr';
+export type AccountId = string;
+export type AccountKind = 'CASH' | 'INVESTMENT';
 export type KpiPeriod = 'mes' | 'trimestre' | 'año';
+
+export interface AccountSummary {
+  id: AccountId;
+  name: string;
+  kind: AccountKind;
+  currency: string;
+  saldo: number;
+}
+
+export interface CreateAccountRequest {
+  name: string;
+  kind: AccountKind;
+  initialBalance?: number;
+}
+
+export interface CreateAccountResult {
+  ok: boolean;
+  id: string;
+  name: string;
+  kind: AccountKind;
+  error?: string;
+}
 
 export interface Delta {
   diff: number;
@@ -23,11 +46,6 @@ export interface IbkrKpis {
   enCarterasCount: number;
   pnl: number;
   pnlDelta: Delta;
-}
-
-export interface Patrimonio {
-  openbank: number;
-  ibkr: number;
 }
 
 export interface Movement {

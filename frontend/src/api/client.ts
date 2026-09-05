@@ -1,8 +1,11 @@
 import type {
   AccountKpis,
+  AccountSummary,
   AddMovementRequest,
   BettingReport,
   CarterasRankingReport,
+  CreateAccountRequest,
+  CreateAccountResult,
   DeleteResult,
   EditMovementRequest,
   GastosMesActualReport,
@@ -12,7 +15,6 @@ import type {
   MensualEvolucionReport,
   Movement,
   MutationResult,
-  Patrimonio,
   PortfolioReport,
   RankingMode,
   SaldoEvolucionReport,
@@ -29,9 +31,19 @@ async function fetchRangeReport<T>(path: string, filter: RangeFilter, extraParam
   return res.json();
 }
 
-export async function fetchPatrimonio(): Promise<Patrimonio> {
-  const res = await fetch('/api/patrimonio');
+export async function fetchAccounts(): Promise<AccountSummary[]> {
+  const res = await fetch('/api/accounts');
   return res.json();
+}
+
+export async function createAccount(body: CreateAccountRequest): Promise<CreateAccountResult> {
+  const res = await fetch('/api/accounts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
 }
 
 export async function fetchAccountKpis(cuenta: string, period: KpiPeriod): Promise<AccountKpis> {
@@ -39,8 +51,8 @@ export async function fetchAccountKpis(cuenta: string, period: KpiPeriod): Promi
   return res.json();
 }
 
-export async function fetchIbkrKpis(period: KpiPeriod): Promise<IbkrKpis> {
-  const res = await fetch(`/api/accounts/ibkr/ibkr-kpis?period=${encodeURIComponent(period)}`);
+export async function fetchInvestmentKpis(cuenta: string, period: KpiPeriod): Promise<IbkrKpis> {
+  const res = await fetch(`/api/accounts/${cuenta}/ibkr-kpis?period=${encodeURIComponent(period)}`);
   return res.json();
 }
 
@@ -75,16 +87,16 @@ export async function deleteLastMovement(cuenta: string): Promise<DeleteResult> 
   return { ok: res.ok, ...json };
 }
 
-export function fetchApuestas(filter: RangeFilter): Promise<BettingReport> {
-  return fetchRangeReport('/api/accounts/openbank/apuestas', filter);
+export function fetchApuestas(cuenta: string, filter: RangeFilter): Promise<BettingReport> {
+  return fetchRangeReport(`/api/accounts/${cuenta}/apuestas`, filter);
 }
 
-export function fetchCarteras(filter: RangeFilter): Promise<PortfolioReport> {
-  return fetchRangeReport('/api/accounts/ibkr/carteras', filter);
+export function fetchCarteras(cuenta: string, filter: RangeFilter): Promise<PortfolioReport> {
+  return fetchRangeReport(`/api/accounts/${cuenta}/carteras`, filter);
 }
 
-export function fetchTransferencias(filter: RangeFilter): Promise<TransfersReport> {
-  return fetchRangeReport('/api/accounts/ibkr/transferencias', filter);
+export function fetchTransferencias(cuenta: string, filter: RangeFilter): Promise<TransfersReport> {
+  return fetchRangeReport(`/api/accounts/${cuenta}/transferencias`, filter);
 }
 
 export async function submitTransfer(body: TransferRequest): Promise<TransferResult> {
@@ -101,19 +113,19 @@ export function fetchSaldoEvolucion(cuenta: string, filter: RangeFilter): Promis
   return fetchRangeReport(`/api/accounts/${cuenta}/saldo-evolucion`, filter);
 }
 
-export function fetchMensualEvolucion(filter: RangeFilter): Promise<MensualEvolucionReport> {
-  return fetchRangeReport('/api/accounts/openbank/mensual-evolucion', filter);
+export function fetchMensualEvolucion(cuenta: string, filter: RangeFilter): Promise<MensualEvolucionReport> {
+  return fetchRangeReport(`/api/accounts/${cuenta}/mensual-evolucion`, filter);
 }
 
-export function fetchGastosRanking(filter: RangeFilter, mode: RankingMode): Promise<GastosRankingReport> {
-  return fetchRangeReport('/api/accounts/openbank/gastos-ranking', filter, { mode });
+export function fetchGastosRanking(cuenta: string, filter: RangeFilter, mode: RankingMode): Promise<GastosRankingReport> {
+  return fetchRangeReport(`/api/accounts/${cuenta}/gastos-ranking`, filter, { mode });
 }
 
-export function fetchCarterasRanking(filter: RangeFilter, mode: RankingMode): Promise<CarterasRankingReport> {
-  return fetchRangeReport('/api/accounts/ibkr/carteras-ranking', filter, { mode });
+export function fetchCarterasRanking(cuenta: string, filter: RangeFilter, mode: RankingMode): Promise<CarterasRankingReport> {
+  return fetchRangeReport(`/api/accounts/${cuenta}/carteras-ranking`, filter, { mode });
 }
 
-export async function fetchGastosMesActual(): Promise<GastosMesActualReport> {
-  const res = await fetch('/api/accounts/openbank/gastos-mes-actual');
+export async function fetchGastosMesActual(cuenta: string): Promise<GastosMesActualReport> {
+  const res = await fetch(`/api/accounts/${cuenta}/gastos-mes-actual`);
   return res.json();
 }

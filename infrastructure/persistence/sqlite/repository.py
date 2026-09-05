@@ -12,7 +12,9 @@ import uuid
 
 import pandas as pd
 
-from domain.entities import Movement
+from domain.entities import Account, Movement
+from domain.exceptions import AccountNotFoundError
+from domain.value_objects import AccountKind
 
 from .schema import ensure_schema
 
@@ -66,6 +68,49 @@ class SQLiteMovementRepository:
                         for m in movements
                     ],
                 )
+            except Exception:
+                conn.execute("ROLLBACK")
+                raise
+            else:
+                conn.execute("COMMIT")
+
+    def list_accounts(self) -> list[Account]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT id, name, kind, currency FROM accounts ORDER BY rowid"
+            ).fetchall()
+        return [Account(id=r[0], name=r[1], kind=AccountKind(r[2]), currency=r[3]) for r in rows]
+
+    def get_account(self, account_id: str) -> Account:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT id, name, kind, currency FROM accounts WHERE id = ?", (account_id,)
+            ).fetchone()
+        if row is None:
+            raise AccountNotFoundError(f"Cuenta '{account_id}' no encontrada")
+        return Account(id=row[0], name=row[1], kind=AccountKind(row[2]), currency=row[3])
+
+    def create_account(self, account: Account, initial_movement: Movement | None = None) -> None:
+        """Da de alta la cuenta y, si se pasa, su movimiento de saldo
+        inicial -- en una única transacción, para no dejar una cuenta
+        huérfana sin su Saldo Inicial si algo falla a mitad de camino."""
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                conn.execute(
+                    "INSERT INTO accounts (id, name, kind, currency) VALUES (?, ?, ?, ?)",
+                    (account.id, account.name, account.kind.value, account.currency),
+                )
+                if initial_movement is not None:
+                    m = initial_movement
+                    conn.execute(
+                        "INSERT INTO movements (id, account_id, occurred_at, type, concept, amount, balance) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (
+                            str(m.id), m.account_id, m.occurred_at.strftime(_DATE_FORMAT),
+                            m.type, m.concept, m.amount, m.balance,
+                        ),
+                    )
             except Exception:
                 conn.execute("ROLLBACK")
                 raise

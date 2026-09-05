@@ -1,10 +1,13 @@
-import type { AccountId } from '../api/types';
+import type { AccountKind } from '../api/types';
 
 export const TIPOS_NEGATIVOS = new Set(['Gasto', 'Apuestas', 'Inversión', 'Transferencia']);
 
-export const TIPOS_POR_CUENTA: Record<AccountId, string[]> = {
-  openbank: ['Gasto', 'Devolución', 'Ingreso', 'Nómina', 'Apuestas', 'Apuestas_r', 'Transferencia'],
-  ibkr: ['Gasto', 'Ingreso', 'Inversión', 'Inversión_r'],
+// Indexado por kind, no por cuenta individual -- cualquier cuenta CASH o
+// INVESTMENT admite los mismos tipos (mismo criterio que
+// domain/value_objects.py TIPOS_POR_KIND en el backend).
+export const TIPOS_POR_KIND: Record<AccountKind, string[]> = {
+  CASH: ['Gasto', 'Devolución', 'Ingreso', 'Nómina', 'Apuestas', 'Apuestas_r', 'Transferencia'],
+  INVESTMENT: ['Gasto', 'Ingreso', 'Inversión', 'Inversión_r', 'Transferencia'],
 };
 
 const BADGE_MAP: Record<string, string> = {

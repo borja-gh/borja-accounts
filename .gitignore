@@ -6,9 +6,11 @@ venv/
 .venv/
 .DS_Store
 
-# Datos financieros personales — NO subir al repo (los .example sí se versionan)
-openbank.csv
-ibkr.csv
+# Datos financieros personales — NO subir al repo (los .example sí se
+# versionan). Un CSV por cuenta, nombrado <id-de-cuenta>.csv -- ya no son
+# solo openbank.csv/ibkr.csv (modelo N/M de cuentas).
+*.csv
+!*.example.csv
 accounts.db
 
 # Client Portal Gateway de IBKR — binario propietario redistribuible (~10MB),

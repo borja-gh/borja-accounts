@@ -1,22 +1,22 @@
-import type { AccountId, Movement } from '../../api/types';
-import { displayTipo, TIPOS_POR_CUENTA } from '../../domain/tipos';
+import type { AccountKind, Movement } from '../../api/types';
+import { displayTipo, TIPOS_POR_KIND } from '../../domain/tipos';
 import { conceptCandidatesForSearch, rankConcepts } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
 import { EMPTY_SEARCH, type MovSearch } from './search';
 
 interface Props {
-  account: AccountId;
+  kind: AccountKind;
   data: Movement[];
   search: MovSearch;
   onChange: (search: MovSearch) => void;
 }
 
-export function MovimientosSearch({ account, data, search, onChange }: Props) {
+export function MovimientosSearch({ kind, data, search, onChange }: Props) {
   return (
     <div className="mov-search">
       <select value={search.tipo} onChange={(e) => onChange({ ...search, tipo: e.target.value })}>
         <option value="">Todos los tipos</option>
-        {TIPOS_POR_CUENTA[account].map((t) => (
+        {TIPOS_POR_KIND[kind].map((t) => (
           <option key={t} value={t}>
             {displayTipo(t)}
           </option>

@@ -22,16 +22,6 @@ CREATE TABLE IF NOT EXISTS movements (
 CREATE INDEX IF NOT EXISTS idx_movements_account ON movements(account_id);
 """
 
-DEFAULT_ACCOUNTS = [
-    ("openbank", "Openbank", "CASH", "EUR"),
-    ("ibkr", "IBKR", "INVESTMENT", "EUR"),
-]
-
-
 def ensure_schema(conn):
     conn.executescript(SCHEMA)
-    conn.executemany(
-        "INSERT OR IGNORE INTO accounts (id, name, kind, currency) VALUES (?, ?, ?, ?)",
-        DEFAULT_ACCOUNTS,
-    )
     conn.commit()

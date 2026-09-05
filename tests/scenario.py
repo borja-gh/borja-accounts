@@ -39,14 +39,29 @@ def _load_app_module(repo_root):
     return mod
 
 
+# Las cuentas del fixture ya no las siembra ensure_schema() (una DB nueva no
+# debe brotar cuentas que nadie pidió, ver domain/value_objects.py y el
+# modelo de alta dinámica en app/main.py) -- este harness las crea aquí
+# explícitamente, igual que cualquier cuenta real se crea vía POST
+# /api/accounts.
+_FIXTURE_ACCOUNTS = [
+    ("openbank", "Openbank", "CASH"),
+    ("ibkr", "IBKR", "INVESTMENT"),
+]
+
+
 def _seed_sqlite_from_fixture(repo_root, csv_dir, db_path):
     sys.path.insert(0, repo_root)
+    from domain.entities import Account
+    from domain.value_objects import AccountKind
     from infrastructure.persistence.csv.repository import ARCHIVOS, CSVMovementRepository
     from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository
 
     archivos = {k: os.path.join(csv_dir, v) for k, v in ARCHIVOS.items()}
     csv_repo = CSVMovementRepository(archivos)
     sqlite_repo = SQLiteMovementRepository(db_path)
+    for account_id, name, kind in _FIXTURE_ACCOUNTS:
+        sqlite_repo.create_account(Account(id=account_id, name=name, kind=AccountKind(kind)))
     for account_id in ARCHIVOS:
         sqlite_repo.save(account_id, csv_repo.load(account_id))
 
