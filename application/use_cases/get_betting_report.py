@@ -16,7 +16,10 @@ class GetBettingReportUseCase:
         movements = self.repository.load(account_id)
 
         all_bets = [m for m in movements if m.type == "Apuestas"]
-        open_positions = compute_open_positions(movements, "Apuestas", "Apuestas_r")
+        open_positions = sorted(
+            compute_open_positions(movements, "Apuestas", "Apuestas_r"),
+            key=lambda p: p.fi, reverse=True,
+        )
         closed_all = compute_closed_positions(movements, "Apuestas", "Apuestas_r")
         closed_filtered = filter_by_field(closed_all, lambda c: c.fr, range_type, year, reference_local)
 
