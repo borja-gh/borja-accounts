@@ -18,25 +18,35 @@ import { RankingModeToggle } from '../charts/RankingModeToggle';
 import { GastoAlert } from '../gastos/GastoAlert';
 import { useGastosMesActual } from '../gastos/useGastosMesActual';
 import type { AccountViewHandle } from '../shared/viewHandle';
-import type { KpiPeriod, RankingMode } from '../../api/types';
+import type { AccountSummary, KpiPeriod, RankingMode } from '../../api/types';
 
-export const OpenbankView = forwardRef<AccountViewHandle, { onDataChanged: () => void }>(function OpenbankView(
-  { onDataChanged },
-  ref,
-) {
+interface Props {
+  account: AccountSummary;
+  onDataChanged: () => void;
+}
+
+export const CashAccountView = forwardRef<AccountViewHandle, Props>(function CashAccountView({ account, onDataChanged }, ref) {
   const [period, setPeriod] = useState<KpiPeriod>('mes');
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [gastosMode, setGastosMode] = useState<RankingMode>('media');
-  const { kpi, reload: reloadKpis } = useAccountKpis('openbank', period);
-  const { data, reload: reloadData } = useAccountData('openbank');
-  const { report: saldoReport, reload: reloadSaldo } = useRangeReport((f) => fetchSaldoEvolucion('openbank', f), rangeFilter);
-  const { report: mensualReport, reload: reloadMensual } = useRangeReport(fetchMensualEvolucion, rangeFilter);
-  const { report: gastosRanking, reload: reloadGastosRanking } = useRangeReport(
-    (f) => fetchGastosRanking(f, gastosMode),
+  const { kpi, reload: reloadKpis } = useAccountKpis(account.id, period);
+  const { data, reload: reloadData } = useAccountData(account.id);
+  const { report: saldoReport, reload: reloadSaldo } = useRangeReport(
+    (f) => fetchSaldoEvolucion(account.id, f),
     rangeFilter,
-    [gastosMode],
+    [account.id],
   );
-  const { report: gastosMesActual, reload: reloadGastosMesActual } = useGastosMesActual();
+  const { report: mensualReport, reload: reloadMensual } = useRangeReport(
+    (f) => fetchMensualEvolucion(account.id, f),
+    rangeFilter,
+    [account.id],
+  );
+  const { report: gastosRanking, reload: reloadGastosRanking } = useRangeReport(
+    (f) => fetchGastosRanking(account.id, f, gastosMode),
+    rangeFilter,
+    [account.id, gastosMode],
+  );
+  const { report: gastosMesActual, reload: reloadGastosMesActual } = useGastosMesActual(account.id);
 
   function refreshAll() {
     reloadKpis();
@@ -53,9 +63,9 @@ export const OpenbankView = forwardRef<AccountViewHandle, { onDataChanged: () =>
   return (
     <>
       <div className="account-hero">
-        <AccountMark kind="ob" />
+        <AccountMark name={account.name} kind={account.kind} />
         <div>
-          <h2>Openbank</h2>
+          <h2>{account.name}</h2>
           <p>Día a día · gastos, nómina y apuestas</p>
         </div>
         <div className="spacer" />
@@ -74,7 +84,7 @@ export const OpenbankView = forwardRef<AccountViewHandle, { onDataChanged: () =>
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-label">Evolución del saldo</div>
-          <div style={{ height: 280 }}>{saldoReport && <SaldoChart account="openbank" report={saldoReport} />}</div>
+          <div style={{ height: 280 }}>{saldoReport && <SaldoChart kind={account.kind} report={saldoReport} />}</div>
         </div>
         <div className="chart-card">
           <div className="chart-label">Evolución mensual</div>
@@ -104,9 +114,9 @@ export const OpenbankView = forwardRef<AccountViewHandle, { onDataChanged: () =>
         </div>
       </div>
 
-      <ApuestasSection filter={rangeFilter} onDataChanged={refreshAll} />
+      <ApuestasSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
 
-      {data && <MovimientosSection account="openbank" data={data} onDataChanged={refreshAll} />}
+      {data && <MovimientosSection account={account.id} kind={account.kind} data={data} onDataChanged={refreshAll} />}
     </>
   );
 });

@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
-Migra openbank.csv/ibkr.csv a SQLite (docs/ARCHITECTURE.md, Bloque 3).
+Importa CSVs a SQLite (docs/ARCHITECTURE.md, Bloque 3). Uno por cuenta,
+nombrado <account_id>.csv -- generalizado para N cuentas CASH + M cuentas
+INVESTMENT (ya no asume exactamente openbank.csv/ibkr.csv). Las cuentas
+deben existir de antemano en la DB destino (dadas de alta vía POST
+/api/accounts, o ya presentes); este script solo importa movimientos, no
+crea cuentas.
 
 Reglas de seguridad:
 - Se niega a escribir si la cuenta destino ya tiene movimientos en la DB,
@@ -13,6 +18,8 @@ Reglas de seguridad:
 - --csv-dir por defecto es la raíz del repo (ruta absoluta calculada desde
   este script), nunca el cwd del proceso -- una lección de un incidente
   real durante el Bloque 2, ver memoria de proyecto.
+- Un CSV cuyo nombre no coincide con ninguna cuenta existente se ignora en
+  silencio (puede ser cualquier otro fichero suelto en --csv-dir).
 
 Uso:
     python scripts/migrate_csv_to_sqlite.py --db-path accounts.db --dry-run
@@ -26,8 +33,21 @@ from collections import defaultdict
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
 
-from infrastructure.persistence.csv.repository import ARCHIVOS, CSVMovementRepository  # noqa: E402
+from infrastructure.persistence.csv.repository import CSVMovementRepository  # noqa: E402
 from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository  # noqa: E402
+
+
+def discover_csv_accounts(csv_dir: str, known_account_ids: set[str]) -> dict[str, str]:
+    """Mapea account_id -> ruta de CSV, para cada cuenta conocida que tenga
+    un <account_id>.csv en csv_dir."""
+    found = {}
+    for name in os.listdir(csv_dir):
+        if not name.endswith(".csv"):
+            continue
+        account_id = name[:-len(".csv")]
+        if account_id in known_account_ids:
+            found[account_id] = os.path.join(csv_dir, name)
+    return found
 
 
 def _invariants(movements):
@@ -83,11 +103,17 @@ def main():
                          help="No escribe nada, solo informa")
     args = parser.parse_args()
 
-    archivos = {k: os.path.join(args.csv_dir, v) for k, v in ARCHIVOS.items()}
-    csv_repo = CSVMovementRepository(archivos)
     sqlite_repo = SQLiteMovementRepository(args.db_path)
+    known_account_ids = {a.id for a in sqlite_repo.list_accounts()}
+    archivos = discover_csv_accounts(args.csv_dir, known_account_ids)
+    if not archivos:
+        raise SystemExit(
+            f"Ningún CSV en {args.csv_dir} corresponde a una cuenta existente en {args.db_path} "
+            f"(cuentas conocidas: {sorted(known_account_ids) or 'ninguna'})"
+        )
+    csv_repo = CSVMovementRepository(archivos)
 
-    for account_id in ARCHIVOS:
+    for account_id in archivos:
         migrate_account(account_id, csv_repo, sqlite_repo, args.force, args.dry_run)
 
 

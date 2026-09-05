@@ -15,25 +15,33 @@ import { SaldoChart } from '../charts/SaldoChart';
 import { CarterasChart } from '../charts/CarterasChart';
 import { RankingModeToggle } from '../charts/RankingModeToggle';
 import type { AccountViewHandle } from '../shared/viewHandle';
-import type { KpiPeriod, RankingMode } from '../../api/types';
+import type { AccountSummary, KpiPeriod, RankingMode } from '../../api/types';
 
 interface Props {
+  account: AccountSummary;
   onDataChanged: () => void;
   onOpenTransferModal: () => void;
 }
 
-export const IbkrView = forwardRef<AccountViewHandle, Props>(function IbkrView({ onDataChanged, onOpenTransferModal }, ref) {
+export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(function InvestmentAccountView(
+  { account, onDataChanged, onOpenTransferModal },
+  ref,
+) {
   const [period, setPeriod] = useState<KpiPeriod>('mes');
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [carterasMode, setCarterasMode] = useState<RankingMode>('total');
   const [refreshCounter, setRefreshCounter] = useState(0);
-  const { kpi, reload: reloadKpis } = useIbkrKpis(period);
-  const { data, reload: reloadData } = useAccountData('ibkr');
-  const { report: saldoReport, reload: reloadSaldo } = useRangeReport((f) => fetchSaldoEvolucion('ibkr', f), rangeFilter);
-  const { report: carterasReport, reload: reloadCarterasRanking } = useRangeReport(
-    (f) => fetchCarterasRanking(f, carterasMode),
+  const { kpi, reload: reloadKpis } = useIbkrKpis(account.id, period);
+  const { data, reload: reloadData } = useAccountData(account.id);
+  const { report: saldoReport, reload: reloadSaldo } = useRangeReport(
+    (f) => fetchSaldoEvolucion(account.id, f),
     rangeFilter,
-    [carterasMode],
+    [account.id],
+  );
+  const { report: carterasReport, reload: reloadCarterasRanking } = useRangeReport(
+    (f) => fetchCarterasRanking(account.id, f, carterasMode),
+    rangeFilter,
+    [account.id, carterasMode],
   );
 
   function refreshAll() {
@@ -50,10 +58,10 @@ export const IbkrView = forwardRef<AccountViewHandle, Props>(function IbkrView({
   return (
     <>
       <div className="account-hero">
-        <AccountMark kind="ik" />
+        <AccountMark name={account.name} kind={account.kind} />
         <div>
-          <h2>Tu cartera</h2>
-          <p>Capital, carteras y puente con Openbank</p>
+          <h2>{account.name}</h2>
+          <p>Capital, carteras y transferencias</p>
         </div>
         <div className="spacer" />
         <PeriodSelector period={period} onChange={setPeriod} />
@@ -69,7 +77,7 @@ export const IbkrView = forwardRef<AccountViewHandle, Props>(function IbkrView({
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-label">Evolución del saldo</div>
-          <div style={{ height: 280 }}>{saldoReport && <SaldoChart account="ibkr" report={saldoReport} />}</div>
+          <div style={{ height: 280 }}>{saldoReport && <SaldoChart kind={account.kind} report={saldoReport} />}</div>
         </div>
         <div className="chart-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -82,11 +90,13 @@ export const IbkrView = forwardRef<AccountViewHandle, Props>(function IbkrView({
         </div>
       </div>
 
-      {data && <TransferenciasSection key={refreshCounter} filter={rangeFilter} onOpenTransferModal={onOpenTransferModal} />}
+      {data && (
+        <TransferenciasSection key={refreshCounter} account={account.id} filter={rangeFilter} onOpenTransferModal={onOpenTransferModal} />
+      )}
 
-      <InversionesSection filter={rangeFilter} onDataChanged={refreshAll} />
+      <InversionesSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
 
-      {data && <MovimientosSection account="ibkr" data={data} onDataChanged={refreshAll} />}
+      {data && <MovimientosSection account={account.id} kind={account.kind} data={data} onDataChanged={refreshAll} />}
     </>
   );
 });

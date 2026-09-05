@@ -31,7 +31,8 @@ class EditMovementUseCase:
         if objetivo.type == "Saldo Inicial":
             raise ProtectedInitialBalanceError("No se puede editar el saldo inicial")
 
-        self.ledger.validate_type_and_concept(account_id, movements, tipo, concepto, exclude_id=objetivo.id)
+        account = self.repository.get_account(account_id)
+        self.ledger.validate_type_and_concept(account.kind, movements, tipo, concepto, exclude_id=objetivo.id)
 
         objetivo.type = tipo
         objetivo.concept = concepto
