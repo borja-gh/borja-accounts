@@ -23,12 +23,12 @@
       --accent-soft: rgba(44,42,38,0.08);
     }
 
-    body.acc-openbank {
+    body.acc-cash {
       --accent: #8B5E3C;
       --accent-soft: rgba(139,94,60,0.10);
       --bg: #F6F3EF;
     }
-    body.acc-ibkr {
+    body.acc-investment {
       --accent: #2F5D50;
       --accent-soft: rgba(47,93,80,0.10);
       --bg: #F2F5F3;

@@ -2,17 +2,17 @@
   "_meta": {
     "source": "snapshot_frontend.json",
     "excluded_keys": {
-      "openbank_top_merchants": "Sección 'Top del mes' (chips) eliminada del UI en el Bloque 5 -- ver docs/ARCHITECTURE.md §0.",
-      "openbank_charts_all": "Datos de Plotly sin transformación real desde snapshot_backend.json -- se verifican contra ese fichero, no aquí.",
-      "ibkr_charts_all": "Idem."
+      "cash1_top_merchants": "Sección 'Top del mes' (chips) eliminada del UI en el Bloque 5 -- ver docs/ARCHITECTURE.md §0.",
+      "cash1_charts_all": "Datos de Plotly sin transformación real desde snapshot_backend.json -- se verifican contra ese fichero, no aquí.",
+      "investment1_charts_all": "Idem."
     },
     "excluded_columns": {
-      "openbank_apuestas_body": "Columnas 'Bal. Hist.' / 'Crec. Hist.' eliminadas del UI en el Bloque 5 -- ver docs/ARCHITECTURE.md §0.",
-      "ibkr_inversiones_body": "Columnas 'Bal. Hist.' / 'ROI Hist.' eliminadas del UI en el Bloque 5 -- ídem."
+      "cash1_apuestas_body": "Columnas 'Bal. Hist.' / 'Crec. Hist.' eliminadas del UI en el Bloque 5 -- ver docs/ARCHITECTURE.md §0.",
+      "investment1_inversiones_body": "Columnas 'Bal. Hist.' / 'ROI Hist.' eliminadas del UI en el Bloque 5 -- ídem."
     }
   },
   "values": {
-    "openbank_kpis": {
+    "cash1_kpis": {
       "mes": [
         "Saldo actual",
         "8655,00€",
@@ -53,10 +53,10 @@
         "↑ +3655,00€ vs ant."
       ]
     },
-    "openbank_gasto_alert": [
+    "cash1_gasto_alert": [
       "Gastos este mes 1135,00€ · 8% por debajo de la media de los 3 meses anteriores (1230,00€)"
     ],
-    "openbank_apuestas_body": [
+    "cash1_apuestas_body": [
       "Total apostado",
       "300,00€",
       "3 apuestas",
@@ -78,7 +78,7 @@
       "120,00€",
       "Cerrar"
     ],
-    "openbank_movimientos_default": [
+    "cash1_movimientos_default": [
       "Fecha",
       "Tipo",
       "Concepto",
@@ -225,7 +225,7 @@
       "Duplicar",
       "Editar"
     ],
-    "ibkr_kpis": {
+    "investment1_kpis": {
       "mes": [
         "Saldo",
         "1205,00€",
@@ -266,7 +266,7 @@
         "↑ +50,00€ vs ant."
       ]
     },
-    "ibkr_inversiones_body": [
+    "investment1_inversiones_body": [
       "Total en carteras",
       "750,00€",
       "3 carteras",
@@ -310,7 +310,7 @@
       "-50,00€",
       "-25.00%"
     ],
-    "ibkr_transferencias_body": [
+    "investment1_transferencias_body": [
       "Recibido",
       "400,00€",
       "Enviado",
@@ -326,7 +326,7 @@
       "Desde OPENBANK",
       "+400.00€"
     ],
-    "ibkr_movimientos_default": [
+    "investment1_movimientos_default": [
       "Fecha",
       "Tipo",
       "Concepto",

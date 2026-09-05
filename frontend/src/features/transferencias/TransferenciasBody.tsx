@@ -37,7 +37,7 @@ export function TransferenciasBody({ report }: { report: TransfersReport }) {
     return (
       <>
         {kpis}
-        <div className="empty">Aún no hay transferencias con Openbank.</div>
+        <div className="empty">Aún no hay transferencias registradas.</div>
       </>
     );
   }

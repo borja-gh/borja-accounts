@@ -9,9 +9,9 @@ interface Props {
   report: SaldoEvolucionReport;
 }
 
-// La traza "Media 30d" (report.mediaMovil, solo Openbank) se omite a
+// La traza "Media 30d" (report.mediaMovil, solo cuentas CASH) se omite a
 // propósito -- limpieza de UI acordada en docs/ARCHITECTURE.md §0. El
-// backend la sigue calculando (with_media_movil=True para Openbank) pero
+// backend la sigue calculando (with_media_movil=True para CASH) pero
 // ya no se representa.
 export function SaldoChart({ kind, report }: Props) {
   const L = baseLayout();

@@ -9,9 +9,9 @@ describe('KpiCardsIbkr', () => {
   it.each(['mes', 'trimestre', 'año'] satisfies KpiPeriod[])(
     'coincide con el golden master para period=%s',
     (period) => {
-      const kpi = backendFixture.ibkr_kpis_by_period[period];
+      const kpi = backendFixture.investment1_kpis_by_period[period];
       const { container } = render(<KpiCardsIbkr kpi={kpi} period={period} />);
-      expect(extractVisibleText(container)).toEqual(expectedValues.ibkr_kpis[period]);
+      expect(extractVisibleText(container)).toEqual(expectedValues.investment1_kpis[period]);
     },
   );
 });

@@ -1,5 +1,5 @@
 """
-Genera openbank.example.csv / ibkr.example.csv con un dataset sintético
+Genera cash1.example.csv / investment1.example.csv con un dataset sintético
 que ejercita todo el dominio (gastos recurrentes, nómina, devolución,
 apuestas abiertas/cerradas ganadora y perdedora, inversiones abiertas/
 cerradas ganadora y perdedora, transferencia entre cuentas, y dos filas
@@ -8,6 +8,12 @@ con timestamp idéntico para validar la estabilidad del mergesort).
 "Hoy simulado" de referencia para el golden master: 2026-07-15.
 Reutiliza recalcular_saldo() de app.py para que el Saldo del fixture sea
 consistente con el comportamiento real del sistema, no aritmética manual.
+
+Roto desde que app.py (Flask original) se eliminó en el Bloque 1 -- este
+script no se ha vuelto a ejecutar desde entonces; los CSV versionados son
+el resultado congelado de la última vez que corrió. Si el dataset
+sintético necesita cambiar, portar antes recalcular_saldo() a
+domain/services/ledger.py:LedgerService.recalculate_balances().
 
 Uso: python tests/build_fixture.py
 """
@@ -24,7 +30,7 @@ spec.loader.exec_module(appmod)
 
 import pandas as pd
 
-OPENBANK_SEED = [
+CASH1_SEED = [
     ("2026-01-01 09:00:00", "Saldo Inicial", "Apertura de cuenta", 5000.00),
     ("2026-01-05 10:00:00", "Gasto", "Alquiler", 900.00),
     ("2026-01-06 11:00:00", "Gasto", "Supermercado", 220.00),
@@ -72,7 +78,7 @@ OPENBANK_SEED = [
     ("2026-07-15 09:00:00", "Nómina", "Sueldo julio", 1800.00),
 ]
 
-IBKR_SEED = [
+INVESTMENT1_SEED = [
     ("2026-01-01 09:00:00", "Saldo Inicial", "Apertura de cuenta", 1000.00),
     ("2026-01-10 09:00:00", "Inversión", "Cartera Tech", 300.00),
     ("2026-02-05 09:00:00", "Inversión", "Cartera Bonos", 200.00),
@@ -97,5 +103,5 @@ def build(seed, cuenta, out_path):
 
 
 if __name__ == "__main__":
-    build(OPENBANK_SEED, "openbank", os.path.join(REPO_ROOT, "openbank.example.csv"))
-    build(IBKR_SEED, "ibkr", os.path.join(REPO_ROOT, "ibkr.example.csv"))
+    build(CASH1_SEED, "cash1", os.path.join(REPO_ROOT, "cash1.example.csv"))
+    build(INVESTMENT1_SEED, "investment1", os.path.join(REPO_ROOT, "investment1.example.csv"))

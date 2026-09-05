@@ -7,8 +7,8 @@ aquí. Este fichero sigue siendo solo routing FastAPI: parsea el request,
 invoca el caso de uso correspondiente y traduce excepciones de dominio al
 mismo contrato JSON que exponía el app.py (Flask) original.
 
-Los CSV reales (openbank.csv/ibkr.csv) no se leen ni escriben más desde
-aquí -- pasan a rol de import/export vía scripts/migrate_csv_to_sqlite.py.
+Los CSV reales (uno por cuenta) no se leen ni escriben más desde aquí --
+pasan a rol de import/export vía scripts/migrate_csv_to_sqlite.py.
 """
 import os
 import sys

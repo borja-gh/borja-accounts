@@ -12,10 +12,10 @@ describe('MensualChart', () => {
   beforeEach(() => newPlot.mockClear());
 
   it('coincide con el golden master', () => {
-    const report = backendFixture.openbank_mensual_evolucion_all;
+    const report = backendFixture.cash1_mensual_evolucion_all;
     render(<MensualChart report={report} />);
     const [, traces, layout] = newPlot.mock.calls[0];
-    const expected = rawFrontendSnapshot.openbank_charts_all['c-mensual'];
+    const expected = rawFrontendSnapshot.cash1_charts_all['c-mensual'];
     expect(traces).toEqual(expected.traces);
     expect(layout).toEqual(expected.layout);
   });

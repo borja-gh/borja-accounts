@@ -12,10 +12,10 @@ describe('DonutChart', () => {
   beforeEach(() => newPlot.mockClear());
 
   it('coincide con el golden master', () => {
-    const donut = backendFixture.openbank_gastos_ranking_all_media.donut;
+    const donut = backendFixture.cash1_gastos_ranking_all_media.donut;
     render(<DonutChart donut={donut} />);
     const [, traces, layout] = newPlot.mock.calls[0];
-    const expected = rawFrontendSnapshot.openbank_charts_all['c-donut'];
+    const expected = rawFrontendSnapshot.cash1_charts_all['c-donut'];
     expect(traces).toEqual(expected.traces);
     expect(layout).toEqual(expected.layout);
   });

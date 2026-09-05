@@ -21,8 +21,8 @@ import pandas as pd
 from domain.entities import Movement
 
 ARCHIVOS = {
-    "openbank": "openbank.csv",
-    "ibkr": "ibkr.csv",
+    "cash1": "cash1.csv",
+    "investment1": "investment1.csv",
 }
 
 

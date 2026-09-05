@@ -18,7 +18,7 @@ export const backendFixture = readJson('snapshot_backend.json');
 // extract_frontend_values.py) -- contrato de aceptación del Bloque 5.
 export const expectedValues = readJson('snapshot_frontend_values.json').values;
 
-// Snapshot crudo del vanilla (incluye openbank_charts_all/ibkr_charts_all,
+// Snapshot crudo del vanilla (incluye cash1_charts_all/investment1_charts_all,
 // las traces/layout que Plotly.newPlot recibió) -- extract_frontend_values.py
 // excluye deliberadamente los charts de expectedValues, así que los tests
 // de gráficos comparan contra este fichero directamente. Ver el comentario

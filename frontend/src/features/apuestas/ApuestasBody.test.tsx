@@ -6,8 +6,8 @@ import { ApuestasBody } from './ApuestasBody';
 
 describe('ApuestasBody', () => {
   it('coincide con el golden master (rango 3m del fixture)', () => {
-    const report = backendFixture.openbank_apuestas_report_3m;
+    const report = backendFixture.cash1_apuestas_report_3m;
     const { container } = render(<ApuestasBody report={report} onClosePosition={() => {}} />);
-    expect(extractVisibleText(container)).toEqual(expectedValues.openbank_apuestas_body);
+    expect(extractVisibleText(container)).toEqual(expectedValues.cash1_apuestas_body);
   });
 });

@@ -20,13 +20,13 @@ Uso: python3 extract_frontend_values.py > snapshot_frontend_values.json
      (o simplemente ejecutar el módulo: escribe el fichero directamente)
 
 Exclusiones deliberadas (limpieza de UI acordada, docs/ARCHITECTURE.md §0):
-- openbank_top_merchants: sección completa "Top del mes" (chips), eliminada
+- cash1_top_merchants: sección completa "Top del mes" (chips), eliminada
   del UI en el Bloque 5.
 - Columnas "Bal. Hist." / "Crec. Hist." (apuestas) y "Bal. Hist." /
   "ROI Hist." (carteras): las 2 últimas columnas de cada tabla "histórico
   cerrado", eliminadas del UI en el Bloque 5. Se identifican y recortan
   estructuralmente (no por regenerar el snapshot), ver strip_historical_columns.
-- openbank_charts_all / ibkr_charts_all: las funciones chart* pasan los
+- cash1_charts_all / investment1_charts_all: las funciones chart* pasan los
   datos de snapshot_backend.json a Plotly casi sin transformación (la
   media móvil vive ahora en el backend). El test de React para gráficos
   compara las traces capturadas directamente contra snapshot_backend.json,
@@ -42,18 +42,18 @@ HERE = Path(__file__).parent
 SNAPSHOT_PATH = HERE / "snapshot_frontend.json"
 OUTPUT_PATH = HERE / "snapshot_frontend_values.json"
 
-EXCLUDED_KEYS = {"openbank_top_merchants", "openbank_charts_all", "ibkr_charts_all"}
+EXCLUDED_KEYS = {"cash1_top_merchants", "cash1_charts_all", "investment1_charts_all"}
 EXCLUDED_REASON = {
-    "openbank_top_merchants": "Sección 'Top del mes' (chips) eliminada del UI en el Bloque 5 -- ver docs/ARCHITECTURE.md §0.",
-    "openbank_charts_all": "Datos de Plotly sin transformación real desde snapshot_backend.json -- se verifican contra ese fichero, no aquí.",
-    "ibkr_charts_all": "Idem.",
+    "cash1_top_merchants": "Sección 'Top del mes' (chips) eliminada del UI en el Bloque 5 -- ver docs/ARCHITECTURE.md §0.",
+    "cash1_charts_all": "Datos de Plotly sin transformación real desde snapshot_backend.json -- se verifican contra ese fichero, no aquí.",
+    "investment1_charts_all": "Idem.",
 }
 
 HIST_TABLE_MARKER = "Bal. Hist."
 HIST_COLS_TO_DROP = 2  # Bal. Hist. + (Crec. Hist. | ROI Hist.)
 EXCLUDED_COLUMNS_REASON = {
-    "openbank_apuestas_body": "Columnas 'Bal. Hist.' / 'Crec. Hist.' eliminadas del UI en el Bloque 5 -- ver docs/ARCHITECTURE.md §0.",
-    "ibkr_inversiones_body": "Columnas 'Bal. Hist.' / 'ROI Hist.' eliminadas del UI en el Bloque 5 -- ídem.",
+    "cash1_apuestas_body": "Columnas 'Bal. Hist.' / 'Crec. Hist.' eliminadas del UI en el Bloque 5 -- ver docs/ARCHITECTURE.md §0.",
+    "investment1_inversiones_body": "Columnas 'Bal. Hist.' / 'ROI Hist.' eliminadas del UI en el Bloque 5 -- ídem.",
 }
 
 _CELL_OPEN = r"<t[hd](?:\s[^>]*)?>"

@@ -40,8 +40,8 @@ uv sync
 
 # Los CSV con datos reales están en .gitignore (uno por cuenta, <id-cuenta>.csv).
 # En un clon nuevo, arranca a partir de los ejemplos:
-cp openbank.example.csv openbank.csv
-cp ibkr.example.csv ibkr.csv
+cp cash1.example.csv cash1.csv
+cp investment1.example.csv investment1.csv
 
 # Las cuentas deben existir ya en accounts.db (alta vía POST /api/accounts, o
 # ya presentes) antes de importar -- el script solo trae movimientos, no crea
