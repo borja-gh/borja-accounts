@@ -32,8 +32,8 @@ function App() {
   const selected = accounts?.find((a) => a.id === account) ?? null;
 
   useEffect(() => {
-    document.body.classList.remove('acc-openbank', 'acc-ibkr');
-    if (selected) document.body.classList.add(selected.kind === 'INVESTMENT' ? 'acc-ibkr' : 'acc-openbank');
+    document.body.classList.remove('acc-cash', 'acc-investment');
+    if (selected) document.body.classList.add(selected.kind === 'INVESTMENT' ? 'acc-investment' : 'acc-cash');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.kind]);
 
