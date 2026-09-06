@@ -11,5 +11,5 @@ class GetGastosRankingUseCase:
                 reference: datetime, mode: str) -> dict:
         movements = self.repository.load(account_id)
         ranking = compute_gastos_ranking(movements, range_type, year, reference, mode)
-        donut = compute_gastos_donut(movements, range_type, year, reference)
+        donut = compute_gastos_donut(movements, range_type, year, reference, mode)
         return {"ranking": ranking, "donut": donut}

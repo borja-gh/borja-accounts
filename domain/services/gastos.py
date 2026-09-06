@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 from domain.entities import Movement
 from domain.services.calendar import month_key
-from domain.services.concept_ranking import rank_by_concept
+from domain.services.concept_ranking import n_months_for_range, rank_by_concept
 from domain.services.period_filter import filter_by_field
 
 TZ = ZoneInfo("Europe/Madrid")
@@ -85,15 +85,20 @@ def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int
 
 
 def compute_gastos_donut(movements: list[Movement], range_type: str, year: int | str | None,
-                          reference: datetime, top_n: int = 14) -> dict:
+                          reference: datetime, mode: str = "total", top_n: int = 14) -> dict:
     reference_local = reference.astimezone(TZ)
     gastos = _filtered_gastos(movements, range_type, year, reference_local)
+    hover_suffix = "€/mes" if mode == "media" else "€"
     if not gastos:
-        return {"labels": [], "values": [], "hasGastos": False}
+        return {"labels": [], "values": [], "hasGastos": False, "hoverSuffix": hover_suffix}
 
     by_concepto: dict[str, float] = {}
     for m in gastos:
         by_concepto[m.concept] = by_concepto.get(m.concept, 0.0) + m.amount
+
+    if mode == "media":
+        n_months = n_months_for_range(gastos, range_type)
+        by_concepto = {c: t / n_months for c, t in by_concepto.items()}
 
     sorted_entries = sorted(
         ((c, _r2(t)) for c, t in by_concepto.items() if t > 0),
@@ -106,4 +111,4 @@ def compute_gastos_donut(movements: list[Movement], range_type: str, year: int |
     if rest > 0:
         labels.append("Otros")
         values.append(rest)
-    return {"labels": labels, "values": values, "hasGastos": True}
+    return {"labels": labels, "values": values, "hasGastos": True, "hoverSuffix": hover_suffix}

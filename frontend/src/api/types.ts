@@ -158,22 +158,6 @@ export interface PortfolioReport {
   totalRoi: number;
 }
 
-export interface TransferItem {
-  Fecha: string;
-  Concepto: string;
-  Total: number;
-  dir: 'in' | 'out';
-  label: string;
-}
-
-export interface TransfersReport {
-  items: TransferItem[];
-  lifetimeRec: number;
-  lifetimeSent: number;
-  lifetimeNet: number;
-  totalCount: number;
-}
-
 export interface TransferRequest {
   origen: AccountId;
   destino: AccountId;
@@ -217,6 +201,7 @@ export interface GastosDonutSection {
   hasGastos: boolean;
   labels: string[];
   values: number[];
+  hoverSuffix: string;
 }
 
 export interface GastosRankingReport {

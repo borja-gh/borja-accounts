@@ -23,7 +23,7 @@ def _r2(v: float) -> float:
     return round(v, 2)
 
 
-def _n_months(items: list[Movement], range_type: str) -> int:
+def n_months_for_range(items: list[Movement], range_type: str) -> int:
     if range_type in (None, "all", "year", "custom"):
         return len({_fecha_str(m)[:7] for m in items}) or 1
     return _MONTHS_FOR_RANGE.get(range_type, 1)
@@ -47,7 +47,7 @@ def rank_by_concept(movements: list[Movement], tipo: str, range_type: str, year:
         by_concepto[m.concept] = by_concepto.get(m.concept, 0.0) + m.amount
 
     if mode == "media":
-        n_months = _n_months(items, range_type)
+        n_months = n_months_for_range(items, range_type)
         entries = [(c, _r2(t / n_months)) for c, t in by_concepto.items()]
     else:
         entries = [(c, _r2(t)) for c, t in by_concepto.items()]

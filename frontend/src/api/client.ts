@@ -21,7 +21,6 @@ import type {
   SaldoEvolucionReport,
   TransferRequest,
   TransferResult,
-  TransfersReport,
 } from './types';
 import type { RangeFilter } from '../features/filters/RangeFilter';
 
@@ -105,10 +104,6 @@ export function fetchApuestas(cuenta: string, filter: RangeFilter): Promise<Bett
 
 export function fetchCarteras(cuenta: string, filter: RangeFilter): Promise<PortfolioReport> {
   return fetchRangeReport(`/api/accounts/${cuenta}/carteras`, filter);
-}
-
-export function fetchTransferencias(cuenta: string, filter: RangeFilter): Promise<TransfersReport> {
-  return fetchRangeReport(`/api/accounts/${cuenta}/transferencias`, filter);
 }
 
 export async function submitTransfer(body: TransferRequest): Promise<TransferResult> {
