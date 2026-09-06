@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { AccountMark } from '../../components/AccountMark';
+import { SectionHeading } from '../../components/SectionHeading';
 import { fetchSaldoEvolucion, fetchMensualEvolucion, fetchGastosRanking } from '../../api/client';
 import { KpiCards } from '../kpis/KpiCards';
 import { PeriodSelector } from '../kpis/PeriodSelector';
@@ -71,16 +72,18 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
         <div className="spacer" />
         <PeriodSelector period={period} onChange={setPeriod} allowCustom />
       </div>
+      <SectionHeading title="Resumen general" />
       <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} />}</div>
+      {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} />}
 
       {data && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>Rango de Desglose y Apuestas</span>
           <RangeFilterBar data={data} filter={rangeFilter} onChange={setRangeFilter} />
         </div>
       )}
 
-      {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} />}
-
+      <SectionHeading title="Desglose" />
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-label">Evolución del saldo</div>
@@ -114,8 +117,10 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
         </div>
       </div>
 
+      <SectionHeading title="Apuestas" />
       <ApuestasSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
 
+      <SectionHeading title="Movimientos" />
       {data && <MovimientosSection account={account.id} kind={account.kind} data={data} onDataChanged={refreshAll} />}
     </>
   );
