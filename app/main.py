@@ -40,8 +40,10 @@ from application.use_cases.get_gastos_mes_actual import GetGastosMesActualUseCas
 from application.use_cases.get_gastos_ranking import GetGastosRankingUseCase
 from application.use_cases.get_transfers_report import GetTransfersReportUseCase
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
+from application.use_cases.update_portfolio_holding import UpdatePortfolioHoldingUseCase
 from domain.exceptions import DomainError
 from domain.services.ledger import LedgerService
+from domain.services.portfolio_holdings import compute_investment_saldo
 from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository
 
 BASE_DIR = _REPO_ROOT
@@ -119,8 +121,13 @@ def get_patrimonio():
     result = {}
     for cuenta in _known_account_ids():
         try:
+            account = repository.get_account(cuenta)
             movements = repository.load(cuenta)
-            result[cuenta] = round(float(movements[-1].balance), 2) if movements else 0.0
+            holdings = repository.list_portfolio_holdings(cuenta)
+            if account.kind.value == "INVESTMENT" and holdings:
+                result[cuenta] = compute_investment_saldo(movements, holdings, account.cash_override)
+            else:
+                result[cuenta] = round(float(movements[-1].balance), 2) if movements else 0.0
         except Exception:
             result[cuenta] = 0.0
     return result
@@ -131,7 +138,11 @@ def get_accounts():
     result = []
     for account in repository.list_accounts():
         movements = repository.load(account.id)
-        saldo = round(float(movements[-1].balance), 2) if movements else 0.0
+        holdings = repository.list_portfolio_holdings(account.id)
+        if account.kind.value == "INVESTMENT" and holdings:
+            saldo = compute_investment_saldo(movements, holdings, account.cash_override)
+        else:
+            saldo = round(float(movements[-1].balance), 2) if movements else 0.0
         result.append({
             "id": account.id, "name": account.name, "kind": account.kind.value,
             "currency": account.currency, "saldo": saldo,
@@ -272,6 +283,19 @@ def get_carteras(cuenta: str, range: str = "all", year: str | None = None):
     if err:
         return err
     return report
+
+
+@app.put("/api/accounts/{cuenta}/portfolio-holdings/{holding_id}")
+async def update_portfolio_holding(cuenta: str, holding_id: int, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    result, err = _run(UpdatePortfolioHoldingUseCase(repository).execute, cuenta, holding_id, data)
+    if err:
+        return err
+    return result
 
 
 @app.get("/api/accounts/{cuenta}/apuestas")

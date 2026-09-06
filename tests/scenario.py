@@ -68,7 +68,7 @@ def _load_app_module(repo_root):
 
 def _seed_sqlite_from_fixture(repo_root, csv_dir, db_path):
     sys.path.insert(0, repo_root)
-    from domain.entities import Account
+    from domain.entities import Account, PortfolioHolding
     from domain.value_objects import AccountKind
     from infrastructure.persistence.csv.repository import ARCHIVOS, CSVMovementRepository
     from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository
@@ -80,6 +80,32 @@ def _seed_sqlite_from_fixture(repo_root, csv_dir, db_path):
         sqlite_repo.create_account(Account(id=account_id, name=name, kind=AccountKind(kind)))
     for account_id in ARCHIVOS:
         sqlite_repo.save(account_id, csv_repo.load(account_id))
+
+    # "Cartera Tech"/"Cartera Bonos"/"Cartera Global" (investment1.example.csv)
+    # se quedan como legado vía movements -- dan cobertura al path histórico
+    # (compute_closed_positions) que sigue existiendo para Cartera 1 en
+    # producción. "Cartera Prueba" es sintética y da cobertura al modelo de
+    # holdings (ver docs/ARCHITECTURE.md): AAPL sigue abierta (sin
+    # close_price_usd, pnl None) y MSFT ya se vendió (close_price_usd
+    # relleno, pnl calculado, con nota) -- así se ejercita también que el
+    # PnL de la cartera se queda en None mientras no estén todas cerradas.
+    sqlite_repo.replace_portfolio_holdings("investment1", [
+        PortfolioHolding(
+            id=0, account_id="investment1", portfolio="Cartera Prueba",
+            ticker="AAPL", company="Apple Inc.", shares=10.0, price_usd=100.0,
+            capital_usd=1000.0, contributed_at="2026-05-01", source_file="test-fixture",
+        ),
+        PortfolioHolding(
+            id=0, account_id="investment1", portfolio="Cartera Prueba",
+            ticker="MSFT", company="Microsoft Corp.", shares=5.0, price_usd=200.0,
+            capital_usd=1000.0, contributed_at="2026-05-01", source_file="test-fixture",
+            close_price_usd=180.0, note="Vendida con pérdida",
+        ),
+    ])
+    investment1 = sqlite_repo.get_account("investment1")
+    investment1.currency = "USD"
+    investment1.cash_override = 50.0
+    sqlite_repo.update_account(investment1)
 
 
 def run_scenario(repo_root):

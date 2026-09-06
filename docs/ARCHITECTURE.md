@@ -12,6 +12,7 @@ Documento de referencia para el refactor a FastAPI + arquitectura hexagonal, con
 | Frontend | **React + TypeScript + Vite**, monorepo `backend/` + `frontend/`. Reemplaza el SPA vanilla JS actual. Se construye **después** de que la lógica financiera esté en el backend (Bloque 5, tras Bloque 4) para no reimplementar los cálculos dos veces. | Mantener vanilla JS; frameworks más pesados (Next.js) sin caso de uso para una app local de un usuario |
 | Integración IBKR | **Dentro de alcance, real, lectura + escritura.** Adapter contra el Client Portal Gateway (CPGW) oficial de IBKR, incluye poder operar (colocar/cancelar órdenes). Cada operación de escritura exige confirmación explícita del usuario en el momento — sin automatización ni trading algorítmico. Es una app personal de un único usuario: él decide y confirma cada acción. | Dejarlo como stub/"proyecto aparte"; solo-lectura por defecto |
 | Puerto de la app | **8000** (uvicorn), liberando el **5000** para el gateway CPGW, que lo tiene fijado en su propio `conf.yaml` | Mantener 5000 para la app (choca con el gateway) |
+| Datos de inversión | Los datos financieros del usuario se mantienen fuera del control de versiones; las pruebas utilizan fixtures sintéticos. | Configuración explícita por cuenta |
 
 Estas decisiones ya condicionan el diseño de abajo.
 
@@ -173,6 +174,8 @@ Los datos financieros del usuario se mantienen fuera del control de versiones; l
 2. **Cómo reconcilian** los datos que reporte el gateway (posiciones/cantidades reales) contra el histórico introducido a mano: ¿el dato del broker se vuelve autoritativo desde el momento de la primera sincronización, solo anota/enriquece el registro manual, o conviven como dos fuentes visibles por separado?
 
 Se resuelve con dry-run, dataset de prueba y verificación de invariantes (capital total sin cambios) antes de tocar el dato real — igual que cualquier migración de datos reales en este proyecto.
+
+Los datos financieros del usuario se mantienen fuera del control de versiones; las pruebas utilizan fixtures sintéticos.
 
 ## 5. Fuera de alcance (explícitamente)
 

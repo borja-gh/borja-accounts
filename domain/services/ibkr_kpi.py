@@ -3,9 +3,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from domain.entities import Movement
+from domain.entities import Movement, PortfolioHolding
 from domain.services.period_slices import period_slices
-from domain.services.positions import compute_closed_positions, compute_open_positions
+from domain.services.portfolio_holdings import compute_open_investment_summary
+from domain.services.positions import compute_closed_positions
 from domain.services.transfers import is_transfer_in, is_transfer_out
 
 TZ = ZoneInfo("Europe/Madrid")
@@ -39,14 +40,16 @@ def _delta(curr: float, prv: float) -> Delta:
     return Delta(diff=_r2(curr - prv))
 
 
-def compute_ibkr_kpis(movements: list[Movement], kpi_type: str, reference: datetime) -> IbkrKPIResult:
+def compute_ibkr_kpis(movements: list[Movement], holdings: list[PortfolioHolding],
+                       cash_override: float | None, kpi_type: str, reference: datetime) -> IbkrKPIResult:
     reference_local = reference.astimezone(TZ)
-    saldo = movements[-1].balance if movements else 0.0
     slices = period_slices(kpi_type, reference_local)
 
-    open_positions = compute_open_positions(movements, "Inversión", "Inversión_r")
-    en_carteras = _r2(sum(p.monto for p in open_positions))
-    en_carteras_count = len(open_positions)
+    summary = compute_open_investment_summary(movements, holdings)
+    en_carteras_count = summary.count
+    en_carteras = summary.capital_usd
+    cash = cash_override if cash_override is not None else 0.0
+    saldo = _r2(cash + en_carteras)
 
     def aportado(rs):
         rec = sum(m.amount for m in rs if is_transfer_in(m))

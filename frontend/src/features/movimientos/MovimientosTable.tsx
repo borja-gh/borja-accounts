@@ -14,6 +14,12 @@ const ACTION_BTN_STYLE = { fontSize: 11, padding: '3px 8px', whiteSpace: 'nowrap
 // `rows` llega ya ordenado por searchedMovs() -- a diferencia del vanilla
 // (que reordenaba también aquí), no se repite el sort porque el resultado
 // observable es idéntico.
+//
+// € hardcodeado a propósito, incluso para investment1 (cuenta USD): esta
+// tabla lista los `movements` crudos (Ingreso/Transferencia/Saldo
+// Inicial/Cartera 1 legado), que son transferencias reales en EUR desde
+// Openbank -- no pasan por el modelo de holdings/USD. Ver
+// docs/ARCHITECTURE.md §0 sobre por qué conviven ambas divisas.
 export function MovimientosTable({ rows, onFilterByConcept, onDuplicate, onEdit }: Props) {
   if (!rows.length) return <div className="empty">Sin movimientos.</div>;
   return (
