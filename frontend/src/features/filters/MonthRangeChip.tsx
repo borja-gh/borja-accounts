@@ -1,27 +1,53 @@
 import { useEffect, useRef, useState } from 'react';
 import { monthLabel } from './monthLabel';
 
+const MESES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+function yearOptions(): string[] {
+  const now = new Date().getFullYear();
+  return Array.from({ length: 8 }, (_, i) => String(now - 6 + i));
+}
+
 interface MonthInputProps {
   value: string;
   onChange: (value: string) => void;
 }
 
+// Dos <select> (mes + año) en vez de <input type="month"> -- el value
+// real que llegaba al backend con el input nativo fue "03/26" en vez de
+// "2026-03" (ver logs), y el 400 resultante rompía el front porque
+// KpiDelta leía delta.diff de un payload de error. Un <select> no admite
+// ese formato ambiguo y funciona igual en cualquier navegador.
 function MonthInput({ value, onChange }: MonthInputProps) {
-  const ref = useRef<HTMLInputElement>(null);
+  const [year = '', month = ''] = value ? value.split('-') : [];
+  const years = yearOptions();
+  const currentYear = String(new Date().getFullYear());
+
   return (
     <div className="month-input-wrap">
-      <input ref={ref} type="month" className="date-input" value={value} onChange={(e) => onChange(e.target.value)} />
-      <button
-        type="button"
-        className="month-input-cal"
-        aria-label="Abrir calendario"
-        onClick={() => ref.current?.showPicker?.()}
-      >
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
-          <rect x="1.5" y="2.5" width="13" height="12" rx="1.5" />
-          <path d="M1.5 6h13M4.5 1v2.5M11.5 1v2.5" strokeLinecap="round" />
-        </svg>
-      </button>
+      <select value={month} onChange={(e) => onChange(`${year || currentYear}-${e.target.value}`)}>
+        <option value="" disabled>
+          Mes
+        </option>
+        {MESES.map((label, i) => (
+          <option key={label} value={String(i + 1).padStart(2, '0')}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <select value={year} onChange={(e) => onChange(`${e.target.value}-${month || '01'}`)}>
+        <option value="" disabled>
+          Año
+        </option>
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
