@@ -853,7 +853,7 @@
     {
       "Concepto": "Cartera Tech",
       "Fecha": "2026-01-10 09:00:00",
-      "Saldo": 700.0,
+      "Saldo": 1000.0,
       "Tipo": "Inversión",
       "Total": 300.0,
       "_idx": 1
@@ -861,7 +861,7 @@
     {
       "Concepto": "Cartera Bonos",
       "Fecha": "2026-02-05 09:00:00",
-      "Saldo": 500.0,
+      "Saldo": 1000.0,
       "Tipo": "Inversión",
       "Total": 200.0,
       "_idx": 2
@@ -869,7 +869,7 @@
     {
       "Concepto": "Comisión custodia",
       "Fecha": "2026-03-01 09:00:00",
-      "Saldo": 490.0,
+      "Saldo": 990.0,
       "Tipo": "Gasto",
       "Total": 10.0,
       "_idx": 3
@@ -877,7 +877,7 @@
     {
       "Concepto": "Cartera Global",
       "Fecha": "2026-04-12 09:00:00",
-      "Saldo": 240.0,
+      "Saldo": 990.0,
       "Tipo": "Inversión",
       "Total": 250.0,
       "_idx": 4
@@ -885,7 +885,7 @@
     {
       "Concepto": "Cartera Tech",
       "Fecha": "2026-05-10 09:00:00",
-      "Saldo": 640.0,
+      "Saldo": 1090.0,
       "Tipo": "Inversión_r",
       "Total": 400.0,
       "_idx": 5
@@ -893,7 +893,7 @@
     {
       "Concepto": "Cartera Bonos",
       "Fecha": "2026-06-08 09:00:00",
-      "Saldo": 790.0,
+      "Saldo": 1040.0,
       "Tipo": "Inversión_r",
       "Total": 150.0,
       "_idx": 6
@@ -901,7 +901,7 @@
     {
       "Concepto": "Desde OPENBANK",
       "Fecha": "2026-06-25 10:30:00",
-      "Saldo": 1190.0,
+      "Saldo": 1440.0,
       "Tipo": "Ingreso",
       "Total": 400.0,
       "_idx": 7
@@ -909,7 +909,7 @@
     {
       "Concepto": "Dividendo",
       "Fecha": "2026-07-02 09:00:00",
-      "Saldo": 1205.0,
+      "Saldo": 1455.0,
       "Tipo": "Ingreso",
       "Total": 15.0,
       "_idx": 8

@@ -12,6 +12,7 @@ venv/
 *.csv
 !*.example.csv
 accounts.db
+backups/
 
 # Client Portal Gateway de IBKR — binario propietario redistribuible (~10MB),
 # incluye keystore (root/vertx.jks) y contraseña en claro en conf.yaml.
