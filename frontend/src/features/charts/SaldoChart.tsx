@@ -13,9 +13,16 @@ interface Props {
 // propósito -- limpieza de UI acordada en docs/ARCHITECTURE.md §0. El
 // backend la sigue calculando (with_media_movil=True para CASH) pero
 // ya no se representa.
+//
+// Para INVESTMENT esta serie sigue viniendo de movements.balance -- capital
+// aportado neto histórico, en EUR (las transferencias reales desde
+// Openbank). NO es el saldo actual de mercado que muestra el KPI "Saldo"
+// (ese viene de holdings/ticker_quotes, en USD) -- por eso se etiqueta
+// explícitamente distinto, para que no se lean como la misma magnitud.
 export function SaldoChart({ kind, report }: Props) {
   const L = baseLayout();
   const lineColor = kind === 'INVESTMENT' ? '#2F5D50' : '#0969da';
+  const label = kind === 'INVESTMENT' ? 'Capital aportado' : 'Saldo';
 
   const traces: Data[] = [
     {
@@ -23,7 +30,7 @@ export function SaldoChart({ kind, report }: Props) {
       y: report.saldos,
       type: 'scatter',
       mode: 'lines',
-      name: `Saldo (${eur(report.actual)})`,
+      name: `${label} (${eur(report.actual)})`,
       line: { color: lineColor, width: 2.5 },
       hovertemplate: '%{x|%d/%m/%y}: <b>%{y:,.2f}€</b><extra></extra>',
     } as Data,

@@ -9,4 +9,6 @@ class GetIbkrKPIsUseCase:
 
     def execute(self, account_id: str, kpi_type: str, reference: datetime) -> IbkrKPIResult:
         movements = self.repository.load(account_id)
-        return compute_ibkr_kpis(movements, kpi_type, reference)
+        holdings = self.repository.list_portfolio_holdings(account_id)
+        account = self.repository.get_account(account_id)
+        return compute_ibkr_kpis(movements, holdings, account.cash_override, kpi_type, reference)

@@ -34,3 +34,9 @@ TIPOS_POSITIVOS = {"Ingreso", "Saldo Inicial", "Nómina", "Devolución", "Apuest
 # Apuestas/Apuestas_r NO sigue este tratamiento -- decisión explícita del
 # usuario de dejarlas con la aritmética anterior por ahora.
 TIPOS_NEGATIVOS = {"Gasto", "Apuestas", "Transferencia"}
+
+# Símbolo de presentación por divisa de cuenta -- igual a CURRENCY_SUFFIX en
+# frontend/src/lib/format.ts, duplicado deliberado (backend/frontend son
+# lenguajes distintos, no hay forma de compartir esta constante sin un
+# tercer artefacto).
+CURRENCY_SYMBOLS = {"EUR": "€", "USD": "$"}
