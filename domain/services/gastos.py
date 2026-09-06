@@ -1,8 +1,8 @@
 """
 Traducción de la parte de cálculo de gastoAlertHtml/topMerchantsHtml/
-chartGastos/chartDonut (index.html) -- la construcción de `Plotly.newPlot`
-y el HTML de la alerta se quedan en el frontend, solo se mueve la
-agregación (ranking por concepto, media/mes, top-N, "Otros" del donut).
+chartGastos (index.html) -- la construcción de `Plotly.newPlot` y el
+HTML de la alerta se quedan en el frontend, solo se mueve la agregación
+(ranking por concepto, media/mes, top-N).
 """
 from dataclasses import dataclass
 from datetime import datetime
@@ -10,8 +10,7 @@ from zoneinfo import ZoneInfo
 
 from domain.entities import Movement
 from domain.services.calendar import month_key
-from domain.services.concept_ranking import n_months_for_range, rank_by_concept
-from domain.services.period_filter import filter_by_field
+from domain.services.concept_ranking import rank_by_concept
 
 TZ = ZoneInfo("Europe/Madrid")
 
@@ -67,11 +66,6 @@ def compute_top_merchants(movements: list[Movement], reference: datetime, limit:
     return [(c, _r2(v)) for c, v in top]
 
 
-def _filtered_gastos(movements, range_type, year, reference_local):
-    filtered = filter_by_field(movements, _fecha_str, range_type, year, reference_local)
-    return [m for m in filtered if m.type == "Gasto" and m.amount is not None]
-
-
 def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int | str | None,
                             reference: datetime, mode: str = "media", limit: int = 20) -> dict:
     entries, hover_suffix, has_gastos = rank_by_concept(
@@ -82,33 +76,3 @@ def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int
         "hoverSuffix": hover_suffix,
         "hasGastos": has_gastos,
     }
-
-
-def compute_gastos_donut(movements: list[Movement], range_type: str, year: int | str | None,
-                          reference: datetime, mode: str = "total", top_n: int = 14) -> dict:
-    reference_local = reference.astimezone(TZ)
-    gastos = _filtered_gastos(movements, range_type, year, reference_local)
-    hover_suffix = "€/mes" if mode == "media" else "€"
-    if not gastos:
-        return {"labels": [], "values": [], "hasGastos": False, "hoverSuffix": hover_suffix}
-
-    by_concepto: dict[str, float] = {}
-    for m in gastos:
-        by_concepto[m.concept] = by_concepto.get(m.concept, 0.0) + m.amount
-
-    if mode == "media":
-        n_months = n_months_for_range(gastos, range_type)
-        by_concepto = {c: t / n_months for c, t in by_concepto.items()}
-
-    sorted_entries = sorted(
-        ((c, _r2(t)) for c, t in by_concepto.items() if t > 0),
-        key=lambda kv: kv[1], reverse=True,
-    )
-    top = sorted_entries[:top_n]
-    rest = round(sum(v for _, v in sorted_entries[top_n:]), 2)
-    labels = [c for c, _ in top]
-    values = [v for _, v in top]
-    if rest > 0:
-        labels.append("Otros")
-        values.append(rest)
-    return {"labels": labels, "values": values, "hasGastos": True, "hoverSuffix": hover_suffix}

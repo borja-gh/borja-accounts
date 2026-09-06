@@ -197,16 +197,8 @@ export interface GastosRankingSection {
   hoverSuffix: string;
 }
 
-export interface GastosDonutSection {
-  hasGastos: boolean;
-  labels: string[];
-  values: number[];
-  hoverSuffix: string;
-}
-
 export interface GastosRankingReport {
   ranking: GastosRankingSection;
-  donut: GastosDonutSection;
 }
 
 export interface CarterasRankingReport {

@@ -14,7 +14,6 @@ import { useRangeReport } from '../filters/useRangeReport';
 import { SaldoChart } from '../charts/SaldoChart';
 import { MensualChart } from '../charts/MensualChart';
 import { GastosChart } from '../charts/GastosChart';
-import { DonutChart } from '../charts/DonutChart';
 import { RankingModeToggle } from '../charts/RankingModeToggle';
 import { GastoAlert } from '../gastos/GastoAlert';
 import { useGastosMesActual } from '../gastos/useGastosMesActual';
@@ -100,20 +99,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
             </div>
             <RankingModeToggle mode={gastosMode} onChange={setGastosMode} btnClass="gastos-mode-btn" />
           </div>
-          <div style={{ display: 'flex', gap: 14 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="chart-label" style={{ marginBottom: 6 }}>
-                Top 20 · Ranking
-              </div>
-              {gastosRanking && <GastosChart ranking={gastosRanking.ranking} />}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="chart-label" style={{ marginBottom: 6 }}>
-                Distribución
-              </div>
-              {gastosRanking && <DonutChart donut={gastosRanking.donut} />}
-            </div>
-          </div>
+          {gastosRanking && <GastosChart ranking={gastosRanking.ranking} />}
         </div>
       </div>
 
