@@ -26,7 +26,11 @@ import type { RangeFilter } from '../features/filters/RangeFilter';
 
 async function fetchRangeReport<T>(path: string, filter: RangeFilter, extraParams?: Record<string, string>): Promise<T> {
   const params = new URLSearchParams({ range: filter.type, ...extraParams });
-  if (filter.year !== undefined) params.set('year', String(filter.year));
+  if (filter.type === 'custom' && filter.fromYm && filter.toYm) {
+    params.set('year', `${filter.fromYm}:${filter.toYm}`);
+  } else if (filter.year !== undefined) {
+    params.set('year', String(filter.year));
+  }
   const res = await fetch(`${path}?${params}`);
   return res.json();
 }

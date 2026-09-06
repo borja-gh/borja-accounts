@@ -5,6 +5,19 @@ export function eur(v: number): string {
   }) + '€';
 }
 
+const CURRENCY_SUFFIX: Record<string, string> = { EUR: '€', USD: '$' };
+
+/** Igual que eur() pero para cualquier divisa soportada -- el símbolo va
+ * detrás del número en los dos casos que existen hoy (EUR/USD), así que no
+ * hace falta Intl.NumberFormat por-locale para esto. */
+export function money(v: number, currency: string): string {
+  const suffix = CURRENCY_SUFFIX[currency] ?? currency;
+  return (Number.isFinite(v) ? v : 0).toLocaleString('es-ES', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }) + suffix;
+}
+
 // Parsea solo los componentes de fecha y construye un Date local -- nunca
 // Date(string), que en TZ Europe/Madrid puede cruzar medianoche hacia atrás
 // (ver el fix del bug de zona horaria en domain/services/kpi.py).

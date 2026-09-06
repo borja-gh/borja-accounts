@@ -1,18 +1,20 @@
 export type AccountId = string;
 export type AccountKind = 'CASH' | 'INVESTMENT';
+export type Currency = 'EUR' | 'USD';
 export type KpiPeriod = 'mes' | 'trimestre' | 'año';
 
 export interface AccountSummary {
   id: AccountId;
   name: string;
   kind: AccountKind;
-  currency: string;
+  currency: Currency;
   saldo: number;
 }
 
 export interface CreateAccountRequest {
   name: string;
   kind: AccountKind;
+  currency: Currency;
   initialBalance?: number;
 }
 
@@ -21,6 +23,7 @@ export interface CreateAccountResult {
   id: string;
   name: string;
   kind: AccountKind;
+  currency: Currency;
   error?: string;
 }
 
@@ -69,6 +72,7 @@ export interface EditMovementRequest {
   tipo: string;
   concepto: string;
   total: number;
+  fecha: string;
 }
 
 export interface MutationResult {
@@ -111,6 +115,7 @@ export interface BettingReport {
   totalApostado: number;
   totalBets: number;
   totalPnL: number;
+  totalPnLPct: number;
   winRate: number;
   wins: number;
 }

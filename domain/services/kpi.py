@@ -23,12 +23,27 @@ from zoneinfo import ZoneInfo
 
 from domain.entities import Movement
 from domain.services.calendar import calendar_month_start, month_key
+from domain.services.transfers import is_transfer_in
 from domain.value_objects import TIPOS_NEGATIVOS, TIPOS_POSITIVOS
 
 TZ = ZoneInfo("Europe/Madrid")
 
-TIPOS_KPI_ING = {"Nómina", "Ingreso", "Devolución"}
-TIPOS_KPI_GAS = {"Gasto", "Transferencia"}
+# Ingresos/Gastos del período son netos, no una suma bruta por tipo:
+# - Devolución contrarresta Gasto (un gasto parcialmente devuelto reduce el
+#   gasto neto, no aparece como un ingreso nuevo) -- por eso no está en
+#   TIPOS_KPI_ING, y se resta explícitamente de "gastos" en _sum_period.
+# - Transferencia (salida) no cuenta como gasto -- mover dinero entre
+#   cuentas propias no es un gasto real.
+# - Un "Ingreso" que en realidad es una transferencia entrante (ver
+#   is_transfer_in, detecta el concepto "Desde X") tampoco cuenta como
+#   ingreso real, por el mismo motivo.
+# El KPI "Balance" del período no sigue esta poda -- usa TIPOS_POSITIVOS/
+# TIPOS_NEGATIVOS completos, sin cambios: el neto (ingresos-gastos) es
+# idéntico mueva o no la Devolución de "ingreso" a "menos gasto", y
+# Transferencia/Apuestas/Inversión sí deben pesar en el balance real de la
+# cuenta aunque no se desglosen como "ingreso" o "gasto".
+TIPOS_KPI_ING = {"Nómina", "Ingreso"}
+TIPOS_KPI_GAS = {"Gasto"}
 
 
 def _r2(v: float) -> float:
@@ -44,15 +59,21 @@ def _sum_period(movements: list[Movement], in_period) -> dict:
     for m in movements:
         if not in_period(m):
             continue
-        if m.type in TIPOS_KPI_ING:
+        if m.type in TIPOS_KPI_ING and not is_transfer_in(m):
             ing += m.amount
         if m.type in TIPOS_KPI_GAS:
             gas += m.amount
+        elif m.type == "Devolución":
+            gas -= m.amount
         if m.type in TIPOS_POSITIVOS and m.type != "Saldo Inicial":
             bal_ing += m.amount
         elif m.type in TIPOS_NEGATIVOS:
             bal_gas += m.amount
-    return {"ingresos": _r2(ing), "gastos": _r2(gas), "balance": _r2(bal_ing - bal_gas)}
+    # Si la Devolución cae en un período distinto al de su Gasto (p.ej. el
+    # gasto se edita a un mes anterior, o simplemente se devuelve en el mes
+    # siguiente), "gastos" podría salir negativo -- se acota a 0 porque es
+    # un KPI de "cuánto gastaste este período", no un neto con signo.
+    return {"ingresos": _r2(ing), "gastos": _r2(max(0.0, gas)), "balance": _r2(bal_ing - bal_gas)}
 
 
 @dataclass
