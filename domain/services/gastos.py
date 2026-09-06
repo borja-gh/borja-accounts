@@ -72,7 +72,7 @@ def _filtered_gastos(movements, range_type, year, reference_local):
     return [m for m in filtered if m.type == "Gasto" and m.amount is not None]
 
 
-def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int | None,
+def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int | str | None,
                             reference: datetime, mode: str = "media", limit: int = 20) -> dict:
     entries, hover_suffix, has_gastos = rank_by_concept(
         movements, "Gasto", range_type, year, reference, mode, limit,
@@ -84,7 +84,7 @@ def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int
     }
 
 
-def compute_gastos_donut(movements: list[Movement], range_type: str, year: int | None,
+def compute_gastos_donut(movements: list[Movement], range_type: str, year: int | str | None,
                           reference: datetime, top_n: int = 14) -> dict:
     reference_local = reference.astimezone(TZ)
     gastos = _filtered_gastos(movements, range_type, year, reference_local)

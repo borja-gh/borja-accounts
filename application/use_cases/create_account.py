@@ -8,6 +8,9 @@ from domain.services.ledger import LedgerService
 from domain.value_objects import AccountKind
 
 
+_SUPPORTED_CURRENCIES = {"EUR", "USD"}
+
+
 def _slugify(name: str) -> str:
     normalized = unicodedata.normalize("NFKD", name)
     ascii_only = normalized.encode("ascii", "ignore").decode("ascii")
@@ -36,6 +39,10 @@ class CreateAccountUseCase:
         except (TypeError, ValueError):
             raise InvalidAccountError("Saldo inicial inválido")
 
+        currency = data.get("currency") or "EUR"
+        if currency not in _SUPPORTED_CURRENCIES:
+            raise InvalidAccountError(f"Divisa '{currency}' no soportada -- solo EUR o USD")
+
         existing_ids = {a.id for a in self.repository.list_accounts()}
         base_slug = _slugify(name)
         account_id = base_slug
@@ -44,7 +51,7 @@ class CreateAccountUseCase:
             account_id = f"{base_slug}-{suffix}"
             suffix += 1
 
-        account = Account(id=account_id, name=name, kind=kind)
+        account = Account(id=account_id, name=name, kind=kind, currency=currency)
 
         initial_movement = None
         if initial_balance != 0:

@@ -147,7 +147,7 @@ async def create_account(request: Request):
     account, err = _run(CreateAccountUseCase(repository, ledger).execute, data)
     if err:
         return err
-    return {"ok": True, "id": account.id, "name": account.name, "kind": account.kind.value}
+    return {"ok": True, "id": account.id, "name": account.name, "kind": account.kind.value, "currency": account.currency}
 
 
 @app.get("/api/data/{cuenta}")
@@ -201,7 +201,7 @@ def get_ibkr_kpis(cuenta: str, period: str = "mes"):
 
 
 @app.get("/api/accounts/{cuenta}/saldo-evolucion")
-def get_saldo_evolucion(cuenta: str, range: str = "all", year: int | None = None):
+def get_saldo_evolucion(cuenta: str, range: str = "all", year: str | None = None):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetSaldoEvolucionUseCase(repository).execute, cuenta, range, year, _reference_now())
@@ -211,7 +211,7 @@ def get_saldo_evolucion(cuenta: str, range: str = "all", year: int | None = None
 
 
 @app.get("/api/accounts/{cuenta}/mensual-evolucion")
-def get_mensual_evolucion(cuenta: str, range: str = "all", year: int | None = None):
+def get_mensual_evolucion(cuenta: str, range: str = "all", year: str | None = None):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetMensualEvolucionUseCase(repository).execute, cuenta, range, year, _reference_now())
@@ -221,7 +221,7 @@ def get_mensual_evolucion(cuenta: str, range: str = "all", year: int | None = No
 
 
 @app.get("/api/accounts/{cuenta}/carteras-ranking")
-def get_carteras_ranking(cuenta: str, range: str = "all", year: int | None = None, mode: str = "media"):
+def get_carteras_ranking(cuenta: str, range: str = "all", year: str | None = None, mode: str = "media"):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(
@@ -243,7 +243,7 @@ def get_gastos_mes_actual(cuenta: str):
 
 
 @app.get("/api/accounts/{cuenta}/gastos-ranking")
-def get_gastos_ranking(cuenta: str, range: str = "all", year: int | None = None, mode: str = "media"):
+def get_gastos_ranking(cuenta: str, range: str = "all", year: str | None = None, mode: str = "media"):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(
@@ -255,7 +255,7 @@ def get_gastos_ranking(cuenta: str, range: str = "all", year: int | None = None,
 
 
 @app.get("/api/accounts/{cuenta}/transferencias")
-def get_transferencias(cuenta: str, range: str = "all", year: int | None = None):
+def get_transferencias(cuenta: str, range: str = "all", year: str | None = None):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetTransfersReportUseCase(repository).execute, cuenta, range, year, _reference_now())
@@ -265,7 +265,7 @@ def get_transferencias(cuenta: str, range: str = "all", year: int | None = None)
 
 
 @app.get("/api/accounts/{cuenta}/carteras")
-def get_carteras(cuenta: str, range: str = "all", year: int | None = None):
+def get_carteras(cuenta: str, range: str = "all", year: str | None = None):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetPortfolioReportUseCase(repository).execute, cuenta, range, year, _reference_now())
@@ -275,7 +275,7 @@ def get_carteras(cuenta: str, range: str = "all", year: int | None = None):
 
 
 @app.get("/api/accounts/{cuenta}/apuestas")
-def get_apuestas(cuenta: str, range: str = "all", year: int | None = None):
+def get_apuestas(cuenta: str, range: str = "all", year: str | None = None):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     report, err = _run(GetBettingReportUseCase(repository).execute, cuenta, range, year, _reference_now())

@@ -24,12 +24,12 @@ def _r2(v: float) -> float:
 
 
 def _n_months(items: list[Movement], range_type: str) -> int:
-    if range_type in (None, "all", "year"):
+    if range_type in (None, "all", "year", "custom"):
         return len({_fecha_str(m)[:7] for m in items}) or 1
     return _MONTHS_FOR_RANGE.get(range_type, 1)
 
 
-def rank_by_concept(movements: list[Movement], tipo: str, range_type: str, year: int | None,
+def rank_by_concept(movements: list[Movement], tipo: str, range_type: str, year: int | str | None,
                      reference: datetime, mode: str, limit: int) -> tuple[list[tuple[str, float]], str, bool]:
     """Devuelve (entries, hover_suffix, has_items). entries ya en orden
     descendente y recortadas a `limit`; has_items indica si había algún

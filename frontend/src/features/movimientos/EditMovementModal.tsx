@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { editMovement } from '../../api/client';
 import type { AccountId, AccountKind, Movement } from '../../api/types';
 import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
-import { eur, fd } from '../../lib/format';
+import { eur } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
 import { candidatesForTipo, rankConcepts } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
@@ -21,6 +21,7 @@ export function EditMovementModal({ idx, account, kind, data, onClose, onSaved }
   const [tipo, setTipo] = useState('');
   const [concepto, setConcepto] = useState('');
   const [total, setTotal] = useState('');
+  const [fecha, setFecha] = useState('');
   const showToast = useToast();
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export function EditMovementModal({ idx, account, kind, data, onClose, onSaved }
       setTipo(row.Tipo);
       setConcepto(row.Concepto);
       setTotal(Number(row.Total).toFixed(2));
+      setFecha(row.Fecha.slice(0, 10));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row?._idx]);
@@ -54,8 +56,12 @@ export function EditMovementModal({ idx, account, kind, data, onClose, onSaved }
       showToast('Introduce un importe válido', 'err');
       return;
     }
+    if (!fecha) {
+      showToast('Introduce una fecha', 'err');
+      return;
+    }
     try {
-      const body = await editMovement(account, { idx: idx as number, tipo, concepto: trimmedConcepto, total: totalNum });
+      const body = await editMovement(account, { idx: idx as number, tipo, concepto: trimmedConcepto, total: totalNum, fecha });
       if (!body.ok) {
         showToast(body.error || 'Error al editar', 'err');
         return;
@@ -74,7 +80,7 @@ export function EditMovementModal({ idx, account, kind, data, onClose, onSaved }
         <h3>Editar movimiento</h3>
         <div className="fg">
           <label>Fecha</label>
-          <input type="text" disabled value={fd(row.Fecha)} style={{ opacity: 0.65, cursor: 'not-allowed' }} readOnly />
+          <input type="date" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </div>
         <div className="fg">
           <label>Tipo</label>

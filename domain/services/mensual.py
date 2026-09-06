@@ -17,7 +17,7 @@ def _r2(v: float) -> float:
     return round(v, 2)
 
 
-def compute_mensual(movements: list[Movement], range_type: str, year: int | None, reference: datetime) -> dict:
+def compute_mensual(movements: list[Movement], range_type: str, year: int | str | None, reference: datetime) -> dict:
     reference_local = reference.astimezone(TZ)
     filtered = filter_by_field(movements, _fecha_str, range_type, year, reference_local)
 

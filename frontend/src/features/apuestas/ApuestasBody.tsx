@@ -15,6 +15,7 @@ function sectionKpis(report: BettingReport): SectionKpiItem[] {
       label: 'P&L neto',
       value: eur(report.totalPnL),
       valueClass: report.totalPnL >= 0 ? 'num-pos' : 'num-neg',
+      sub: report.closedCount ? `${report.totalPnLPct.toFixed(2)}% sobre cerradas` : undefined,
     },
     {
       label: 'Win rate',

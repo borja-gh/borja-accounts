@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createAccount } from '../../api/client';
-import type { AccountKind, AccountSummary } from '../../api/types';
+import type { AccountKind, AccountSummary, Currency } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 export function CreateAccountModal({ open, onClose, onCreated }: Props) {
   const [name, setName] = useState('');
   const [kind, setKind] = useState<AccountKind>('CASH');
+  const [currency, setCurrency] = useState<Currency>('EUR');
   const [initialBalance, setInitialBalance] = useState('');
   const showToast = useToast();
 
@@ -19,6 +20,7 @@ export function CreateAccountModal({ open, onClose, onCreated }: Props) {
     if (open) {
       setName('');
       setKind('CASH');
+      setCurrency('EUR');
       setInitialBalance('');
     }
   }, [open]);
@@ -46,14 +48,14 @@ export function CreateAccountModal({ open, onClose, onCreated }: Props) {
       return;
     }
     try {
-      const body = await createAccount({ name: trimmedName, kind, initialBalance: saldo });
+      const body = await createAccount({ name: trimmedName, kind, currency, initialBalance: saldo });
       if (!body.ok) {
         showToast(body.error || 'Error al crear la cuenta', 'err');
         return;
       }
       onClose();
       showToast(`Cuenta "${body.name}" creada`, 'ok');
-      onCreated({ id: body.id, name: body.name, kind: body.kind, currency: 'EUR', saldo });
+      onCreated({ id: body.id, name: body.name, kind: body.kind, currency: body.currency, saldo });
     } catch {
       showToast('Error de conexión', 'err');
     }
@@ -75,7 +77,14 @@ export function CreateAccountModal({ open, onClose, onCreated }: Props) {
           </select>
         </div>
         <div className="fg">
-          <label>Saldo inicial (€)</label>
+          <label>Divisa</label>
+          <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+        <div className="fg">
+          <label>Saldo inicial ({currency})</label>
           <input
             type="number"
             placeholder="0.00"

@@ -31,7 +31,7 @@ def _rolling_mean(dates: list[str], values: list[float], days: int) -> list[floa
     return out
 
 
-def compute_saldo_evolucion(movements: list[Movement], range_type: str, year: int | None,
+def compute_saldo_evolucion(movements: list[Movement], range_type: str, year: int | str | None,
                              reference: datetime, with_media_movil: bool) -> dict:
     reference_local = reference.astimezone(TZ)
     filtered = filter_by_field(movements, _fecha_str, range_type, year, reference_local)
