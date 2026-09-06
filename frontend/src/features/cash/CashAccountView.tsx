@@ -18,7 +18,7 @@ import { RankingModeToggle } from '../charts/RankingModeToggle';
 import { GastoAlert } from '../gastos/GastoAlert';
 import { useGastosMesActual } from '../gastos/useGastosMesActual';
 import type { AccountViewHandle } from '../shared/viewHandle';
-import type { AccountSummary, KpiPeriod, RankingMode } from '../../api/types';
+import type { AccountSummary, KpiPeriodFilter, RankingMode } from '../../api/types';
 
 interface Props {
   account: AccountSummary;
@@ -26,7 +26,7 @@ interface Props {
 }
 
 export const CashAccountView = forwardRef<AccountViewHandle, Props>(function CashAccountView({ account, onDataChanged }, ref) {
-  const [period, setPeriod] = useState<KpiPeriod>('mes');
+  const [period, setPeriod] = useState<KpiPeriodFilter>({ type: 'mes' });
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [gastosMode, setGastosMode] = useState<RankingMode>('media');
   const { kpi, reload: reloadKpis } = useAccountKpis(account.id, period);
@@ -69,7 +69,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
           <p>Día a día · gastos, nómina y apuestas</p>
         </div>
         <div className="spacer" />
-        <PeriodSelector period={period} onChange={setPeriod} />
+        <PeriodSelector period={period} onChange={setPeriod} allowCustom />
       </div>
       <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} />}</div>
 

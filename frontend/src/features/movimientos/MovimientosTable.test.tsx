@@ -8,16 +8,39 @@ import type { Movement } from '../../api/types';
 
 const noop = () => {};
 
+// El vanilla (index.html) ordenaba los empates de misma Fecha por orden de
+// inserción ascendente (sort estable sobre una clave que no incluye hora).
+// searchedMovs() ahora rompe esos empates por _idx descendente -- el
+// movimiento insertado más tarde ese día aparece arriba, coherente con
+// "más reciente primero" -- así que dos filas del 05/07/2026 (Supermercado/
+// Restaurante) se ven en orden invertido respecto al snapshot congelado.
+function swapAdjacentRows(expected: string[], anchor: string, rowLen: number): string[] {
+  const anchorIdx = expected.indexOf(anchor);
+  const rowStart = anchorIdx - 2; // Fecha, Tipo, <anchor=Concepto>, ...
+  const result = [...expected];
+  const rowA = result.splice(rowStart, rowLen);
+  const rowB = result.splice(rowStart, rowLen);
+  result.splice(rowStart, 0, ...rowB, ...rowA);
+  return result;
+}
+
 describe('MovimientosTable', () => {
-  it.each([
-    ['cash1' as const, 'initial_data_cash1' as const, 'cash1_movimientos_default' as const],
-    ['investment1' as const, 'initial_data_investment1' as const, 'investment1_movimientos_default' as const],
-  ])('coincide con el golden master para %s', (_account, fixtureKey, expectedKey) => {
-    const data: Movement[] = backendFixture[fixtureKey];
+  it('coincide con el golden master para cash1 salvo el reorden de empates de fecha', () => {
+    const data: Movement[] = backendFixture.initial_data_cash1;
     const rows = searchedMovs(data, EMPTY_SEARCH);
     const { container } = render(
       <MovimientosTable rows={rows} onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
     );
-    expect(extractVisibleText(container)).toEqual(expectedValues[expectedKey]);
+    const expected = swapAdjacentRows(expectedValues.cash1_movimientos_default, 'Supermercado', 7);
+    expect(extractVisibleText(container)).toEqual(expected);
+  });
+
+  it('coincide con el golden master para investment1', () => {
+    const data: Movement[] = backendFixture.initial_data_investment1;
+    const rows = searchedMovs(data, EMPTY_SEARCH);
+    const { container } = render(
+      <MovimientosTable rows={rows} onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
+    );
+    expect(extractVisibleText(container)).toEqual(expectedValues.investment1_movimientos_default);
   });
 });

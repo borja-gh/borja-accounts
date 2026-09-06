@@ -23,25 +23,30 @@ from zoneinfo import ZoneInfo
 
 from domain.entities import Movement
 from domain.services.calendar import calendar_month_start, month_key
+from domain.services.period_filter import (
+    month_end_exclusive,
+    month_start,
+    months_between,
+    parse_custom_range,
+    shift_ym,
+)
 from domain.services.transfers import is_transfer_in
-from domain.value_objects import TIPOS_NEGATIVOS, TIPOS_POSITIVOS
 
 TZ = ZoneInfo("Europe/Madrid")
 
-# Ingresos/Gastos del período son netos, no una suma bruta por tipo:
+# Ingresos/Gastos/Balance del período son netos, no una suma bruta por tipo:
 # - Devolución contrarresta Gasto (un gasto parcialmente devuelto reduce el
 #   gasto neto, no aparece como un ingreso nuevo) -- por eso no está en
-#   TIPOS_KPI_ING, y se resta explícitamente de "gastos" en _sum_period.
+#   TIPOS_KPI_ING, y se resta explícitamente de "gastos" en net_flows.
 # - Transferencia (salida) no cuenta como gasto -- mover dinero entre
 #   cuentas propias no es un gasto real.
 # - Un "Ingreso" que en realidad es una transferencia entrante (ver
 #   is_transfer_in, detecta el concepto "Desde X") tampoco cuenta como
 #   ingreso real, por el mismo motivo.
-# El KPI "Balance" del período no sigue esta poda -- usa TIPOS_POSITIVOS/
-# TIPOS_NEGATIVOS completos, sin cambios: el neto (ingresos-gastos) es
-# idéntico mueva o no la Devolución de "ingreso" a "menos gasto", y
-# Transferencia/Apuestas/Inversión sí deben pesar en el balance real de la
-# cuenta aunque no se desglosen como "ingreso" o "gasto".
+# - Balance = ingresos - gastos (ambos ya netos) -- ya no es el cambio bruto
+#   de saldo de la cuenta: Transferencia/Apuestas/Inversión no pesan en él,
+#   igual que no pesan en ingresos/gastos, para que los tres KPIs cuadren
+#   siempre entre sí.
 TIPOS_KPI_ING = {"Nómina", "Ingreso"}
 TIPOS_KPI_GAS = {"Gasto"}
 
@@ -54,8 +59,8 @@ def _fecha_str(m: Movement) -> str:
     return m.occurred_at.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _sum_period(movements: list[Movement], in_period) -> dict:
-    ing = gas = bal_ing = bal_gas = 0.0
+def net_flows(movements: list[Movement], in_period) -> dict:
+    ing = gas = 0.0
     for m in movements:
         if not in_period(m):
             continue
@@ -65,15 +70,12 @@ def _sum_period(movements: list[Movement], in_period) -> dict:
             gas += m.amount
         elif m.type == "Devolución":
             gas -= m.amount
-        if m.type in TIPOS_POSITIVOS and m.type != "Saldo Inicial":
-            bal_ing += m.amount
-        elif m.type in TIPOS_NEGATIVOS:
-            bal_gas += m.amount
     # Si la Devolución cae en un período distinto al de su Gasto (p.ej. el
     # gasto se edita a un mes anterior, o simplemente se devuelve en el mes
     # siguiente), "gastos" podría salir negativo -- se acota a 0 porque es
     # un KPI de "cuánto gastaste este período", no un neto con signo.
-    return {"ingresos": _r2(ing), "gastos": _r2(max(0.0, gas)), "balance": _r2(bal_ing - bal_gas)}
+    gas = max(0.0, gas)
+    return {"ingresos": _r2(ing), "gastos": _r2(gas), "balance": _r2(ing - gas)}
 
 
 @dataclass
@@ -96,27 +98,38 @@ def _delta(curr: float, prv: float) -> PeriodDelta:
     return PeriodDelta(diff=_r2(curr - prv))
 
 
-def compute_kpis(movements: list[Movement], kpi_type: str, reference: datetime) -> KPIResult:
+def compute_kpis(movements: list[Movement], kpi_type: str, reference: datetime, custom_range: str | None = None) -> KPIResult:
     """reference: instante UTC (tz-aware). kpi_type: 'mes' (default) |
-    'trimestre' | 'año'."""
+    'trimestre' | 'año' | 'custom' (requiere custom_range='YYYY-MM:YYYY-MM').
+    Para 'custom', el "período anterior" del delta es el mismo número de
+    meses inmediatamente antes de `from_ym` -- no hay otra definición
+    derivable de un rango arbitrario."""
     saldo = movements[-1].balance if movements else 0.0
     reference_local = reference.astimezone(TZ)
 
     if kpi_type == "trimestre":
         cut = calendar_month_start(reference_local, 2)
         cut2 = calendar_month_start(reference_local, 5)
-        curr = _sum_period(movements, lambda m: _fecha_str(m) >= cut)
-        prv = _sum_period(movements, lambda m: cut2 <= _fecha_str(m) < cut)
+        curr = net_flows(movements, lambda m: _fecha_str(m) >= cut)
+        prv = net_flows(movements, lambda m: cut2 <= _fecha_str(m) < cut)
     elif kpi_type == "año":
         y = str(reference_local.year)
         py = str(reference_local.year - 1)
-        curr = _sum_period(movements, lambda m: _fecha_str(m).startswith(y))
-        prv = _sum_period(movements, lambda m: _fecha_str(m).startswith(py))
+        curr = net_flows(movements, lambda m: _fecha_str(m).startswith(y))
+        prv = net_flows(movements, lambda m: _fecha_str(m).startswith(py))
+    elif kpi_type == "custom":
+        from_ym, to_ym = parse_custom_range(custom_range)
+        cut = month_start(from_ym)
+        cut_end = month_end_exclusive(to_ym)
+        n = months_between(from_ym, to_ym)
+        prev_cut = month_start(shift_ym(from_ym, -n))
+        curr = net_flows(movements, lambda m: cut <= _fecha_str(m) < cut_end)
+        prv = net_flows(movements, lambda m: prev_cut <= _fecha_str(m) < cut)
     else:
         m_key = month_key(reference_local, 0)
         pm_key = month_key(reference_local, -1)
-        curr = _sum_period(movements, lambda m: _fecha_str(m)[:7] == m_key)
-        prv = _sum_period(movements, lambda m: _fecha_str(m)[:7] == pm_key)
+        curr = net_flows(movements, lambda m: _fecha_str(m)[:7] == m_key)
+        prv = net_flows(movements, lambda m: _fecha_str(m)[:7] == pm_key)
 
     return KPIResult(
         saldo=saldo,

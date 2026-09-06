@@ -24,7 +24,7 @@
         "↓ -115,00€ vs ant.",
         "Balance · este mes",
         "665,00€",
-        "↑ +515,00€ vs ant."
+        "↑ +115,00€ vs ant."
       ],
       "trimestre": [
         "Saldo actual",
@@ -36,8 +36,8 @@
         "3595,00€",
         "↓ -135,00€ vs ant.",
         "Balance · últimos 3 meses",
-        "1285,00€",
-        "↓ -605,00€ vs ant."
+        "1805,00€",
+        "↓ -15,00€ vs ant."
       ],
       "año": [
         "Saldo actual",
@@ -49,8 +49,8 @@
         "8545,00€",
         "↑ +8545,00€ vs ant.",
         "Balance · este año",
-        "3655,00€",
-        "↑ +3655,00€ vs ant."
+        "4205,00€",
+        "↑ +4205,00€ vs ant."
       ]
     },
     "cash1_gasto_alert": [
