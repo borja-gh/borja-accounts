@@ -224,6 +224,48 @@
     .fbtn:hover { border-color: var(--accent); color: var(--accent); }
     .fbtn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+    .range-popover-wrap { position: relative; }
+    .range-popover {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      z-index: 20;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 200px;
+    }
+    .range-popover-row { display: flex; flex-direction: column; gap: 4px; }
+    .range-popover-row label { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .range-popover-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; }
+    .range-popover-actions .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+
+    .month-input-wrap { position: relative; display: flex; }
+    .month-input-wrap .date-input { padding-right: 30px; }
+    .month-input-cal {
+      position: absolute;
+      z-index: 3;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .month-input-cal:hover { color: var(--accent); background: var(--surface2); }
+
     /* ── CHARTS ── */
     .charts-grid {
       display: grid;
@@ -357,11 +399,13 @@
     }
     /* Firefox: tipografía web en el control rompe popups nativos de select/date */
     select,
-    input[type="date"] {
+    input[type="date"],
+    input[type="month"] {
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       appearance: auto;
     }
-    input[type="date"] {
+    input[type="date"],
+    input[type="month"] {
       min-height: 38px;
       position: relative;
       z-index: 2;

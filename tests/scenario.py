@@ -177,6 +177,11 @@ def run_scenario(repo_root):
             result["cash1_saldo_evolucion_custom_mar_may"] = client.get(
                 "/api/accounts/cash1/saldo-evolucion?range=custom&year=2026-03:2026-05"
             ).json()
+            # Mismo rango libre, ahora como period de los KPIs (ver
+            # compute_kpis rama "custom" en domain/services/kpi.py).
+            result["cash1_kpis_custom_mar_may"] = client.get(
+                "/api/accounts/cash1/kpis?period=custom&year=2026-03:2026-05"
+            ).json()
 
             # --- Snapshot B: secuencia determinista de mutaciones ---
             steps = []

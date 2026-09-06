@@ -20,6 +20,11 @@ export function searchedMovs(rows: Movement[], search: MovSearch): Movement[] {
     res = res.filter((r) => r.Concepto.toLowerCase().includes(q));
   }
   if (search.fecha) res = res.filter((r) => r.Fecha.slice(0, 10) === search.fecha);
-  res = [...res].sort((a, b) => b.Fecha.localeCompare(a.Fecha));
+  // Empate a Fecha (misma fecha exacta, sin hora real) se rompe por _idx
+  // descendente -- _idx refleja el orden cronológico real que asigna el
+  // backend (ORDER BY occurred_at, rowid), así que el movimiento insertado
+  // más tarde ese mismo día aparece arriba, coherente con "más reciente
+  // primero" en el resto de la tabla.
+  res = [...res].sort((a, b) => b.Fecha.localeCompare(a.Fecha) || (b._idx ?? 0) - (a._idx ?? 0));
   return isSearchActive(search) ? res.slice(0, 500) : res.slice(0, 20);
 }

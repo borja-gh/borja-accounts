@@ -1,8 +1,8 @@
 {
   "cash1_kpis": {
-    "mes": "\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Saldo actual</div>\n      <div class=\"kpi-value\">8655,00€</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Ingresos · este mes</div>\n      <div class=\"kpi-value pos\">1800,00€</div>\n      <div class=\"kpi-delta neu\">= igual al período anterior</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Gastos · este mes</div>\n      <div class=\"kpi-value neg\">1135,00€</div>\n      <div class=\"kpi-delta pos\">↓ -115,00€ vs ant.</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Balance · este mes</div>\n      <div class=\"kpi-value pos\">665,00€</div>\n      <div class=\"kpi-delta pos\">↑ +515,00€ vs ant.</div>\n    </div>\n  ",
-    "trimestre": "\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Saldo actual</div>\n      <div class=\"kpi-value\">8655,00€</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Ingresos · últimos 3 meses</div>\n      <div class=\"kpi-value pos\">5400,00€</div>\n      <div class=\"kpi-delta neg\">↓ -150,00€ vs ant.</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Gastos · últimos 3 meses</div>\n      <div class=\"kpi-value neg\">3595,00€</div>\n      <div class=\"kpi-delta pos\">↓ -135,00€ vs ant.</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Balance · últimos 3 meses</div>\n      <div class=\"kpi-value pos\">1285,00€</div>\n      <div class=\"kpi-delta neg\">↓ -605,00€ vs ant.</div>\n    </div>\n  ",
-    "año": "\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Saldo actual</div>\n      <div class=\"kpi-value\">8655,00€</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Ingresos · este año</div>\n      <div class=\"kpi-value pos\">12.750,00€</div>\n      <div class=\"kpi-delta pos\">↑ +12.750,00€ vs ant.</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Gastos · este año</div>\n      <div class=\"kpi-value neg\">8545,00€</div>\n      <div class=\"kpi-delta neg\">↑ +8545,00€ vs ant.</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Balance · este año</div>\n      <div class=\"kpi-value pos\">3655,00€</div>\n      <div class=\"kpi-delta pos\">↑ +3655,00€ vs ant.</div>\n    </div>\n  "
+    "mes": "\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Saldo actual</div>\n      <div class=\"kpi-value\">8655,00€</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Ingresos · este mes</div>\n      <div class=\"kpi-value pos\">1800,00€</div>\n      <div class=\"kpi-delta neu\">= igual al período anterior</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Gastos · este mes</div>\n      <div class=\"kpi-value neg\">1135,00€</div>\n      <div class=\"kpi-delta pos\">↓ -115,00€ vs ant.</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Balance · este mes</div>\n      <div class=\"kpi-value pos\">665,00€</div>\n      <div class=\"kpi-delta pos\">↑ +115,00€ vs ant.</div>\n    </div>\n  ",
+    "trimestre": "\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Saldo actual</div>\n      <div class=\"kpi-value\">8655,00€</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Ingresos · últimos 3 meses</div>\n      <div class=\"kpi-value pos\">5400,00€</div>\n      <div class=\"kpi-delta neg\">↓ -150,00€ vs ant.</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Gastos · últimos 3 meses</div>\n      <div class=\"kpi-value neg\">3595,00€</div>\n      <div class=\"kpi-delta pos\">↓ -135,00€ vs ant.</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Balance · últimos 3 meses</div>\n      <div class=\"kpi-value pos\">1805,00€</div>\n      <div class=\"kpi-delta neg\">↓ -15,00€ vs ant.</div>\n    </div>\n  ",
+    "año": "\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Saldo actual</div>\n      <div class=\"kpi-value\">8655,00€</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Ingresos · este año</div>\n      <div class=\"kpi-value pos\">12.750,00€</div>\n      <div class=\"kpi-delta pos\">↑ +12.750,00€ vs ant.</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Gastos · este año</div>\n      <div class=\"kpi-value neg\">8545,00€</div>\n      <div class=\"kpi-delta neg\">↑ +8545,00€ vs ant.</div>\n    </div>\n    <div class=\"kpi\">\n      <div class=\"kpi-label\">Balance · este año</div>\n      <div class=\"kpi-value pos\">4205,00€</div>\n      <div class=\"kpi-delta pos\">↑ +4205,00€ vs ant.</div>\n    </div>\n  "
   },
   "cash1_gasto_alert": "<div class=\"soft-alert ok\">Gastos este mes 1135,00€ · 8% por debajo de la media de los 3 meses anteriores (1230,00€)</div>",
   "cash1_top_merchants": "<div class=\"merchants-strip\">\n    <span class=\"mlabel\">Top del mes</span>\n    <button type=\"button\" class=\"chip\" title=\"Alquiler\" data-c=\"Alquiler\" onclick=\"filterByConcept(this.dataset.c)\">Alquiler <span class=\"chip-n\">900,00€</span></button><button type=\"button\" class=\"chip\" title=\"Supermercado\" data-c=\"Supermercado\" onclick=\"filterByConcept(this.dataset.c)\">Supermercado <span class=\"chip-n\">130,00€</span></button><button type=\"button\" class=\"chip\" title=\"Transporte\" data-c=\"Transporte\" onclick=\"filterByConcept(this.dataset.c)\">Transporte <span class=\"chip-n\">60,00€</span></button><button type=\"button\" class=\"chip\" title=\"Restaurante\" data-c=\"Restaurante\" onclick=\"filterByConcept(this.dataset.c)\">Restaurante <span class=\"chip-n\">45,00€</span></button>\n  </div>",
@@ -280,7 +280,7 @@
           "y": [
             1800,
             1800,
-            2185,
+            1950,
             1800,
             1800,
             1800,
@@ -304,12 +304,12 @@
             "2026-07"
           ],
           "y": [
-            -1320,
-            -1405,
-            -1260,
+            -1220,
+            -1325,
+            -1175,
             -1230,
-            -1330,
-            -1650,
+            -1210,
+            -1250,
             -1135
           ],
           "type": "bar",
@@ -318,12 +318,12 @@
             "color": "rgba(207,34,46,.55)"
           },
           "customdata": [
-            1320,
-            1405,
-            1260,
+            1220,
+            1325,
+            1175,
             1230,
-            1330,
-            1650,
+            1210,
+            1250,
             1135
           ],
           "hovertemplate": "%{customdata:,.2f}€<extra>Gastos</extra>"
@@ -339,12 +339,12 @@
             "2026-07"
           ],
           "y": [
-            480,
-            395,
-            925,
+            580,
+            475,
+            775,
             570,
-            470,
-            150,
+            590,
+            550,
             665
           ],
           "type": "scatter",

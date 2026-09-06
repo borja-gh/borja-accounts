@@ -64,7 +64,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
           <p>Capital, carteras y transferencias</p>
         </div>
         <div className="spacer" />
-        <PeriodSelector period={period} onChange={setPeriod} />
+        <PeriodSelector period={{ type: period }} onChange={(p) => setPeriod(p.type as KpiPeriod)} />
       </div>
       <div className="kpis">{kpi && <KpiCardsIbkr kpi={kpi} period={period} />}</div>
 

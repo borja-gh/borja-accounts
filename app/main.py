@@ -171,10 +171,10 @@ def get_data(cuenta: str):
 
 
 @app.get("/api/accounts/{cuenta}/kpis")
-def get_account_kpis(cuenta: str, period: str = "mes"):
+def get_account_kpis(cuenta: str, period: str = "mes", year: str | None = None):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
-    kpi, err = _run(GetAccountKPIsUseCase(repository).execute, cuenta, period, _reference_now())
+    kpi, err = _run(GetAccountKPIsUseCase(repository).execute, cuenta, period, _reference_now(), year)
     if err:
         return err
     return {

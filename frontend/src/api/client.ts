@@ -12,6 +12,7 @@ import type {
   GastosRankingReport,
   IbkrKpis,
   KpiPeriod,
+  KpiPeriodFilter,
   MensualEvolucionReport,
   Movement,
   MutationResult,
@@ -50,8 +51,12 @@ export async function createAccount(body: CreateAccountRequest): Promise<CreateA
   return { ok: res.ok, ...json };
 }
 
-export async function fetchAccountKpis(cuenta: string, period: KpiPeriod): Promise<AccountKpis> {
-  const res = await fetch(`/api/accounts/${cuenta}/kpis?period=${encodeURIComponent(period)}`);
+export async function fetchAccountKpis(cuenta: string, period: KpiPeriodFilter): Promise<AccountKpis> {
+  const params = new URLSearchParams({ period: period.type });
+  if (period.type === 'custom' && period.fromYm && period.toYm) {
+    params.set('year', `${period.fromYm}:${period.toYm}`);
+  }
+  const res = await fetch(`/api/accounts/${cuenta}/kpis?${params}`);
   return res.json();
 }
 

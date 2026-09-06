@@ -2,6 +2,14 @@ export type AccountId = string;
 export type AccountKind = 'CASH' | 'INVESTMENT';
 export type Currency = 'EUR' | 'USD';
 export type KpiPeriod = 'mes' | 'trimestre' | 'año';
+export type KpiPeriodType = KpiPeriod | 'custom';
+
+export interface KpiPeriodFilter {
+  type: KpiPeriodType;
+  /** Solo con type: 'custom' -- 'YYYY-MM', ambos inclusive. */
+  fromYm?: string;
+  toYm?: string;
+}
 
 export interface AccountSummary {
   id: AccountId;

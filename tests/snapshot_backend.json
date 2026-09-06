@@ -144,9 +144,9 @@
   },
   "cash1_kpis_by_period": {
     "año": {
-      "balance": 3655.0,
+      "balance": 4205.0,
       "balanceDelta": {
-        "diff": 3655.0
+        "diff": 4205.0
       },
       "gastos": 8545.0,
       "gastosDelta": {
@@ -161,7 +161,7 @@
     "mes": {
       "balance": 665.0,
       "balanceDelta": {
-        "diff": 515.0
+        "diff": 115.0
       },
       "gastos": 1135.0,
       "gastosDelta": {
@@ -174,9 +174,9 @@
       "saldo": 8655.0
     },
     "trimestre": {
-      "balance": 1285.0,
+      "balance": 1805.0,
       "balanceDelta": {
-        "diff": -605.0
+        "diff": -15.0
       },
       "gastos": 3595.0,
       "gastosDelta": {
@@ -189,29 +189,44 @@
       "saldo": 8655.0
     }
   },
+  "cash1_kpis_custom_mar_may": {
+    "balance": 1935.0,
+    "balanceDelta": {
+      "diff": 880.0
+    },
+    "gastos": 3615.0,
+    "gastosDelta": {
+      "diff": 1070.0
+    },
+    "ingresos": 5550.0,
+    "ingresosDelta": {
+      "diff": 1950.0
+    },
+    "saldo": 8655.0
+  },
   "cash1_mensual_evolucion_all": {
     "balance": [
-      480.0,
-      395.0,
-      925.0,
+      580.0,
+      475.0,
+      775.0,
       570.0,
-      470.0,
-      150.0,
+      590.0,
+      550.0,
       665.0
     ],
     "gastos": [
-      1320.0,
-      1405.0,
-      1260.0,
+      1220.0,
+      1325.0,
+      1175.0,
       1230.0,
-      1330.0,
-      1650.0,
+      1210.0,
+      1250.0,
       1135.0
     ],
     "ingresos": [
       1800.0,
       1800.0,
-      2185.0,
+      1950.0,
       1800.0,
       1800.0,
       1800.0,
