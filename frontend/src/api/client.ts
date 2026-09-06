@@ -51,12 +51,15 @@ export async function createAccount(body: CreateAccountRequest): Promise<CreateA
   return { ok: res.ok, ...json };
 }
 
-export async function fetchAccountKpis(cuenta: string, period: KpiPeriodFilter): Promise<AccountKpis> {
+export async function fetchAccountKpis(cuenta: string, period: KpiPeriodFilter): Promise<AccountKpis | null> {
   const params = new URLSearchParams({ period: period.type });
   if (period.type === 'custom' && period.fromYm && period.toYm) {
     params.set('year', `${period.fromYm}:${period.toYm}`);
   }
   const res = await fetch(`/api/accounts/${cuenta}/kpis?${params}`);
+  // Un 400 (rango inválido) devuelve {"error": ...}, no un AccountKpis --
+  // tratarlo como tal rompía KpiDelta (delta.diff de un campo inexistente).
+  if (!res.ok) return null;
   return res.json();
 }
 
