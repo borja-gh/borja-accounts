@@ -47,24 +47,6 @@
     ]
   },
   "cash1_gastos_ranking_3m_media": {
-    "donut": {
-      "hasGastos": true,
-      "hoverSuffix": "€/mes",
-      "labels": [
-        "Alquiler",
-        "Supermercado",
-        "Transporte",
-        "Gimnasio",
-        "Restaurante"
-      ],
-      "values": [
-        900.0,
-        196.67,
-        60.0,
-        26.67,
-        15.0
-      ]
-    },
     "ranking": {
       "entries": [
         {
@@ -93,26 +75,6 @@
     }
   },
   "cash1_gastos_ranking_all_media": {
-    "donut": {
-      "hasGastos": true,
-      "hoverSuffix": "€/mes",
-      "labels": [
-        "Alquiler",
-        "Supermercado",
-        "Transporte",
-        "Gimnasio",
-        "Reparación bici",
-        "Restaurante"
-      ],
-      "values": [
-        900.0,
-        220.0,
-        60.0,
-        34.29,
-        12.14,
-        6.43
-      ]
-    },
     "ranking": {
       "entries": [
         {

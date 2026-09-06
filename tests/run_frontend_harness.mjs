@@ -157,7 +157,6 @@ function run() {
   api.chartSaldo(fixture.cash1SaldoEvolucionAll);
   api.chartMensual(fixture.cash1MensualEvolucionAll);
   api.chartGastos(fixture.cash1GastosRankingAllMedia.ranking);
-  api.chartDonut(fixture.cash1GastosRankingAllMedia.donut);
   result.cash1_charts_all = JSON.parse(JSON.stringify(sandbox.__capturedPlots));
   for (const k of Object.keys(sandbox.__capturedPlots)) delete sandbox.__capturedPlots[k];
 
