@@ -7,6 +7,6 @@ class GetAccountKPIsUseCase:
     def __init__(self, repository):
         self.repository = repository
 
-    def execute(self, account_id: str, kpi_type: str, reference: datetime) -> KPIResult:
+    def execute(self, account_id: str, kpi_type: str, reference: datetime, custom_range: str | None = None) -> KPIResult:
         movements = self.repository.load(account_id)
-        return compute_kpis(movements, kpi_type, reference)
+        return compute_kpis(movements, kpi_type, reference, custom_range)

@@ -53,13 +53,7 @@ function App() {
           (selected.kind === 'CASH' ? (
             <CashAccountView key={selected.id} account={selected} ref={viewRef} onDataChanged={refreshAccounts} />
           ) : (
-            <InvestmentAccountView
-              key={selected.id}
-              account={selected}
-              ref={viewRef}
-              onDataChanged={refreshAccounts}
-              onOpenTransferModal={() => setTransferModalOpen(true)}
-            />
+            <InvestmentAccountView key={selected.id} account={selected} ref={viewRef} onDataChanged={refreshAccounts} />
           ))}
       </main>
       <TransferModal

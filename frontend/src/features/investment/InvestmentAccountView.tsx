@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { AccountMark } from '../../components/AccountMark';
+import { SectionHeading } from '../../components/SectionHeading';
 import { fetchSaldoEvolucion, fetchCarterasRanking } from '../../api/client';
 import { KpiCardsIbkr } from '../kpis/KpiCardsIbkr';
 import { PeriodSelector } from '../kpis/PeriodSelector';
@@ -7,7 +8,6 @@ import { useIbkrKpis } from '../kpis/useIbkrKpis';
 import { MovimientosSection } from '../movimientos/MovimientosSection';
 import { useAccountData } from '../movimientos/useAccountData';
 import { InversionesSection } from '../inversiones/InversionesSection';
-import { TransferenciasSection } from '../transferencias/TransferenciasSection';
 import { DEFAULT_RANGE_FILTER, type RangeFilter } from '../filters/RangeFilter';
 import { RangeFilterBar } from '../filters/RangeFilterBar';
 import { useRangeReport } from '../filters/useRangeReport';
@@ -20,17 +20,15 @@ import type { AccountSummary, KpiPeriod, RankingMode } from '../../api/types';
 interface Props {
   account: AccountSummary;
   onDataChanged: () => void;
-  onOpenTransferModal: () => void;
 }
 
 export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(function InvestmentAccountView(
-  { account, onDataChanged, onOpenTransferModal },
+  { account, onDataChanged },
   ref,
 ) {
   const [period, setPeriod] = useState<KpiPeriod>('mes');
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [carterasMode, setCarterasMode] = useState<RankingMode>('total');
-  const [refreshCounter, setRefreshCounter] = useState(0);
   const { kpi, reload: reloadKpis } = useIbkrKpis(account.id, period);
   const { data, reload: reloadData } = useAccountData(account.id);
   const { report: saldoReport, reload: reloadSaldo } = useRangeReport(
@@ -49,7 +47,6 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
     reloadData();
     reloadSaldo();
     reloadCarterasRanking();
-    setRefreshCounter((c) => c + 1);
     onDataChanged();
   }
 
@@ -61,19 +58,22 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
         <AccountMark name={account.name} kind={account.kind} />
         <div>
           <h2>{account.name}</h2>
-          <p>Capital, carteras y transferencias</p>
+          <p>Capital y carteras</p>
         </div>
         <div className="spacer" />
-        <PeriodSelector period={period} onChange={setPeriod} />
+        <PeriodSelector period={{ type: period }} onChange={(p) => setPeriod(p.type as KpiPeriod)} />
       </div>
+
+      <SectionHeading title="Resumen general" />
       <div className="kpis">{kpi && <KpiCardsIbkr kpi={kpi} period={period} />}</div>
 
       {data && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}>
           <RangeFilterBar data={data} filter={rangeFilter} onChange={setRangeFilter} />
         </div>
       )}
 
+      <SectionHeading title="Desglose" />
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-label">Evolución del saldo</div>
@@ -90,12 +90,10 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
         </div>
       </div>
 
-      {data && (
-        <TransferenciasSection key={refreshCounter} account={account.id} filter={rangeFilter} onOpenTransferModal={onOpenTransferModal} />
-      )}
-
+      <SectionHeading title="Inversiones" />
       <InversionesSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
 
+      <SectionHeading title="Movimientos" />
       {data && <MovimientosSection account={account.id} kind={account.kind} data={data} onDataChanged={refreshAll} />}
     </>
   );

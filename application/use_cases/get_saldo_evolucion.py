@@ -8,7 +8,7 @@ class GetSaldoEvolucionUseCase:
     def __init__(self, repository):
         self.repository = repository
 
-    def execute(self, account_id: str, range_type: str, year: int | None, reference: datetime) -> dict:
+    def execute(self, account_id: str, range_type: str, year: int | str | None, reference: datetime) -> dict:
         movements = self.repository.load(account_id)
         # Media móvil solo en cuentas CASH; en INVESTMENT sobra -- misma
         # decisión que hoy toma chartSaldo() según el kind de la cuenta,

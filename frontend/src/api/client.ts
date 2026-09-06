@@ -12,6 +12,7 @@ import type {
   GastosRankingReport,
   IbkrKpis,
   KpiPeriod,
+  KpiPeriodFilter,
   MensualEvolucionReport,
   Movement,
   MutationResult,
@@ -20,13 +21,16 @@ import type {
   SaldoEvolucionReport,
   TransferRequest,
   TransferResult,
-  TransfersReport,
 } from './types';
 import type { RangeFilter } from '../features/filters/RangeFilter';
 
 async function fetchRangeReport<T>(path: string, filter: RangeFilter, extraParams?: Record<string, string>): Promise<T> {
   const params = new URLSearchParams({ range: filter.type, ...extraParams });
-  if (filter.year !== undefined) params.set('year', String(filter.year));
+  if (filter.type === 'custom' && filter.fromYm && filter.toYm) {
+    params.set('year', `${filter.fromYm}:${filter.toYm}`);
+  } else if (filter.year !== undefined) {
+    params.set('year', String(filter.year));
+  }
   const res = await fetch(`${path}?${params}`);
   return res.json();
 }
@@ -46,8 +50,15 @@ export async function createAccount(body: CreateAccountRequest): Promise<CreateA
   return { ok: res.ok, ...json };
 }
 
-export async function fetchAccountKpis(cuenta: string, period: KpiPeriod): Promise<AccountKpis> {
-  const res = await fetch(`/api/accounts/${cuenta}/kpis?period=${encodeURIComponent(period)}`);
+export async function fetchAccountKpis(cuenta: string, period: KpiPeriodFilter): Promise<AccountKpis | null> {
+  const params = new URLSearchParams({ period: period.type });
+  if (period.type === 'custom' && period.fromYm && period.toYm) {
+    params.set('year', `${period.fromYm}:${period.toYm}`);
+  }
+  const res = await fetch(`/api/accounts/${cuenta}/kpis?${params}`);
+  // Un 400 (rango inválido) devuelve {"error": ...}, no un AccountKpis --
+  // tratarlo como tal rompía KpiDelta (delta.diff de un campo inexistente).
+  if (!res.ok) return null;
   return res.json();
 }
 
@@ -93,10 +104,6 @@ export function fetchApuestas(cuenta: string, filter: RangeFilter): Promise<Bett
 
 export function fetchCarteras(cuenta: string, filter: RangeFilter): Promise<PortfolioReport> {
   return fetchRangeReport(`/api/accounts/${cuenta}/carteras`, filter);
-}
-
-export function fetchTransferencias(cuenta: string, filter: RangeFilter): Promise<TransfersReport> {
-  return fetchRangeReport(`/api/accounts/${cuenta}/transferencias`, filter);
 }
 
 export async function submitTransfer(body: TransferRequest): Promise<TransferResult> {

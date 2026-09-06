@@ -14,6 +14,7 @@
     "totalApostado": 300.0,
     "totalBets": 3,
     "totalPnL": -30.0,
+    "totalPnLPct": -16.67,
     "winRate": 50.0,
     "wins": 1
   },
@@ -48,6 +49,7 @@
   "cash1_gastos_ranking_3m_media": {
     "donut": {
       "hasGastos": true,
+      "hoverSuffix": "€/mes",
       "labels": [
         "Alquiler",
         "Supermercado",
@@ -56,11 +58,11 @@
         "Restaurante"
       ],
       "values": [
-        2700.0,
-        590.0,
-        180.0,
-        80.0,
-        45.0
+        900.0,
+        196.67,
+        60.0,
+        26.67,
+        15.0
       ]
     },
     "ranking": {
@@ -93,6 +95,7 @@
   "cash1_gastos_ranking_all_media": {
     "donut": {
       "hasGastos": true,
+      "hoverSuffix": "€/mes",
       "labels": [
         "Alquiler",
         "Supermercado",
@@ -102,12 +105,12 @@
         "Restaurante"
       ],
       "values": [
-        6300.0,
-        1540.0,
-        420.0,
-        240.0,
-        85.0,
-        45.0
+        900.0,
+        220.0,
+        60.0,
+        34.29,
+        12.14,
+        6.43
       ]
     },
     "ranking": {
@@ -143,28 +146,28 @@
   },
   "cash1_kpis_by_period": {
     "año": {
-      "balance": 3655.0,
+      "balance": 4205.0,
       "balanceDelta": {
-        "diff": 3655.0
+        "diff": 4205.0
       },
-      "gastos": 9030.0,
+      "gastos": 8545.0,
       "gastosDelta": {
-        "diff": 9030.0
+        "diff": 8545.0
       },
-      "ingresos": 12835.0,
+      "ingresos": 12750.0,
       "ingresosDelta": {
-        "diff": 12835.0
+        "diff": 12750.0
       },
       "saldo": 8655.0
     },
     "mes": {
       "balance": 665.0,
       "balanceDelta": {
-        "diff": 515.0
+        "diff": 115.0
       },
       "gastos": 1135.0,
       "gastosDelta": {
-        "diff": -515.0
+        "diff": -115.0
       },
       "ingresos": 1800.0,
       "ingresosDelta": {
@@ -173,44 +176,59 @@
       "saldo": 8655.0
     },
     "trimestre": {
-      "balance": 1285.0,
+      "balance": 1805.0,
       "balanceDelta": {
-        "diff": -605.0
+        "diff": -15.0
       },
-      "gastos": 3995.0,
+      "gastos": 3595.0,
       "gastosDelta": {
-        "diff": 180.0
+        "diff": -135.0
       },
       "ingresos": 5400.0,
       "ingresosDelta": {
-        "diff": -235.0
+        "diff": -150.0
       },
       "saldo": 8655.0
     }
   },
+  "cash1_kpis_custom_mar_may": {
+    "balance": 1935.0,
+    "balanceDelta": {
+      "diff": 880.0
+    },
+    "gastos": 3615.0,
+    "gastosDelta": {
+      "diff": 1070.0
+    },
+    "ingresos": 5550.0,
+    "ingresosDelta": {
+      "diff": 1950.0
+    },
+    "saldo": 8655.0
+  },
   "cash1_mensual_evolucion_all": {
     "balance": [
-      480.0,
-      395.0,
-      925.0,
+      580.0,
+      475.0,
+      775.0,
       570.0,
-      470.0,
-      150.0,
+      590.0,
+      550.0,
       665.0
     ],
     "gastos": [
-      1320.0,
-      1405.0,
-      1260.0,
+      1220.0,
+      1325.0,
+      1175.0,
       1230.0,
-      1330.0,
-      1650.0,
+      1210.0,
+      1250.0,
       1135.0
     ],
     "ingresos": [
       1800.0,
       1800.0,
-      2185.0,
+      1950.0,
       1800.0,
       1800.0,
       1800.0,
@@ -368,6 +386,75 @@
       6915.0,
       6855.0,
       8655.0
+    ]
+  },
+  "cash1_saldo_evolucion_custom_mar_may": {
+    "actual": 7840.0,
+    "dates": [
+      "2026-03-01 09:00:00",
+      "2026-03-06 11:00:00",
+      "2026-03-08 09:00:00",
+      "2026-03-12 09:00:00",
+      "2026-03-15 09:00:00",
+      "2026-03-18 20:00:00",
+      "2026-03-20 09:00:00",
+      "2026-03-25 09:00:00",
+      "2026-04-01 09:00:00",
+      "2026-04-06 11:00:00",
+      "2026-04-08 09:00:00",
+      "2026-04-10 15:00:00",
+      "2026-04-15 09:00:00",
+      "2026-04-20 09:00:00",
+      "2026-05-01 09:00:00",
+      "2026-05-06 11:00:00",
+      "2026-05-08 09:00:00",
+      "2026-05-15 09:00:00",
+      "2026-05-20 09:00:00",
+      "2026-05-28 09:00:00"
+    ],
+    "mediaMovil": [
+      4975.0,
+      4845.0,
+      4781.666666666667,
+      4771.25,
+      5125.0,
+      5385.833333333333,
+      5566.428571428572,
+      5720.625,
+      5836.25,
+      5955.625,
+      6075.0,
+      6023.333333333333,
+      6292.5,
+      6338.571428571428,
+      6291.428571428572,
+      6342.857142857143,
+      6418.571428571428,
+      6951.666666666667,
+      7043.333333333333,
+      7121.666666666667
+    ],
+    "saldos": [
+      4975.0,
+      4715.0,
+      4655.0,
+      4740.0,
+      6540.0,
+      6690.0,
+      6650.0,
+      6800.0,
+      5900.0,
+      5670.0,
+      5610.0,
+      5610.0,
+      7410.0,
+      7370.0,
+      6470.0,
+      6260.0,
+      6200.0,
+      8000.0,
+      7960.0,
+      7840.0
     ]
   },
   "final_data_cash1": [
@@ -724,19 +811,19 @@
       "_idx": 43
     },
     {
-      "Concepto": "Sueldo julio",
-      "Fecha": "2026-07-15 09:00:00",
-      "Saldo": 8655.0,
-      "Tipo": "Nómina",
-      "Total": 1800.0,
+      "Concepto": "Test Cafetería",
+      "Fecha": "2026-07-14 00:00:00",
+      "Saldo": 6850.0,
+      "Tipo": "Gasto",
+      "Total": 5.0,
       "_idx": 44
     },
     {
-      "Concepto": "Test Cafetería",
-      "Fecha": "2026-07-16 00:00:00",
+      "Concepto": "Sueldo julio",
+      "Fecha": "2026-07-15 09:00:00",
       "Saldo": 8650.0,
-      "Tipo": "Gasto",
-      "Total": 5.0,
+      "Tipo": "Nómina",
+      "Total": 1800.0,
       "_idx": 45
     },
     {
@@ -768,7 +855,7 @@
     {
       "Concepto": "Cartera Tech",
       "Fecha": "2026-01-10 09:00:00",
-      "Saldo": 700.0,
+      "Saldo": 1000.0,
       "Tipo": "Inversión",
       "Total": 300.0,
       "_idx": 1
@@ -776,7 +863,7 @@
     {
       "Concepto": "Cartera Bonos",
       "Fecha": "2026-02-05 09:00:00",
-      "Saldo": 500.0,
+      "Saldo": 1000.0,
       "Tipo": "Inversión",
       "Total": 200.0,
       "_idx": 2
@@ -784,7 +871,7 @@
     {
       "Concepto": "Comisión custodia",
       "Fecha": "2026-03-01 09:00:00",
-      "Saldo": 490.0,
+      "Saldo": 990.0,
       "Tipo": "Gasto",
       "Total": 10.0,
       "_idx": 3
@@ -792,7 +879,7 @@
     {
       "Concepto": "Cartera Global",
       "Fecha": "2026-04-12 09:00:00",
-      "Saldo": 240.0,
+      "Saldo": 990.0,
       "Tipo": "Inversión",
       "Total": 250.0,
       "_idx": 4
@@ -800,7 +887,7 @@
     {
       "Concepto": "Cartera Tech",
       "Fecha": "2026-05-10 09:00:00",
-      "Saldo": 640.0,
+      "Saldo": 1090.0,
       "Tipo": "Inversión_r",
       "Total": 400.0,
       "_idx": 5
@@ -808,7 +895,7 @@
     {
       "Concepto": "Cartera Bonos",
       "Fecha": "2026-06-08 09:00:00",
-      "Saldo": 790.0,
+      "Saldo": 1040.0,
       "Tipo": "Inversión_r",
       "Total": 150.0,
       "_idx": 6
@@ -816,7 +903,7 @@
     {
       "Concepto": "Desde OPENBANK",
       "Fecha": "2026-06-25 10:30:00",
-      "Saldo": 1190.0,
+      "Saldo": 1440.0,
       "Tipo": "Ingreso",
       "Total": 400.0,
       "_idx": 7
@@ -824,7 +911,7 @@
     {
       "Concepto": "Dividendo",
       "Fecha": "2026-07-02 09:00:00",
-      "Saldo": 1205.0,
+      "Saldo": 1455.0,
       "Tipo": "Ingreso",
       "Total": 15.0,
       "_idx": 8
@@ -1499,6 +1586,7 @@
       "path": "/api/movimiento/cash1",
       "request": {
         "concepto": "Test Cafetería",
+        "fecha": "2026-07-14",
         "idx": 45,
         "tipo": "Gasto",
         "total": 5.0

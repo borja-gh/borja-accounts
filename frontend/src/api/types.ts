@@ -1,18 +1,28 @@
 export type AccountId = string;
 export type AccountKind = 'CASH' | 'INVESTMENT';
+export type Currency = 'EUR' | 'USD';
 export type KpiPeriod = 'mes' | 'trimestre' | 'año';
+export type KpiPeriodType = KpiPeriod | 'custom';
+
+export interface KpiPeriodFilter {
+  type: KpiPeriodType;
+  /** Solo con type: 'custom' -- 'YYYY-MM', ambos inclusive. */
+  fromYm?: string;
+  toYm?: string;
+}
 
 export interface AccountSummary {
   id: AccountId;
   name: string;
   kind: AccountKind;
-  currency: string;
+  currency: Currency;
   saldo: number;
 }
 
 export interface CreateAccountRequest {
   name: string;
   kind: AccountKind;
+  currency: Currency;
   initialBalance?: number;
 }
 
@@ -21,6 +31,7 @@ export interface CreateAccountResult {
   id: string;
   name: string;
   kind: AccountKind;
+  currency: Currency;
   error?: string;
 }
 
@@ -69,6 +80,7 @@ export interface EditMovementRequest {
   tipo: string;
   concepto: string;
   total: number;
+  fecha: string;
 }
 
 export interface MutationResult {
@@ -111,6 +123,7 @@ export interface BettingReport {
   totalApostado: number;
   totalBets: number;
   totalPnL: number;
+  totalPnLPct: number;
   winRate: number;
   wins: number;
 }
@@ -143,22 +156,6 @@ export interface PortfolioReport {
   totalCarteras: number;
   totalPnL: number;
   totalRoi: number;
-}
-
-export interface TransferItem {
-  Fecha: string;
-  Concepto: string;
-  Total: number;
-  dir: 'in' | 'out';
-  label: string;
-}
-
-export interface TransfersReport {
-  items: TransferItem[];
-  lifetimeRec: number;
-  lifetimeSent: number;
-  lifetimeNet: number;
-  totalCount: number;
 }
 
 export interface TransferRequest {
@@ -204,6 +201,7 @@ export interface GastosDonutSection {
   hasGastos: boolean;
   labels: string[];
   values: number[];
+  hoverSuffix: string;
 }
 
 export interface GastosRankingReport {

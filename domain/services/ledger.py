@@ -23,10 +23,26 @@ class LedgerService:
         """Barrido completo desde cero, en el orden dado (el llamador es
         responsable de ordenar por fecha antes). Redondeo por fila, no del
         acumulador — preserva el comportamiento exacto de recalcular_saldo()
-        del app.py original."""
+        del app.py original.
+
+        Inversión/Inversión_r son un par especial, no una clasificación
+        positivo/negativo simple (ver el comentario en value_objects.py):
+        abrir una posición no toca el saldo -- se acumula el invertido por
+        concepto -- y cerrarla solo mueve el saldo por la ganancia/pérdida
+        neta (lo devuelto menos lo invertido en ese concepto), nunca por el
+        importe devuelto bruto."""
         saldo = 0.0
+        invertido_por_concepto: dict[str, float] = {}
         for m in movements:
-            saldo += m.amount if m.type in self.positive_types else -m.amount
+            if m.type == "Inversión":
+                invertido_por_concepto[m.concept] = invertido_por_concepto.get(m.concept, 0.0) + m.amount
+            elif m.type == "Inversión_r":
+                invertido = invertido_por_concepto.get(m.concept, 0.0)
+                saldo += m.amount - invertido
+            elif m.type in self.positive_types:
+                saldo += m.amount
+            else:
+                saldo -= m.amount
             m.balance = round(saldo, 2)
         return movements
 
