@@ -1,9 +1,9 @@
-import type { AccountKpis, KpiPeriod } from '../../api/types';
+import type { AccountKpis, KpiPeriod, KpiPeriodFilter } from '../../api/types';
 import { eur } from '../../lib/format';
 import { kpiLabel } from './kpiLabel';
 import { KpiDelta } from './KpiDelta';
 
-export function KpiCards({ kpi, period }: { kpi: AccountKpis; period: KpiPeriod }) {
+export function KpiCards({ kpi, period }: { kpi: AccountKpis; period: KpiPeriod | KpiPeriodFilter }) {
   const lbl = kpiLabel(period);
   return (
     <>

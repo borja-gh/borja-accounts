@@ -15,7 +15,7 @@ export function DonutChart({ donut }: { donut: GastosDonutSection }) {
       values: donut.values,
       sort: false,
       customdata: donut.labels,
-      hovertemplate: '<b>%{customdata}</b><br>%{value:,.2f}€  ·  %{percent}<extra></extra>',
+      hovertemplate: `<b>%{customdata}</b><br>%{value:,.2f}${donut.hoverSuffix}  ·  %{percent}<extra></extra>`,
       texttemplate: '<b>%{percent}</b>',
       textfont: { size: 13, color: '#ffffff' },
       insidetextorientation: 'horizontal',

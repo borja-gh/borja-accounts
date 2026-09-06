@@ -21,10 +21,7 @@ export function ApuestasSection({ account, filter, onDataChanged }: Props) {
   if (!report) return null;
 
   return (
-    <div className="section" style={{ marginBottom: 14 }}>
-      <div className="section-head">
-        <span className="section-title">Análisis de Apuestas</span>
-      </div>
+    <div className="section" style={{ marginBottom: 14, paddingTop: 6 }}>
       <ApuestasBody report={report} onClosePosition={setClosing} />
 
       <ClosePositionModal

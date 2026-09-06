@@ -11,7 +11,7 @@ class GetBettingReportUseCase:
     def __init__(self, repository):
         self.repository = repository
 
-    def execute(self, account_id: str, range_type: str, year: int | None, reference: datetime) -> dict:
+    def execute(self, account_id: str, range_type: str, year: int | str | None, reference: datetime) -> dict:
         reference_local = reference.astimezone(TZ)
         movements = self.repository.load(account_id)
 
@@ -25,6 +25,7 @@ class GetBettingReportUseCase:
 
         total_apostado = round(sum(m.amount for m in all_bets), 2)
         total_pnl = closed_all[-1].bal_h if closed_all else 0.0
+        total_pnl_pct = closed_all[-1].pct_h if closed_all else 0.0
         wins = sum(1 for c in closed_all if c.bal > 0)
         win_rate = round(wins / len(closed_all) * 100, 2) if closed_all else 0.0
         open_total = round(sum(p.monto for p in open_positions), 2)
@@ -33,6 +34,7 @@ class GetBettingReportUseCase:
             "totalBets": len(all_bets),
             "totalApostado": total_apostado,
             "totalPnL": total_pnl,
+            "totalPnLPct": total_pnl_pct,
             "wins": wins,
             "closedCount": len(closed_all),
             "winRate": win_rate,

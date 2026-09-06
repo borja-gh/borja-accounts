@@ -172,6 +172,16 @@ def run_scenario(repo_root):
             result["investment1_carteras_ranking_all_total"] = client.get(
                 "/api/accounts/investment1/carteras-ranking?range=all&mode=total"
             ).json()
+            # Rango libre mes/año inicio-fin (ver domain/services/period_filter.py):
+            # marzo-mayo 2026, protege el modo "custom" en el golden master.
+            result["cash1_saldo_evolucion_custom_mar_may"] = client.get(
+                "/api/accounts/cash1/saldo-evolucion?range=custom&year=2026-03:2026-05"
+            ).json()
+            # Mismo rango libre, ahora como period de los KPIs (ver
+            # compute_kpis rama "custom" en domain/services/kpi.py).
+            result["cash1_kpis_custom_mar_may"] = client.get(
+                "/api/accounts/cash1/kpis?period=custom&year=2026-03:2026-05"
+            ).json()
 
             # --- Snapshot B: secuencia determinista de mutaciones ---
             steps = []
@@ -205,8 +215,12 @@ def run_scenario(repo_root):
             # el estado actual en vez de asumir una posición fija.
             data_cash1 = client.get("/api/data/cash1").json()
             idx_cafeteria = next(r["_idx"] for r in data_cash1 if r["Concepto"] == "Test Cafetería")
+            # Cambia también la fecha (de 2026-07-16 a 2026-07-14) para
+            # ejercitar el reordenamiento + recálculo de saldo tras editar
+            # la fecha de un movimiento (ver EditMovementUseCase).
             call("edita_gasto_cafeteria", "put", "/api/movimiento/cash1", {
                 "idx": idx_cafeteria, "tipo": "Gasto", "concepto": "Test Cafetería", "total": 5.00,
+                "fecha": "2026-07-14",
             })
 
             call("borra_ultimo_cash1", "delete", "/api/movimiento/cash1")

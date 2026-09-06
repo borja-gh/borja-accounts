@@ -5,7 +5,7 @@ from domain.exceptions import (
 )
 from domain.services.ledger import LedgerService
 
-from .shared import parse_total
+from .shared import parse_fecha, parse_total
 
 
 class EditMovementUseCase:
@@ -37,6 +37,9 @@ class EditMovementUseCase:
         objetivo.type = tipo
         objetivo.concept = concepto
         objetivo.amount = total
+        if data.get("fecha"):
+            objetivo.occurred_at = parse_fecha(data)
+        movements = sorted(movements, key=lambda m: m.occurred_at)
         movements = self.ledger.recalculate_balances(movements)
         self.repository.save(account_id, movements)
 

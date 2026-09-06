@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { AccountMark } from '../../components/AccountMark';
+import { SectionHeading } from '../../components/SectionHeading';
 import { fetchSaldoEvolucion, fetchMensualEvolucion, fetchGastosRanking } from '../../api/client';
 import { KpiCards } from '../kpis/KpiCards';
 import { PeriodSelector } from '../kpis/PeriodSelector';
@@ -18,7 +19,7 @@ import { RankingModeToggle } from '../charts/RankingModeToggle';
 import { GastoAlert } from '../gastos/GastoAlert';
 import { useGastosMesActual } from '../gastos/useGastosMesActual';
 import type { AccountViewHandle } from '../shared/viewHandle';
-import type { AccountSummary, KpiPeriod, RankingMode } from '../../api/types';
+import type { AccountSummary, KpiPeriodFilter, RankingMode } from '../../api/types';
 
 interface Props {
   account: AccountSummary;
@@ -26,7 +27,7 @@ interface Props {
 }
 
 export const CashAccountView = forwardRef<AccountViewHandle, Props>(function CashAccountView({ account, onDataChanged }, ref) {
-  const [period, setPeriod] = useState<KpiPeriod>('mes');
+  const [period, setPeriod] = useState<KpiPeriodFilter>({ type: 'mes' });
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [gastosMode, setGastosMode] = useState<RankingMode>('media');
   const { kpi, reload: reloadKpis } = useAccountKpis(account.id, period);
@@ -69,18 +70,20 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
           <p>Día a día · gastos, nómina y apuestas</p>
         </div>
         <div className="spacer" />
-        <PeriodSelector period={period} onChange={setPeriod} />
+        <PeriodSelector period={period} onChange={setPeriod} allowCustom />
       </div>
+      <SectionHeading title="Resumen general" />
       <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} />}</div>
+      {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} />}
 
       {data && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>Rango de Desglose y Apuestas</span>
           <RangeFilterBar data={data} filter={rangeFilter} onChange={setRangeFilter} />
         </div>
       )}
 
-      {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} />}
-
+      <SectionHeading title="Desglose" />
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-label">Evolución del saldo</div>
@@ -114,8 +117,10 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
         </div>
       </div>
 
+      <SectionHeading title="Apuestas" />
       <ApuestasSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
 
+      <SectionHeading title="Movimientos" />
       {data && <MovimientosSection account={account.id} kind={account.kind} data={data} onDataChanged={refreshAll} />}
     </>
   );

@@ -1,4 +1,5 @@
 import type { Movement } from '../../api/types';
+import { MonthRangeChip } from './MonthRangeChip';
 import { rangeOptions } from './rangeOptions';
 import type { RangeFilter } from './RangeFilter';
 
@@ -17,8 +18,9 @@ interface Props {
 // cambio de comportamiento por defecto intencional, no una regresión.
 export function RangeFilterBar({ data, filter, onChange }: Props) {
   const options = rangeOptions(data);
+
   return (
-    <div style={{ display: 'flex', gap: 4 }}>
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
       {options.map((opt) => {
         const active = filter.type === opt.type && (opt.year === undefined || opt.year === filter.year);
         return (
@@ -31,6 +33,13 @@ export function RangeFilterBar({ data, filter, onChange }: Props) {
           </button>
         );
       })}
+      <MonthRangeChip
+        key={filter.type}
+        active={filter.type === 'custom'}
+        fromYm={filter.fromYm}
+        toYm={filter.toYm}
+        onApply={(fromYm, toYm) => onChange({ type: 'custom', fromYm, toYm })}
+      />
     </div>
   );
 }
