@@ -19,10 +19,7 @@ export function InversionesSection({ account, filter, onDataChanged }: Props) {
   if (!report) return null;
 
   return (
-    <div className="section" style={{ marginBottom: 14 }}>
-      <div className="section-head">
-        <span className="section-title">Análisis de carteras</span>
-      </div>
+    <div className="section" style={{ marginBottom: 14, paddingTop: 6 }}>
       <InversionesBody report={report} onClosePosition={setClosing} />
 
       <ClosePositionModal

@@ -49,6 +49,7 @@
   "cash1_gastos_ranking_3m_media": {
     "donut": {
       "hasGastos": true,
+      "hoverSuffix": "€/mes",
       "labels": [
         "Alquiler",
         "Supermercado",
@@ -57,11 +58,11 @@
         "Restaurante"
       ],
       "values": [
-        2700.0,
-        590.0,
-        180.0,
-        80.0,
-        45.0
+        900.0,
+        196.67,
+        60.0,
+        26.67,
+        15.0
       ]
     },
     "ranking": {
@@ -94,6 +95,7 @@
   "cash1_gastos_ranking_all_media": {
     "donut": {
       "hasGastos": true,
+      "hoverSuffix": "€/mes",
       "labels": [
         "Alquiler",
         "Supermercado",
@@ -103,12 +105,12 @@
         "Restaurante"
       ],
       "values": [
-        6300.0,
-        1540.0,
-        420.0,
-        240.0,
-        85.0,
-        45.0
+        900.0,
+        220.0,
+        60.0,
+        34.29,
+        12.14,
+        6.43
       ]
     },
     "ranking": {
