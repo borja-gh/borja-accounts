@@ -14,7 +14,20 @@ describe('KpiCardsInvestment', () => {
     (period) => {
       const kpi = backendFixture.investment1_kpis_by_period[period];
       const { container } = render(<KpiCardsInvestment kpi={kpi} period={period} currency="USD" />);
-      const expected = expectedValues.investment1_kpis[period].map((s: string) => s.replace(/€/g, '$'));
+      // El Saldo ya no es cash_override + en_carteras (doble contaba el
+      // capital invertido, que el ledger ya incluye al no restar en
+      // "Inversión") -- ahora es el balance del histórico combinado, ver
+      // build_investment_ledger. "En carteras" no cambia. "Saldo preventa"
+      // es una tarjeta nueva (KpiCardsInvestment.tsx) -- sin holdings con
+      // current_price en el fixture, coincide con Saldo.
+      const base = expectedValues.investment1_kpis[period]
+        .map((s: string) => s.replace(/€/g, '$'))
+        .map((s: string, i: number) => (i === 1 ? '1455,00$' : s));
+      const expected = [
+        ...base.slice(0, 2),
+        'Saldo preventa', '1455,00$', 'Con el último precio de mercado consultado',
+        ...base.slice(2),
+      ];
       expect(extractVisibleText(container)).toEqual(expected);
     },
   );

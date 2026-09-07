@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { updatePortfolioHolding } from '../../api/client';
 import type { AccountId, ClosedInvestPosition, OpenInvestPosition, PortfolioHoldingDetail, PortfolioReport } from '../../api/types';
 import { DataTable, type Column } from '../../components/DataTable';
@@ -32,20 +32,27 @@ function HoldingRow({ account, holding, currency, onSaved }: {
   currency: string;
   onSaved: () => void;
 }) {
-  const [closePrice, setClosePrice] = useState(holding.closePrice?.toString() ?? '');
+  const [currentPrice, setCurrentPrice] = useState(holding.currentPrice?.toString() ?? '');
   const [note, setNote] = useState(holding.note ?? '');
+  const [closing, setClosing] = useState(false);
+  const [closePriceInput, setClosePriceInput] = useState('');
   const showToast = useToast();
+  const isClosed = holding.closePrice !== null;
 
-  async function saveClosePrice() {
-    const trimmed = closePrice.trim();
+  useEffect(() => {
+    setCurrentPrice(holding.currentPrice?.toString() ?? '');
+  }, [holding.currentPrice]);
+
+  async function saveCurrentPrice() {
+    const trimmed = currentPrice.trim();
     const value = trimmed === '' ? null : Number(trimmed);
     if (value !== null && (Number.isNaN(value) || value < 0)) {
-      showToast('Precio de cierre inválido', 'err');
-      setClosePrice(holding.closePrice?.toString() ?? '');
+      showToast('Precio actual inválido', 'err');
+      setCurrentPrice(holding.currentPrice?.toString() ?? '');
       return;
     }
-    if (value === holding.closePrice) return;
-    const result = await updatePortfolioHolding(account, holding.id, { closePrice: value });
+    if (value === holding.currentPrice) return;
+    const result = await updatePortfolioHolding(account, holding.id, { currentPrice: value });
     if (!result.ok) {
       showToast(result.error || 'Error al guardar', 'err');
       return;
@@ -65,6 +72,27 @@ function HoldingRow({ account, holding, currency, onSaved }: {
     onSaved();
   }
 
+  function startClose() {
+    setClosePriceInput(holding.currentPrice?.toString() ?? '');
+    setClosing(true);
+  }
+
+  async function confirmClose() {
+    const trimmed = closePriceInput.trim();
+    const value = trimmed === '' ? null : Number(trimmed);
+    if (value === null || Number.isNaN(value) || value < 0) {
+      showToast('Precio de cierre inválido', 'err');
+      return;
+    }
+    const result = await updatePortfolioHolding(account, holding.id, { closePrice: value });
+    if (!result.ok) {
+      showToast(result.error || 'Error al guardar', 'err');
+      return;
+    }
+    setClosing(false);
+    onSaved();
+  }
+
   return (
     <tr>
       <td>
@@ -79,15 +107,41 @@ function HoldingRow({ account, holding, currency, onSaved }: {
           step="0.01"
           min="0"
           placeholder="—"
-          value={closePrice}
-          onChange={(e) => setClosePrice(e.target.value)}
-          onBlur={saveClosePrice}
+          value={currentPrice}
+          onChange={(e) => setCurrentPrice(e.target.value)}
+          onBlur={saveCurrentPrice}
+          disabled={isClosed}
           style={{ width: 90, textAlign: 'right' }}
         />
       </td>
       <td className={`r ${pnlClass(holding.pnl)}`}>
         {holding.pnl === null ? '—' : `${money(holding.pnl, currency)} (${holding.pnlPct?.toFixed(2)}%)`}
       </td>
+      <td className="r">
+        {isClosed ? (
+          <span className="badge">Cerrado</span>
+        ) : closing ? (
+          <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              autoFocus
+              value={closePriceInput}
+              onChange={(e) => setClosePriceInput(e.target.value)}
+              style={{ width: 80, textAlign: 'right' }}
+            />
+            <button className="btn btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }} onClick={confirmClose}>
+              OK
+            </button>
+          </div>
+        ) : (
+          <button className="btn btn-ghost" style={{ fontSize: 11, padding: '2px 8px' }} onClick={startClose}>
+            Cerrar
+          </button>
+        )}
+      </td>
+      <td className="r">{holding.closePrice === null ? '—' : money(holding.closePrice, currency)}</td>
       <td>
         <input
           type="text"
@@ -130,8 +184,10 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
                 <th>Empresa</th>
                 <th className="r">Precio medio</th>
                 <th className="r">Capital</th>
-                <th className="r">Precio cierre</th>
+                <th className="r">Precio actual</th>
                 <th className="r">PnL</th>
+                <th className="r">Estado</th>
+                <th className="r">Precio cierre</th>
                 <th>Anotaciones</th>
               </tr>
             </thead>
@@ -175,12 +231,13 @@ interface Props {
 }
 
 /** Las carteras abiertas viven en portfolio_holdings (composición real por
- * ticker, ver docs/ARCHITECTURE.md) -- sin seguimiento de valor de mercado
- * en vivo: es un check de compra/cierre, no un tracker. El PnL de un
- * holding solo aparece cuando se rellena su precio de cierre; el PnL de la
- * cartera solo cuando TODOS sus holdings tienen precio de cierre. Todo se
- * muestra en la divisa nativa de la cuenta, incluido el historial legado
- * (Cartera 1, sin CSV) -- ver scripts/backfill_exchange_rates.py. */
+ * ticker, ver docs/ARCHITECTURE.md). El PnL de un holding usa el precio de
+ * cierre si ya se vendió, si no el último precio de mercado consultado
+ * (botón "Precios actuales", InversionesSection) -- no realizado hasta
+ * cerrar. El PnL de la cartera solo aparece cuando TODOS sus holdings
+ * tienen algún precio. Todo se muestra en la divisa nativa de la cuenta,
+ * incluido el historial legado (Cartera 1, sin CSV) -- ver
+ * scripts/backfill_exchange_rates.py. */
 export function InversionesBody({ account, report, currency, onSaved }: Props) {
   if (!report.openCount && !report.closedCount) {
     return <div className="empty">No hay carteras registradas todavía.</div>;

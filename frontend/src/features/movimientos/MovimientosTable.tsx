@@ -39,7 +39,10 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
       <tbody>
         {rows.map((r) => {
           const canAct = r.Tipo !== 'Saldo Inicial' && r._idx != null;
-          const isNeg = TIPOS_NEGATIVOS.has(r.Tipo);
+          // Inversión no mueve el saldo al abrir (ver ledger.py) -- ni
+          // resta ni suma, así que no lleva signo.
+          const isNeutral = r.Tipo === 'Inversión';
+          const isNeg = !isNeutral && TIPOS_NEGATIVOS.has(r.Tipo);
           return (
             <tr key={r._idx ?? `${r.Fecha}-${r.Concepto}`}>
               <td className="nowrap" style={{ color: 'var(--muted)' }}>
@@ -53,7 +56,7 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
                   {r.Concepto}
                 </span>
               </td>
-              <td className={`r nowrap ${isNeg ? 'num-neg' : 'num-pos'}`}>{`${isNeg ? '-' : '+'}${r.Total.toFixed(2)}${symbol}`}</td>
+              <td className={`r nowrap ${isNeutral ? '' : isNeg ? 'num-neg' : 'num-pos'}`}>{`${isNeutral ? '' : isNeg ? '-' : '+'}${r.Total.toFixed(2)}${symbol}`}</td>
               <td className="r nowrap" style={{ fontWeight: 600 }}>{`${r.Saldo.toFixed(2)}${symbol}`}</td>
               <td className="r">
                 {canAct && (

@@ -28,7 +28,6 @@ class Account:
     name: str
     kind: AccountKind
     currency: str = "EUR"
-    cash_override: float | None = None
     theme: str | None = None
 
 
@@ -53,3 +52,8 @@ class PortfolioHolding:
     fee_usd: float | None = None
     close_price_usd: float | None = None
     note: str | None = None
+    current_price_usd: float | None = None
+    """Último precio de mercado consultado (yfinance), solo informativo
+    mientras la holding sigue abierta -- editable a mano o vía el refresh
+    masivo (RefreshHoldingPricesUseCase). Deja de actualizarse una vez que
+    close_price_usd tiene valor (la posición ya está cerrada)."""

@@ -38,7 +38,8 @@ class GetPortfolioReportUseCase:
                     {
                         "id": h.id, "ticker": h.ticker, "company": h.company,
                         "avgPrice": h.avg_price_usd, "capital": h.capital_usd,
-                        "closePrice": h.close_price_usd, "pnl": h.pnl_usd, "pnlPct": h.pnl_pct,
+                        "closePrice": h.close_price_usd, "currentPrice": h.current_price_usd,
+                        "pnl": h.pnl_usd, "pnlPct": h.pnl_pct,
                         "note": h.note,
                     }
                     for h in p.holdings

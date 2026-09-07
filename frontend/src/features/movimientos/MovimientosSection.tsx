@@ -34,7 +34,10 @@ export function MovimientosSection({ account, kind, currency, data, onDataChange
   }
 
   function handleRepeatLast() {
-    const sorted = [...data].sort((a, b) => a.Fecha.localeCompare(b.Fecha));
+    // Filtra filas sin _idx (carteras de holdings fusionadas por
+    // build_investment_ledger, ver GET /api/data/{cuenta}) -- no son
+    // movimientos reales editables/repetibles.
+    const sorted = data.filter((r) => r._idx != null).sort((a, b) => a.Fecha.localeCompare(b.Fecha));
     const last = sorted.at(-1);
     if (!last || last.Tipo === 'Saldo Inicial') {
       showToast('No hay movimiento que repetir', 'err');
@@ -53,7 +56,10 @@ export function MovimientosSection({ account, kind, currency, data, onDataChange
   }
 
   async function handleDeleteLast() {
-    const sorted = [...data].sort((a, b) => a.Fecha.localeCompare(b.Fecha));
+    // El backend (DeleteMovementUseCase) siempre borra el último movimiento
+    // real -- filtra las filas sin _idx (holdings fusionadas) para que el
+    // diálogo de confirmación muestre exactamente lo que se va a borrar.
+    const sorted = data.filter((r) => r._idx != null).sort((a, b) => a.Fecha.localeCompare(b.Fecha));
     const last = sorted.at(-1);
     if (!last) return;
     if (!window.confirm(`¿Borrar el último movimiento?\n\n${fd(last.Fecha)} · ${last.Tipo} · ${last.Concepto} · ${money(last.Total, currency)}`)) return;

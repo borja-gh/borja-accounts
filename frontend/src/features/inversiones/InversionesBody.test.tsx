@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '../../components/ToastContext';
 import { backendFixture } from '../../test/goldenMaster';
@@ -56,7 +56,7 @@ describe('InversionesBody', () => {
     const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
     fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
 
-    const rows = Array.from(container.querySelectorAll('tbody tr'));
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('tbody tr'));
     const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
     const msftRow = rows.find((r) => r.textContent?.includes('MSFT'))!;
 
@@ -67,10 +67,10 @@ describe('InversionesBody', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0);
   });
 
-  it('editar el precio de cierre guarda vía la API y recarga el reporte', async () => {
+  it('editar el precio actual guarda vía la API y recarga el reporte', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ ok: true, closePrice: 130, note: null }),
+      json: async () => ({ ok: true, closePrice: null, currentPrice: 130, note: null }),
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -79,7 +79,7 @@ describe('InversionesBody', () => {
     const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved });
     fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
 
-    const rows = Array.from(container.querySelectorAll('tbody tr'));
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('tbody tr'));
     const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
     const priceInput = aaplRow.querySelector('input[type="number"]') as HTMLInputElement;
 
@@ -89,7 +89,36 @@ describe('InversionesBody', () => {
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/accounts/investment1/portfolio-holdings/1',
-      expect.objectContaining({ method: 'PUT' }),
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ currentPrice: 130 }) }),
+    );
+    await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+  });
+
+  it('cerrar una holding pide confirmar el precio antes de guardar closePrice', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, closePrice: 150, currentPrice: null, note: null }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const report = backendFixture.investment1_carteras_report_3m;
+    const onSaved = vi.fn();
+    const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved });
+    fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
+
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('tbody tr'));
+    const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
+
+    fireEvent.click(within(aaplRow).getByText('Cerrar'));
+    const numberInputs = aaplRow.querySelectorAll('input[type="number"]');
+    const closeInput = numberInputs[numberInputs.length - 1] as HTMLInputElement;
+    fireEvent.change(closeInput, { target: { value: '150' } });
+    fireEvent.click(within(aaplRow).getByText('OK'));
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/accounts/investment1/portfolio-holdings/1',
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ closePrice: 150 }) }),
     );
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
   });

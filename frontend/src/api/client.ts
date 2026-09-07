@@ -6,6 +6,7 @@ import type {
   CarterasRankingReport,
   CreateAccountRequest,
   CreateAccountResult,
+  DeleteAccountResult,
   DeleteResult,
   EditMovementRequest,
   GastosMesActualReport,
@@ -22,6 +23,7 @@ import type {
   TransferRequest,
   TransferResult,
   UpdateAccountThemeResult,
+  RefreshHoldingPricesResult,
   UpdatePortfolioHoldingRequest,
   UpdatePortfolioHoldingResult,
 } from './types';
@@ -60,6 +62,12 @@ export async function updateAccountTheme(cuenta: string, theme: ThemeName): Prom
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ theme }),
   });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function deleteAccount(cuenta: string): Promise<DeleteAccountResult> {
+  const res = await fetch(`/api/accounts/${cuenta}`, { method: 'DELETE' });
   const json = await res.json();
   return { ok: res.ok, ...json };
 }
@@ -130,6 +138,12 @@ export async function updatePortfolioHolding(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function refreshHoldingPrices(cuenta: string): Promise<RefreshHoldingPricesResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings/refresh-prices`, { method: 'POST' });
   const json = await res.json();
   return { ok: res.ok, ...json };
 }

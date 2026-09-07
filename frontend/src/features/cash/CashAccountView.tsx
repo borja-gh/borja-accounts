@@ -3,6 +3,7 @@ import { AccountMark } from '../../components/AccountMark';
 import { SectionHeading } from '../../components/SectionHeading';
 import { fetchSaldoEvolucion, fetchMensualEvolucion, fetchGastosRanking, updateAccountTheme } from '../../api/client';
 import { ThemePicker } from '../accounts/ThemePicker';
+import { DeleteAccountModal } from '../accounts/DeleteAccountModal';
 import { DEFAULT_THEME_BY_KIND, type ThemeName } from '../../styles/themes';
 import { KpiCards } from '../kpis/KpiCards';
 import { PeriodSelector } from '../kpis/PeriodSelector';
@@ -31,6 +32,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
   const [period, setPeriod] = useState<KpiPeriodFilter>({ type: 'mes' });
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [gastosMode, setGastosMode] = useState<RankingMode>('media');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const { kpi, reload: reloadKpis } = useAccountKpis(account.id, period);
   const { data, reload: reloadData } = useAccountData(account.id);
   const { report: saldoReport, reload: reloadSaldo } = useRangeReport(
@@ -70,15 +72,24 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
   return (
     <>
       <div className="account-hero">
+        <ThemePicker value={account.theme ?? DEFAULT_THEME_BY_KIND[account.kind]} onChange={handleThemeChange} />
         <AccountMark name={account.name} kind={account.kind} theme={account.theme} />
         <div>
           <h2>{account.name}</h2>
           <p>Día a día · gastos, nómina y apuestas</p>
         </div>
-        <ThemePicker value={account.theme ?? DEFAULT_THEME_BY_KIND[account.kind]} onChange={handleThemeChange} />
         <div className="spacer" />
+        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setDeleteModalOpen(true)}>
+          Eliminar cuenta
+        </button>
         <PeriodSelector period={period} onChange={setPeriod} allowCustom />
       </div>
+      <DeleteAccountModal
+        account={account}
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onDeleted={onDataChanged}
+      />
       <SectionHeading title="Resumen general" />
       <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} currency={account.currency} />}</div>
       {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} />}
