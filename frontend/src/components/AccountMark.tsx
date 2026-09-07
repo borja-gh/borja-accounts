@@ -21,7 +21,7 @@ export function AccountMark({ name, kind, theme, small = false }: Props) {
   return (
     <svg className={`mark ${small ? 'mark-sm' : ''}`} viewBox="0 0 32 32" aria-hidden="true">
       <rect width="32" height="32" rx="8" fill={fill} />
-      <text x="16" y="21" textAnchor="middle" fontFamily="Outfit,system-ui,sans-serif" fontSize="11" fontWeight="700" fill="#fff">
+      <text x="16" y="21" textAnchor="middle" fontFamily="Geist,system-ui,sans-serif" fontSize="11" fontWeight="700" fill="#fff">
         {label}
       </text>
     </svg>

@@ -24,3 +24,12 @@ export const expectedValues = readJson('snapshot_frontend_values.json').values;
 // de gráficos comparan contra este fichero directamente. Ver el comentario
 // en SaldoChart.tsx sobre la traza "Media 30d" que ya no se reproduce.
 export const rawFrontendSnapshot = readJson('snapshot_frontend.json');
+
+// El vanilla congelado usaba 'Outfit, system-ui' (baseLayout.ts ya no --
+// cambio de tipografía de base, ver frontend/src/styles/app.css). Los tests
+// de gráficos comparan layout contra este snapshot congelado: se corrige
+// solo ese campo, nunca se regenera el snapshot completo por un cambio
+// puramente visual.
+export function withCurrentFont<T extends { font?: { family?: string } }>(layout: T): T {
+  return { ...layout, font: { ...layout.font, family: 'Geist, system-ui' } };
+}

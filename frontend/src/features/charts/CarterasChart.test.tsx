@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { backendFixture, rawFrontendSnapshot } from '../../test/goldenMaster';
+import { backendFixture, rawFrontendSnapshot, withCurrentFont } from '../../test/goldenMaster';
 import { CarterasChart } from './CarterasChart';
 
 const newPlot = vi.fn();
@@ -20,7 +20,7 @@ describe('CarterasChart', () => {
       ...t,
       text: t.text.map((s: string) => s.replace('€', '$')),
     }));
-    const expectedLayout = { ...expected.layout, xaxis: { ...expected.layout.xaxis, ticksuffix: '$' } };
+    const expectedLayout = withCurrentFont({ ...expected.layout, xaxis: { ...expected.layout.xaxis, ticksuffix: '$' } });
     expect(traces).toEqual(expectedTraces);
     expect(layout).toEqual(expectedLayout);
   });

@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { backendFixture, rawFrontendSnapshot } from '../../test/goldenMaster';
+import { backendFixture, rawFrontendSnapshot, withCurrentFont } from '../../test/goldenMaster';
 import { SaldoChart } from './SaldoChart';
 
 const newPlot = vi.fn();
@@ -29,7 +29,7 @@ describe('SaldoChart', () => {
       name: t.name.replace('Saldo', 'Capital aportado'),
     }));
     expect(traces).toEqual(expectedTraces);
-    expect(layout).toEqual(expected.layout);
+    expect(layout).toEqual(withCurrentFont(expected.layout));
   });
 
   it('CASH: omite a propósito la traza "Media 30d" (limpieza de UI, ver docs/ARCHITECTURE.md §0)', () => {
@@ -40,6 +40,6 @@ describe('SaldoChart', () => {
     expect(expected.traces).toHaveLength(2); // el vanilla sí emitía Saldo + Media 30d
     expect(traces).toHaveLength(1); // React solo emite la traza de Saldo
     expect(traces[0]).toEqual(expected.traces[0]);
-    expect(layout).toEqual(expected.layout);
+    expect(layout).toEqual(withCurrentFont(expected.layout));
   });
 });
