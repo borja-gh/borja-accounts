@@ -4,9 +4,9 @@ import { SectionHeading } from '../../components/SectionHeading';
 import { fetchSaldoEvolucion, fetchCarterasRanking, updateAccountTheme } from '../../api/client';
 import { ThemePicker } from '../accounts/ThemePicker';
 import { DEFAULT_THEME_BY_KIND, type ThemeName } from '../../styles/themes';
-import { KpiCardsIbkr } from '../kpis/KpiCardsIbkr';
+import { KpiCardsInvestment } from '../kpis/KpiCardsInvestment';
 import { PeriodSelector } from '../kpis/PeriodSelector';
-import { useIbkrKpis } from '../kpis/useIbkrKpis';
+import { useInvestmentKpis } from '../kpis/useInvestmentKpis';
 import { MovimientosSection } from '../movimientos/MovimientosSection';
 import { useAccountData } from '../movimientos/useAccountData';
 import { InversionesSection } from '../inversiones/InversionesSection';
@@ -31,7 +31,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
   const [period, setPeriod] = useState<KpiPeriod>('mes');
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [carterasMode, setCarterasMode] = useState<RankingMode>('total');
-  const { kpi, reload: reloadKpis } = useIbkrKpis(account.id, period);
+  const { kpi, reload: reloadKpis } = useInvestmentKpis(account.id, period);
   const { data, reload: reloadData } = useAccountData(account.id);
   const { report: saldoReport, reload: reloadSaldo } = useRangeReport(
     (f) => fetchSaldoEvolucion(account.id, f),
@@ -73,7 +73,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       </div>
 
       <SectionHeading title="Resumen general" />
-      <div className="kpis">{kpi && <KpiCardsIbkr kpi={kpi} period={period} currency={account.currency} />}</div>
+      <div className="kpis">{kpi && <KpiCardsInvestment kpi={kpi} period={period} currency={account.currency} />}</div>
 
       {data && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}>

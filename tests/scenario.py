@@ -160,7 +160,7 @@ def run_scenario(repo_root):
                 "/api/accounts/cash1/apuestas?range=3m"
             ).json()
             result["investment1_kpis_by_period"] = {
-                period: client.get(f"/api/accounts/investment1/ibkr-kpis?period={period}").json()
+                period: client.get(f"/api/accounts/investment1/investment-kpis?period={period}").json()
                 for period in ("mes", "trimestre", "año")
             }
             # panelFilters.inversiones por defecto en index.html es {type: '3m'}.

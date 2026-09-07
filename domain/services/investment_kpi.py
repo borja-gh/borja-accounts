@@ -1,4 +1,4 @@
-"""Traducción de computeIbkrKPIs/openCarterasSnapshot (index.html)."""
+"""Traducción de computeIbkrKPIs/openCarterasSnapshot (index.html, cuenta INVESTMENT)."""
 from dataclasses import dataclass
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -26,7 +26,7 @@ class Delta:
 
 
 @dataclass
-class IbkrKPIResult:
+class InvestmentKPIResult:
     saldo: float
     aportado: float
     aportado_delta: Delta
@@ -40,8 +40,8 @@ def _delta(curr: float, prv: float) -> Delta:
     return Delta(diff=_r2(curr - prv))
 
 
-def compute_ibkr_kpis(movements: list[Movement], holdings: list[PortfolioHolding],
-                       cash_override: float | None, kpi_type: str, reference: datetime) -> IbkrKPIResult:
+def compute_investment_kpis(movements: list[Movement], holdings: list[PortfolioHolding],
+                       cash_override: float | None, kpi_type: str, reference: datetime) -> InvestmentKPIResult:
     reference_local = reference.astimezone(TZ)
     slices = period_slices(kpi_type, reference_local)
 
@@ -67,7 +67,7 @@ def compute_ibkr_kpis(movements: list[Movement], holdings: list[PortfolioHolding
     curr_p = pnl([c for c in closed if slices.in_curr(c.fr)])
     prv_p = pnl([c for c in closed if slices.in_prv(c.fr)])
 
-    return IbkrKPIResult(
+    return InvestmentKPIResult(
         saldo=saldo,
         aportado=curr_a, aportado_delta=_delta(curr_a, prv_a),
         en_carteras=en_carteras, en_carteras_count=en_carteras_count,
