@@ -9,6 +9,8 @@ from domain.value_objects import AccountKind
 
 
 _SUPPORTED_CURRENCIES = {"EUR", "USD"}
+_SUPPORTED_THEMES = {"clay", "forest", "slate", "plum", "amber", "teal"}
+_DEFAULT_THEME_BY_KIND = {AccountKind.CASH: "clay", AccountKind.INVESTMENT: "forest"}
 
 
 def _slugify(name: str) -> str:
@@ -43,6 +45,10 @@ class CreateAccountUseCase:
         if currency not in _SUPPORTED_CURRENCIES:
             raise InvalidAccountError(f"Divisa '{currency}' no soportada -- solo EUR o USD")
 
+        theme = data.get("theme") or _DEFAULT_THEME_BY_KIND[kind]
+        if theme not in _SUPPORTED_THEMES:
+            raise InvalidAccountError(f"Tema '{theme}' no válido")
+
         existing_ids = {a.id for a in self.repository.list_accounts()}
         base_slug = _slugify(name)
         account_id = base_slug
@@ -51,7 +57,7 @@ class CreateAccountUseCase:
             account_id = f"{base_slug}-{suffix}"
             suffix += 1
 
-        account = Account(id=account_id, name=name, kind=kind, currency=currency)
+        account = Account(id=account_id, name=name, kind=kind, currency=currency, theme=theme)
 
         initial_movement = None
         if initial_balance != 0:

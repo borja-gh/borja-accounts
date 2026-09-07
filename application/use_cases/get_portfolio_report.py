@@ -24,8 +24,9 @@ class GetPortfolioReportUseCase:
         closed_all = compute_closed_positions(movements, "Inversión", "Inversión_r")
         closed_filtered = filter_by_field(closed_all, lambda c: c.fr, range_type, year, reference_local)
 
-        # totalPnL/totalRoi son de Cartera 1 (legado, EUR) -- no se mezclan
-        # con openCapital (USD, carteras basadas en holdings).
+        # totalPnL/totalRoi son de Cartera 1 (legado, sin CSV) -- mismo tipo
+        # de cifra que openCapital (coste, no valor de mercado), ambas ya en
+        # la divisa nativa de la cuenta (ver scripts/backfill_exchange_rates.py).
         total_pnl = closed_all[-1].bal_h if closed_all else 0.0
         total_roi = closed_all[-1].pct_h if closed_all else 0.0
 
@@ -37,7 +38,8 @@ class GetPortfolioReportUseCase:
                     {
                         "id": h.id, "ticker": h.ticker, "company": h.company,
                         "avgPrice": h.avg_price_usd, "capital": h.capital_usd,
-                        "closePrice": h.close_price_usd, "pnl": h.pnl_usd, "pnlPct": h.pnl_pct,
+                        "closePrice": h.close_price_usd, "currentPrice": h.current_price_usd,
+                        "pnl": h.pnl_usd, "pnlPct": h.pnl_pct,
                         "note": h.note,
                     }
                     for h in p.holdings

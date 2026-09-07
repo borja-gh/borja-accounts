@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { addMovement } from '../../api/client';
 import type { AccountId, AccountKind, Movement } from '../../api/types';
 import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
-import { eur, localISODate } from '../../lib/format';
+import { localISODate, money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
 import { candidatesForTipo, rankConcepts, suggestNextApuesta } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
@@ -17,12 +17,13 @@ export interface AddMovementFormHandle {
 interface Props {
   account: AccountId;
   kind: AccountKind;
+  currency: string;
   data: Movement[];
   onSaved: () => void;
 }
 
 export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function AddMovementForm(
-  { account, kind, data, onSaved },
+  { account, kind, currency, data, onSaved },
   ref,
 ) {
   const tipos = TIPOS_POR_KIND[kind];
@@ -80,7 +81,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
         showToast(body.error || 'Error al guardar', 'err');
         return;
       }
-      showToast(`Guardado · Saldo: ${eur(body.saldo)}`, 'ok');
+      showToast(`Guardado · Saldo: ${money(body.saldo, currency)}`, 'ok');
       setFecha(localISODate());
       setTipo(tipos[0]);
       setConcepto('');
@@ -128,7 +129,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
         />
       </div>
       <div className="fg full">
-        <label>Total (€)</label>
+        <label>Total ({currency})</label>
         <input type="number" placeholder="0.00" step="0.01" min="0.01" value={total} onChange={(e) => setTotal(e.target.value)} />
       </div>
       <div className="fg full">

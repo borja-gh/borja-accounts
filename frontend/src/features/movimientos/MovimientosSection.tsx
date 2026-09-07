@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { deleteLastMovement } from '../../api/client';
 import type { AccountId, AccountKind, Movement } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
-import { eur, fd } from '../../lib/format';
+import { fd, money } from '../../lib/format';
 import { AddMovementForm, type AddMovementFormHandle } from './AddMovementForm';
 import { EditMovementModal } from './EditMovementModal';
 import { MovimientosSearch } from './MovimientosSearch';
@@ -14,11 +14,12 @@ const ACTION_BTN_STYLE = { fontSize: 12, padding: '5px 12px' };
 interface Props {
   account: AccountId;
   kind: AccountKind;
+  currency: string;
   data: Movement[];
   onDataChanged: () => void;
 }
 
-export function MovimientosSection({ account, kind, data, onDataChanged }: Props) {
+export function MovimientosSection({ account, kind, currency, data, onDataChanged }: Props) {
   const [search, setSearch] = useState<MovSearch>(EMPTY_SEARCH);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const formRef = useRef<AddMovementFormHandle>(null);
@@ -33,7 +34,10 @@ export function MovimientosSection({ account, kind, data, onDataChanged }: Props
   }
 
   function handleRepeatLast() {
-    const sorted = [...data].sort((a, b) => a.Fecha.localeCompare(b.Fecha));
+    // Filtra filas sin _idx (carteras de holdings fusionadas por
+    // build_investment_ledger, ver GET /api/data/{cuenta}) -- no son
+    // movimientos reales editables/repetibles.
+    const sorted = data.filter((r) => r._idx != null).sort((a, b) => a.Fecha.localeCompare(b.Fecha));
     const last = sorted.at(-1);
     if (!last || last.Tipo === 'Saldo Inicial') {
       showToast('No hay movimiento que repetir', 'err');
@@ -52,17 +56,20 @@ export function MovimientosSection({ account, kind, data, onDataChanged }: Props
   }
 
   async function handleDeleteLast() {
-    const sorted = [...data].sort((a, b) => a.Fecha.localeCompare(b.Fecha));
+    // El backend (DeleteMovementUseCase) siempre borra el último movimiento
+    // real -- filtra las filas sin _idx (holdings fusionadas) para que el
+    // diálogo de confirmación muestre exactamente lo que se va a borrar.
+    const sorted = data.filter((r) => r._idx != null).sort((a, b) => a.Fecha.localeCompare(b.Fecha));
     const last = sorted.at(-1);
     if (!last) return;
-    if (!window.confirm(`¿Borrar el último movimiento?\n\n${fd(last.Fecha)} · ${last.Tipo} · ${last.Concepto} · ${last.Total}€`)) return;
+    if (!window.confirm(`¿Borrar el último movimiento?\n\n${fd(last.Fecha)} · ${last.Tipo} · ${last.Concepto} · ${money(last.Total, currency)}`)) return;
     try {
       const body = await deleteLastMovement(account);
       if (!body.ok) {
         showToast(body.error || 'Error al borrar', 'err');
         return;
       }
-      showToast(`Borrado · Saldo: ${eur(body.saldo)}`, 'ok');
+      showToast(`Borrado · Saldo: ${money(body.saldo, currency)}`, 'ok');
       afterMutation();
     } catch {
       showToast('Error de conexión', 'err');
@@ -94,6 +101,7 @@ export function MovimientosSection({ account, kind, data, onDataChanged }: Props
         <div style={{ overflowX: 'auto' }}>
           <MovimientosTable
             rows={movs}
+            currency={currency}
             onFilterByConcept={(concepto) => setSearch((s) => ({ ...s, concepto }))}
             onDuplicate={handleDuplicate}
             onEdit={setEditingIdx}
@@ -105,13 +113,14 @@ export function MovimientosSection({ account, kind, data, onDataChanged }: Props
         <div className="section-head">
           <span className="section-title">Añadir movimiento</span>
         </div>
-        <AddMovementForm ref={formRef} account={account} kind={kind} data={data} onSaved={afterMutation} />
+        <AddMovementForm ref={formRef} account={account} kind={kind} currency={currency} data={data} onSaved={afterMutation} />
       </div>
 
       <EditMovementModal
         idx={editingIdx}
         account={account}
         kind={kind}
+        currency={currency}
         data={data}
         onClose={() => setEditingIdx(null)}
         onSaved={afterMutation}

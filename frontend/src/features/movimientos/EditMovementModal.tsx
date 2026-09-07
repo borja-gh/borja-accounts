@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { editMovement } from '../../api/client';
 import type { AccountId, AccountKind, Movement } from '../../api/types';
 import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
-import { eur } from '../../lib/format';
+import { money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
 import { candidatesForTipo, rankConcepts } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
@@ -11,12 +11,13 @@ interface Props {
   idx: number | null;
   account: AccountId;
   kind: AccountKind;
+  currency: string;
   data: Movement[];
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function EditMovementModal({ idx, account, kind, data, onClose, onSaved }: Props) {
+export function EditMovementModal({ idx, account, kind, currency, data, onClose, onSaved }: Props) {
   const row = idx != null ? data.find((r) => r._idx === idx) : undefined;
   const [tipo, setTipo] = useState('');
   const [concepto, setConcepto] = useState('');
@@ -67,7 +68,7 @@ export function EditMovementModal({ idx, account, kind, data, onClose, onSaved }
         return;
       }
       onClose();
-      showToast(`Actualizado · Saldo: ${eur(body.saldo)}`, 'ok');
+      showToast(`Actualizado · Saldo: ${money(body.saldo, currency)}`, 'ok');
       onSaved();
     } catch {
       showToast('Error de conexión', 'err');
@@ -103,7 +104,7 @@ export function EditMovementModal({ idx, account, kind, data, onClose, onSaved }
           />
         </div>
         <div className="fg">
-          <label>Total (€)</label>
+          <label>Total ({currency})</label>
           <input type="number" placeholder="0.00" step="0.01" min="0.01" value={total} onChange={(e) => setTotal(e.target.value)} />
         </div>
         <div className="modal-actions">

@@ -21,7 +21,7 @@ export function Header({ accounts, onOpenTransfer }: { accounts: AccountSummary[
       <div className="brand">
         <svg className="mark" viewBox="0 0 32 32" aria-hidden="true">
           <rect width="32" height="32" rx="8" fill="currentColor" />
-          <text x="16" y="22" textAnchor="middle" fontFamily="Outfit,system-ui,sans-serif" fontSize="15" fontWeight="700" fill="#fff">
+          <text x="16" y="22" textAnchor="middle" fontFamily="Geist,system-ui,sans-serif" fontSize="15" fontWeight="700" fill="#fff">
             C
           </text>
         </svg>
@@ -53,9 +53,11 @@ export function Header({ accounts, onOpenTransfer }: { accounts: AccountSummary[
         )}
       </div>
       <div className="spacer" />
-      <button className="btn-transfer" onClick={onOpenTransfer}>
-        ⇄ Transferencia
-      </button>
+      {accounts && accounts.length >= 2 && (
+        <button className="btn-transfer" onClick={onOpenTransfer}>
+          ⇄ Transferencia
+        </button>
+      )}
     </header>
   );
 }

@@ -52,11 +52,20 @@ CREATE INDEX IF NOT EXISTS idx_portfolio_holdings_account ON portfolio_holdings(
 def ensure_schema(conn):
     conn.executescript(SCHEMA)
     columns = {row[1] for row in conn.execute("PRAGMA table_info(accounts)")}
-    if "cash_override" not in columns:
-        conn.execute("ALTER TABLE accounts ADD COLUMN cash_override REAL")
+    if "cash_override" in columns:
+        # Snapshot manual de efectivo, sustituido por el Saldo derivado del
+        # ledger (ver build_investment_ledger) -- ya no se lee ni escribe.
+        conn.execute("ALTER TABLE accounts DROP COLUMN cash_override")
+    if "theme" not in columns:
+        conn.execute("ALTER TABLE accounts ADD COLUMN theme TEXT")
+    movement_columns = {row[1] for row in conn.execute("PRAGMA table_info(movements)")}
+    if "exchange_rate" not in movement_columns:
+        conn.execute("ALTER TABLE movements ADD COLUMN exchange_rate REAL")
     holding_columns = {row[1] for row in conn.execute("PRAGMA table_info(portfolio_holdings)")}
     if "close_price_usd" not in holding_columns:
         conn.execute("ALTER TABLE portfolio_holdings ADD COLUMN close_price_usd REAL")
     if "note" not in holding_columns:
         conn.execute("ALTER TABLE portfolio_holdings ADD COLUMN note TEXT")
+    if "current_price_usd" not in holding_columns:
+        conn.execute("ALTER TABLE portfolio_holdings ADD COLUMN current_price_usd REAL")
     conn.commit()

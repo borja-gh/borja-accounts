@@ -10,11 +10,13 @@ holding es un simple check de compra -- el PnL solo se calcula cuando se
 rellena `close_price_usd` (precio real de venta de esa aportación
 concreta), nunca contra una cotización actual.
 """
+import copy
 from dataclasses import dataclass, field
 
 import pandas as pd
 
 from domain.entities import Movement, PortfolioHolding
+from domain.services.ledger import LedgerService
 from domain.services.positions import OpenPosition, compute_open_positions
 
 
@@ -30,6 +32,7 @@ class HoldingView:
     avg_price_usd: float
     capital_usd: float
     close_price_usd: float | None
+    current_price_usd: float | None
     pnl_usd: float | None
     pnl_pct: float | None
     note: str | None
@@ -73,19 +76,23 @@ def compute_open_portfolios(holdings: list[PortfolioHolding]) -> list[OpenPortfo
             pnl = None
             pnl_pct = None
             capital = _r2(h.capital_usd)
-            if h.close_price_usd is not None:
-                pnl = _r2(h.shares * h.close_price_usd - h.capital_usd)
+            # PnL con el precio de cierre real si ya se vendió; si sigue
+            # abierta, con el último precio de mercado consultado (ver
+            # RefreshHoldingPricesUseCase) -- no realizado hasta cerrar.
+            price = h.close_price_usd if h.close_price_usd is not None else h.current_price_usd
+            if price is not None:
+                pnl = _r2(h.shares * price - h.capital_usd)
                 pnl_pct = _r2(pnl / capital * 100) if capital > 0 else None
             holding_views.append(HoldingView(
                 id=h.id, ticker=h.ticker, company=h.company,
                 avg_price_usd=_r2(h.price_usd), capital_usd=capital,
-                close_price_usd=h.close_price_usd, pnl_usd=pnl, pnl_pct=pnl_pct,
-                note=h.note,
+                close_price_usd=h.close_price_usd, current_price_usd=h.current_price_usd,
+                pnl_usd=pnl, pnl_pct=pnl_pct, note=h.note,
             ))
 
         portfolio_capital = _r2(sum(hv.capital_usd for hv in holding_views))
-        all_closed = bool(holding_views) and all(hv.close_price_usd is not None for hv in holding_views)
-        portfolio_pnl = _r2(sum(hv.pnl_usd for hv in holding_views)) if all_closed else None
+        all_priced = bool(holding_views) and all(hv.pnl_usd is not None for hv in holding_views)
+        portfolio_pnl = _r2(sum(hv.pnl_usd for hv in holding_views)) if all_priced else None
         portfolio_pnl_pct = (
             _r2(portfolio_pnl / portfolio_capital * 100) if portfolio_pnl is not None and portfolio_capital > 0 else None
         )
@@ -111,6 +118,19 @@ class OpenInvestmentSummary:
     legacy_open: list[OpenPosition]
     capital_usd: float
     count: int
+    presale_delta_usd: float
+
+
+def compute_presale_delta(holdings: list[PortfolioHolding]) -> float:
+    """Ganancia/pérdida no realizada de las holdings abiertas que ya tienen
+    un precio de mercado consultado -- las que no (fetch fallido o nunca
+    consultado) contribuyen 0, es decir, se quedan a coste. Alimenta el KPI
+    "Saldo preventa" (en_carteras sigue siendo siempre a coste)."""
+    return round(sum(
+        h.shares * h.current_price_usd - h.capital_usd
+        for h in holdings
+        if h.close_price_usd is None and h.current_price_usd is not None
+    ), 2)
 
 
 def compute_open_investment_summary(movements: list[Movement], holdings: list[PortfolioHolding]) -> OpenInvestmentSummary:
@@ -126,17 +146,32 @@ def compute_open_investment_summary(movements: list[Movement], holdings: list[Po
     return OpenInvestmentSummary(
         holdings_portfolios=holdings_portfolios, legacy_open=legacy_open,
         capital_usd=capital, count=len(holdings_portfolios) + len(legacy_open),
+        presale_delta_usd=compute_presale_delta(holdings),
     )
 
 
-def compute_investment_saldo(movements: list[Movement], holdings: list[PortfolioHolding],
-                              cash_override: float | None) -> float:
-    """cash_override es un snapshot manual (efectivo real reportado por
-    IBKR, ver docs/ARCHITECTURE.md §0) -- NO se ajusta solo por
-    transferencias reales posteriores hacia/desde investment1. Si el
-    usuario transfiere dinero después de tomar el snapshot, el saldo queda
-    desactualizado hasta que se actualice. El saldo es capital invertido
-    (coste), no valor de mercado -- no hay seguimiento de mercado en vivo."""
-    summary = compute_open_investment_summary(movements, holdings)
-    cash = cash_override if cash_override is not None else 0.0
-    return round(cash + summary.capital_usd, 2)
+def build_investment_ledger(account_id: str, movements: list[Movement], holdings: list[PortfolioHolding],
+                             ledger: LedgerService) -> list[Movement]:
+    """Fusiona el histórico real de `movements` con una fila 'Inversión'
+    agregada por cartera de holdings (mismo criterio que Cartera 1, legado
+    sin CSV) -- sin persistir estas filas: `portfolio_holdings` sigue
+    siendo la única fuente de verdad para holdings, esto es solo una
+    proyección de lectura. Así el Saldo (recalculate_balances) y el
+    histórico mostrado en UI derivan de la misma fuente combinada, en vez
+    de depender de un cash_override manual desconectado del ledger.
+
+    Devuelve copias de los `movements` reales (nunca muta la lista de
+    entrada) intercaladas con las filas sintéticas, todo reordenado por
+    fecha y con el saldo recalculado -- Inversión no mueve el saldo al
+    abrir (ver ledger.py), así que el balance de las filas reales no
+    cambia por esta fusión."""
+    portfolios = compute_open_portfolios(holdings)
+    synthetic = [
+        Movement(
+            account_id=account_id, occurred_at=pd.Timestamp(p.opened_at),
+            type="Inversión", concept=p.portfolio, amount=p.capital_usd,
+        )
+        for p in portfolios
+    ]
+    combined = sorted([copy.copy(m) for m in movements] + synthetic, key=lambda m: m.occurred_at)
+    return ledger.recalculate_balances(combined)

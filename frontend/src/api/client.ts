@@ -6,11 +6,12 @@ import type {
   CarterasRankingReport,
   CreateAccountRequest,
   CreateAccountResult,
+  DeleteAccountResult,
   DeleteResult,
   EditMovementRequest,
   GastosMesActualReport,
   GastosRankingReport,
-  IbkrKpis,
+  InvestmentKpis,
   KpiPeriod,
   KpiPeriodFilter,
   MensualEvolucionReport,
@@ -21,10 +22,13 @@ import type {
   SaldoEvolucionReport,
   TransferRequest,
   TransferResult,
+  UpdateAccountThemeResult,
+  RefreshHoldingPricesResult,
   UpdatePortfolioHoldingRequest,
   UpdatePortfolioHoldingResult,
 } from './types';
 import type { RangeFilter } from '../features/filters/RangeFilter';
+import type { ThemeName } from '../styles/themes';
 
 async function fetchRangeReport<T>(path: string, filter: RangeFilter, extraParams?: Record<string, string>): Promise<T> {
   const params = new URLSearchParams({ range: filter.type, ...extraParams });
@@ -52,6 +56,22 @@ export async function createAccount(body: CreateAccountRequest): Promise<CreateA
   return { ok: res.ok, ...json };
 }
 
+export async function updateAccountTheme(cuenta: string, theme: ThemeName): Promise<UpdateAccountThemeResult> {
+  const res = await fetch(`/api/accounts/${cuenta}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ theme }),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function deleteAccount(cuenta: string): Promise<DeleteAccountResult> {
+  const res = await fetch(`/api/accounts/${cuenta}`, { method: 'DELETE' });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
 export async function fetchAccountKpis(cuenta: string, period: KpiPeriodFilter): Promise<AccountKpis | null> {
   const params = new URLSearchParams({ period: period.type });
   if (period.type === 'custom' && period.fromYm && period.toYm) {
@@ -64,8 +84,8 @@ export async function fetchAccountKpis(cuenta: string, period: KpiPeriodFilter):
   return res.json();
 }
 
-export async function fetchInvestmentKpis(cuenta: string, period: KpiPeriod): Promise<IbkrKpis> {
-  const res = await fetch(`/api/accounts/${cuenta}/ibkr-kpis?period=${encodeURIComponent(period)}`);
+export async function fetchInvestmentKpis(cuenta: string, period: KpiPeriod): Promise<InvestmentKpis> {
+  const res = await fetch(`/api/accounts/${cuenta}/investment-kpis?period=${encodeURIComponent(period)}`);
   return res.json();
 }
 
@@ -118,6 +138,12 @@ export async function updatePortfolioHolding(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function refreshHoldingPrices(cuenta: string): Promise<RefreshHoldingPricesResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings/refresh-prices`, { method: 'POST' });
   const json = await res.json();
   return { ok: res.ok, ...json };
 }

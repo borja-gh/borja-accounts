@@ -10,7 +10,7 @@ describe('KpiCards (CASH)', () => {
     'coincide con el golden master para period=%s',
     (period) => {
       const kpi = backendFixture.cash1_kpis_by_period[period];
-      const { container } = render(<KpiCards kpi={kpi} period={period} />);
+      const { container } = render(<KpiCards kpi={kpi} period={period} currency="EUR" />);
       expect(extractVisibleText(container)).toEqual(expectedValues.cash1_kpis[period]);
     },
   );

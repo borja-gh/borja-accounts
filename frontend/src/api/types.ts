@@ -1,3 +1,5 @@
+import type { ThemeName } from '../styles/themes';
+
 export type AccountId = string;
 export type AccountKind = 'CASH' | 'INVESTMENT';
 export type Currency = 'EUR' | 'USD';
@@ -17,6 +19,7 @@ export interface AccountSummary {
   kind: AccountKind;
   currency: Currency;
   saldo: number;
+  theme?: ThemeName | null;
 }
 
 export interface CreateAccountRequest {
@@ -24,6 +27,7 @@ export interface CreateAccountRequest {
   kind: AccountKind;
   currency: Currency;
   initialBalance?: number;
+  theme?: ThemeName;
 }
 
 export interface CreateAccountResult {
@@ -32,6 +36,19 @@ export interface CreateAccountResult {
   name: string;
   kind: AccountKind;
   currency: Currency;
+  theme?: ThemeName | null;
+  error?: string;
+}
+
+export interface UpdateAccountThemeResult {
+  ok: boolean;
+  id: string;
+  theme?: ThemeName | null;
+  error?: string;
+}
+
+export interface DeleteAccountResult {
+  ok: boolean;
   error?: string;
 }
 
@@ -49,8 +66,9 @@ export interface AccountKpis {
   balanceDelta: Delta;
 }
 
-export interface IbkrKpis {
+export interface InvestmentKpis {
   saldo: number;
+  saldoPreventa: number;
   aportado: number;
   aportadoDelta: Delta;
   enCarteras: number;
@@ -135,6 +153,7 @@ export interface PortfolioHoldingDetail {
   avgPrice: number;
   capital: number;
   closePrice: number | null;
+  currentPrice: number | null;
   pnl: number | null;
   pnlPct: number | null;
   note: string | null;
@@ -178,6 +197,7 @@ export interface TransferRequest {
   destino: AccountId;
   total: number;
   fecha: string;
+  exchangeRate?: number;
 }
 
 export interface TransferResult {
@@ -189,13 +209,23 @@ export interface TransferResult {
 
 export interface UpdatePortfolioHoldingRequest {
   closePrice?: number | null;
+  currentPrice?: number | null;
   note?: string | null;
 }
 
 export interface UpdatePortfolioHoldingResult {
   ok: boolean;
   closePrice: number | null;
+  currentPrice: number | null;
   note: string | null;
+  error?: string;
+}
+
+export interface RefreshHoldingPricesResult {
+  ok: boolean;
+  updated: number;
+  total: number;
+  failedTickers: string[];
   error?: string;
 }
 

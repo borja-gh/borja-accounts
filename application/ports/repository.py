@@ -29,6 +29,11 @@ class MovementRepository(Protocol):
         movimiento de saldo inicial -- ambos en una única transacción."""
         ...
 
+    def delete_account(self, account_id: str) -> None:
+        """Borra la cuenta y todo su histórico (movements, portfolio_holdings)
+        en una única transacción."""
+        ...
+
     def list_portfolio_holdings(self, account_id: str) -> list[PortfolioHolding]:
         """Aportaciones reales (una fila por fila de un CSV de carteras/)
         de las carteras de tipo INVESTMENT que se gestionan por holdings
@@ -41,12 +46,19 @@ class MovementRepository(Protocol):
         actualiza fila a fila."""
         ...
 
-    def update_portfolio_holding(self, holding_id: int, close_price_usd: float | None, note: str | None) -> None:
-        """Actualiza close_price_usd/note de una holding existente (edición
-        desde la UI: precio de cierre al vender, o anotación libre)."""
+    def update_portfolio_holding(self, holding_id: int, close_price_usd: float | None, note: str | None,
+                                  current_price_usd: float | None) -> None:
+        """Actualiza close_price_usd/note/current_price_usd de una holding
+        existente (edición desde la UI: precio de cierre al vender, precio
+        de mercado actual, o anotación libre)."""
+        ...
+
+    def update_holdings_current_prices(self, updates: dict[int, float]) -> None:
+        """Upsert en batch de current_price_usd (id de holding -> precio),
+        usado por el refresco masivo vía yfinance."""
         ...
 
     def update_account(self, account: Account) -> None:
-        """Actualiza currency/cash_override de una cuenta existente (id/
-        kind son inmutables tras el alta)."""
+        """Actualiza currency/theme de una cuenta existente (id/kind son
+        inmutables tras el alta)."""
         ...

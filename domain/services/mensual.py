@@ -1,4 +1,4 @@
-"""Traducción de la parte de cálculo de chartMensual (index.html, cuenta Openbank)."""
+"""Traducción de la parte de cálculo de chartMensual (index.html, cuenta CASH)."""
 from datetime import datetime
 from zoneinfo import ZoneInfo
 

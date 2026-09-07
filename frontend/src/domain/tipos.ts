@@ -1,6 +1,6 @@
 import type { AccountKind } from '../api/types';
 
-export const TIPOS_NEGATIVOS = new Set(['Gasto', 'Apuestas', 'Inversión', 'Transferencia']);
+export const TIPOS_NEGATIVOS = new Set(['Gasto', 'Apuestas', 'Transferencia']);
 
 // Indexado por kind, no por cuenta individual -- cualquier cuenta CASH o
 // INVESTMENT admite los mismos tipos (mismo criterio que
