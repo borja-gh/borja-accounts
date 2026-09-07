@@ -85,7 +85,9 @@
 
     /* ── HEADER ── */
     .header {
-      background: var(--surface);
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--border);
       padding: 12px 28px;
       display: flex;
@@ -96,7 +98,7 @@
       z-index: 100;
     }
 
-    .header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.35px; }
+    .header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
 
     .patrimonio-pill {
       font-size: 12px;
@@ -135,7 +137,7 @@
 
     .tab {
       padding: 9px 18px;
-      border-radius: var(--radius) var(--radius) 0 0;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
       cursor: pointer;
       font-size: 13px;
       font-weight: 500;
@@ -152,6 +154,7 @@
       font-weight: 600;
       background: var(--surface);
       border-color: var(--border);
+      box-shadow: var(--shadow-sm);
       margin-bottom: -1px;
     }
     .tab-new {
@@ -550,7 +553,8 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.72);
+      background: rgba(23,19,14,.45);
+      backdrop-filter: blur(2px);
       z-index: 1000;
       align-items: center;
       justify-content: center;
@@ -560,12 +564,13 @@
     .modal {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
+      box-shadow: 0 24px 48px rgba(23,19,14,.16);
       padding: 24px;
       width: 380px;
       max-width: calc(100vw - 40px);
     }
-    .modal h3 { font-size: 15px; margin-bottom: 18px; }
+    .modal h3 { font-family: var(--font-serif); font-style: italic; font-weight: 500; font-size: 19px; margin-bottom: 18px; }
     .modal .fg { margin-bottom: 12px; }
     .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
 
@@ -575,13 +580,14 @@
       bottom: 24px;
       right: 24px;
       padding: 11px 18px;
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-md);
       font-size: 13px;
       font-weight: 500;
       z-index: 9999;
-      transform: translateY(70px);
+      transform: translateY(12px);
       opacity: 0;
-      transition: transform .25s, opacity .25s;
+      transition: transform .3s cubic-bezier(0.16, 1, 0.3, 1), opacity .3s cubic-bezier(0.16, 1, 0.3, 1);
       max-width: 360px;
     }
     .toast.on { transform: translateY(0); opacity: 1; }
