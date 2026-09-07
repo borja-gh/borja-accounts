@@ -30,7 +30,8 @@ def n_months_for_range(items: list[Movement], range_type: str) -> int:
 
 
 def rank_by_concept(movements: list[Movement], tipo: str, range_type: str, year: int | str | None,
-                     reference: datetime, mode: str, limit: int) -> tuple[list[tuple[str, float]], str, bool]:
+                     reference: datetime, mode: str, limit: int,
+                     currency_symbol: str = "€") -> tuple[list[tuple[str, float]], str, bool]:
     """Devuelve (entries, hover_suffix, has_items). entries ya en orden
     descendente y recortadas a `limit`; has_items indica si había algún
     movimiento de `tipo` tras aplicar el filtro de rango (independiente de
@@ -38,7 +39,7 @@ def rank_by_concept(movements: list[Movement], tipo: str, range_type: str, year:
     reference_local = reference.astimezone(TZ)
     filtered = filter_by_field(movements, _fecha_str, range_type, year, reference_local)
     items = [m for m in filtered if m.type == tipo and m.amount is not None]
-    hover_suffix = "€/mes" if mode == "media" else "€"
+    hover_suffix = f"{currency_symbol}/mes" if mode == "media" else currency_symbol
     if not items:
         return [], hover_suffix, False
 

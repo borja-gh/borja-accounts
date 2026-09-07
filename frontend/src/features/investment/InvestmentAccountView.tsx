@@ -65,7 +65,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       </div>
 
       <SectionHeading title="Resumen general" />
-      <div className="kpis">{kpi && <KpiCardsIbkr kpi={kpi} period={period} />}</div>
+      <div className="kpis">{kpi && <KpiCardsIbkr kpi={kpi} period={period} currency={account.currency} />}</div>
 
       {data && (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}>
@@ -76,7 +76,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       <SectionHeading title="Desglose" />
       <div className="charts-grid">
         <div className="chart-card">
-          <div className="chart-label">Evolución del saldo</div>
+          <div className="chart-label">Capital aportado · histórico (EUR)</div>
           <div style={{ height: 280 }}>{saldoReport && <SaldoChart kind={account.kind} report={saldoReport} />}</div>
         </div>
         <div className="chart-card">
@@ -91,7 +91,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       </div>
 
       <SectionHeading title="Inversiones" />
-      <InversionesSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
+      <InversionesSection account={account.id} currency={account.currency} filter={rangeFilter} />
 
       <SectionHeading title="Movimientos" />
       {data && <MovimientosSection account={account.id} kind={account.kind} data={data} onDataChanged={refreshAll} />}

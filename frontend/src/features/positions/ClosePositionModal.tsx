@@ -5,8 +5,10 @@ import { useToast } from '../../components/ToastContext';
 import { eur, localISODate } from '../../lib/format';
 import { r2 } from '../../lib/math';
 
+// Solo Apuestas -- las carteras de inversión basadas en holdings ya no
+// aceptan "Cerrar posición" (ver InversionesBody.tsx).
 export interface ClosePositionRequest {
-  tipo: 'Apuestas' | 'Inversión';
+  tipo: 'Apuestas';
   concepto: string;
   monto: number;
 }
@@ -41,8 +43,6 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
 
   if (!request) return null;
 
-  const isApuesta = request.tipo === 'Apuestas';
-
   async function handleSubmit() {
     if (!request) return;
     const totalNum = parseFloat(total);
@@ -54,22 +54,16 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
       showToast('Introduce el importe recibido (0 si es pérdida total)', 'err');
       return;
     }
-    const tipoR = isApuesta ? 'Apuestas_r' : 'Inversión_r';
     const capital = request.monto || 0;
     const bal = r2(totalNum - capital);
-    const roi = capital > 0 ? r2((bal / capital) * 100) : 0;
     try {
-      const body = await addMovement(account, { fecha, tipo: tipoR, concepto: request.concepto, total: totalNum });
+      const body = await addMovement(account, { fecha, tipo: 'Apuestas_r', concepto: request.concepto, total: totalNum });
       if (!body.ok) {
         showToast(body.error || 'Error al guardar', 'err');
         return;
       }
       onClose();
-      if (tipoR === 'Inversión_r') {
-        showToast(`Cartera cerrada · ROI ${roi.toFixed(1)}% (${eur(bal)}) · Saldo: ${eur(body.saldo)}`, 'ok');
-      } else {
-        showToast(`Apuesta cerrada · ${eur(bal)} · Saldo: ${eur(body.saldo)}`, 'ok');
-      }
+      showToast(`Apuesta cerrada · ${eur(bal)} · Saldo: ${eur(body.saldo)}`, 'ok');
       onSaved();
     } catch {
       showToast('Error de conexión', 'err');
@@ -79,7 +73,7 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
   return (
     <div className="overlay on">
       <div className="modal">
-        <h3>{isApuesta ? 'Cerrar apuesta' : 'Cerrar cartera'}</h3>
+        <h3>Cerrar apuesta</h3>
         <div
           style={{
             background: 'var(--surface2)',
@@ -97,7 +91,7 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
             <b style={{ fontSize: 13, textAlign: 'right', maxWidth: 200 }}>{request.concepto}</b>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{isApuesta ? 'Banca' : 'Capital'}</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Banca</span>
             <b style={{ fontSize: 13 }}>{eur(request.monto)}</b>
           </div>
         </div>

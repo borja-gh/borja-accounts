@@ -128,10 +128,25 @@ export interface BettingReport {
   wins: number;
 }
 
+export interface PortfolioHoldingDetail {
+  id: number;
+  ticker: string;
+  company: string;
+  avgPrice: number;
+  capital: number;
+  closePrice: number | null;
+  pnl: number | null;
+  pnlPct: number | null;
+  note: string | null;
+}
+
 export interface OpenInvestPosition {
   concepto: string;
   fi: string;
   invertido: number;
+  pnl: number | null;
+  pnlPct: number | null;
+  holdings: PortfolioHoldingDetail[];
 }
 
 export interface ClosedInvestPosition {
@@ -172,6 +187,18 @@ export interface TransferResult {
   error?: string;
 }
 
+export interface UpdatePortfolioHoldingRequest {
+  closePrice?: number | null;
+  note?: string | null;
+}
+
+export interface UpdatePortfolioHoldingResult {
+  ok: boolean;
+  closePrice: number | null;
+  note: string | null;
+  error?: string;
+}
+
 export interface SaldoEvolucionReport {
   dates: string[];
   saldos: number[];
@@ -197,16 +224,8 @@ export interface GastosRankingSection {
   hoverSuffix: string;
 }
 
-export interface GastosDonutSection {
-  hasGastos: boolean;
-  labels: string[];
-  values: number[];
-  hoverSuffix: string;
-}
-
 export interface GastosRankingReport {
   ranking: GastosRankingSection;
-  donut: GastosDonutSection;
 }
 
 export interface CarterasRankingReport {

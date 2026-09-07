@@ -13,6 +13,7 @@ export function CarterasChart({ report }: { report: CarterasRankingReport }) {
   const valores = entries.map((e) => e.valor);
   const maxV = Math.max(...valores);
   const L = baseLayout();
+  const symbol = report.hoverSuffix.charAt(0);
 
   const traces: Data[] = [
     {
@@ -20,7 +21,7 @@ export function CarterasChart({ report }: { report: CarterasRankingReport }) {
       y: conceptos.map((c) => `<b>${c}</b>`),
       type: 'bar',
       orientation: 'h',
-      text: valores.map((t) => t.toFixed(0) + '€'),
+      text: valores.map((t) => t.toFixed(0) + symbol),
       textposition: 'outside',
       cliponaxis: false,
       textfont: { color: '#24292f', size: 11 },
@@ -35,7 +36,7 @@ export function CarterasChart({ report }: { report: CarterasRankingReport }) {
     ...L,
     hovermode: 'closest',
     margin: { l: 120, r: 70, t: 10, b: 36 },
-    xaxis: { ...L.xaxis, type: 'linear', ticksuffix: '€', range: [0, maxV * 1.35] },
+    xaxis: { ...L.xaxis, type: 'linear', ticksuffix: symbol, range: [0, maxV * 1.35] },
     yaxis: {
       ...L.yaxis,
       automargin: true,

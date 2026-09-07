@@ -1,15 +1,26 @@
 import type { IbkrKpis, KpiPeriod } from '../../api/types';
-import { eur } from '../../lib/format';
+import { eur, money } from '../../lib/format';
 import { kpiLabel } from './kpiLabel';
 import { KpiDelta } from './KpiDelta';
 
-export function KpiCardsIbkr({ kpi, period }: { kpi: IbkrKpis; period: KpiPeriod }) {
+interface Props {
+  kpi: IbkrKpis;
+  period: KpiPeriod;
+  currency: string;
+}
+
+/** "Aportado neto"/"P&L cerrado" se quedan en eur(): son transferencias
+ * reales en EUR desde Openbank y el histórico de Cartera 1 (legado, sin
+ * CSV, cerrada antes del cambio de divisa) -- ver docs/ARCHITECTURE.md.
+ * Solo Saldo/En carteras reflejan el valor de mercado en la divisa real
+ * de la cuenta (USD). */
+export function KpiCardsIbkr({ kpi, period, currency }: Props) {
   const lbl = kpiLabel(period);
   return (
     <>
       <div className="kpi">
         <div className="kpi-label">Saldo</div>
-        <div className="kpi-value">{eur(kpi.saldo)}</div>
+        <div className="kpi-value">{money(kpi.saldo, currency)}</div>
       </div>
       <div className="kpi">
         <div className="kpi-label">{`Aportado neto · ${lbl}`}</div>
@@ -18,7 +29,7 @@ export function KpiCardsIbkr({ kpi, period }: { kpi: IbkrKpis; period: KpiPeriod
       </div>
       <div className="kpi">
         <div className="kpi-label">En carteras</div>
-        <div className="kpi-value">{eur(kpi.enCarteras)}</div>
+        <div className="kpi-value">{money(kpi.enCarteras, currency)}</div>
         <div className="kpi-delta neu">
           {kpi.enCarterasCount ? `${kpi.enCarterasCount} abierta${kpi.enCarterasCount !== 1 ? 's' : ''}` : 'ninguna abierta'}
         </div>
