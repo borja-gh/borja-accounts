@@ -10,7 +10,7 @@ interface Props {
 }
 
 /** "Aportado neto"/"P&L cerrado" se quedan en eur(): son transferencias
- * reales en EUR desde Openbank y el histórico de Cartera 1 (legado, sin
+ * reales en EUR desde una cuenta CASH y el histórico de Cartera 1 (legado, sin
  * CSV, cerrada antes del cambio de divisa) -- ver docs/ARCHITECTURE.md.
  * Solo Saldo/En carteras reflejan el valor de mercado en la divisa real
  * de la cuenta (USD). */

@@ -15,8 +15,8 @@ interface Props {
 // ya no se representa.
 //
 // Para INVESTMENT esta serie sigue viniendo de movements.balance -- capital
-// aportado neto histórico, en EUR (las transferencias reales desde
-// Openbank). NO es el saldo actual de mercado que muestra el KPI "Saldo"
+// aportado neto histórico, en EUR (las transferencias reales desde la
+// cuenta CASH de origen). NO es el saldo actual de mercado que muestra el KPI "Saldo"
 // (ese viene de holdings/ticker_quotes, en USD) -- por eso se etiqueta
 // explícitamente distinto, para que no se lean como la misma magnitud.
 export function SaldoChart({ kind, report }: Props) {
