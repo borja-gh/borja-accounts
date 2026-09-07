@@ -85,7 +85,9 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-label">Capital aportado · histórico (EUR)</div>
-          <div style={{ height: 280 }}>{saldoReport && <SaldoChart kind={account.kind} report={saldoReport} theme={account.theme} />}</div>
+          <div style={{ height: 280 }}>
+            {saldoReport && <SaldoChart kind={account.kind} report={saldoReport} currency={account.currency} theme={account.theme} />}
+          </div>
         </div>
         <div className="chart-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
