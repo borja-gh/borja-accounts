@@ -53,9 +53,11 @@ export function Header({ accounts, onOpenTransfer }: { accounts: AccountSummary[
         )}
       </div>
       <div className="spacer" />
-      <button className="btn-transfer" onClick={onOpenTransfer}>
-        ⇄ Transferencia
-      </button>
+      {accounts && accounts.length >= 2 && (
+        <button className="btn-transfer" onClick={onOpenTransfer}>
+          ⇄ Transferencia
+        </button>
+      )}
     </header>
   );
 }
