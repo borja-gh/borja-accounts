@@ -1,5 +1,5 @@
 import type { InvestmentKpis, KpiPeriod } from '../../api/types';
-import { eur, money } from '../../lib/format';
+import { money } from '../../lib/format';
 import { kpiLabel } from './kpiLabel';
 import { KpiDelta } from './KpiDelta';
 
@@ -9,11 +9,11 @@ interface Props {
   currency: string;
 }
 
-/** "Aportado neto"/"P&L cerrado" se quedan en eur(): son transferencias
- * reales en EUR desde una cuenta CASH y el histórico de Cartera 1 (legado, sin
- * CSV, cerrada antes del cambio de divisa) -- ver docs/ARCHITECTURE.md.
- * Solo Saldo/En carteras reflejan el valor de mercado en la divisa real
- * de la cuenta (USD). */
+// Todos los KPIs se muestran en la divisa nativa de la cuenta (money()) --
+// una cuenta no mezcla divisas internamente (ver docs/ARCHITECTURE.md §0).
+// Aportado/P&L cerrado ya no fuerzan EUR: las transferencias entre cuentas
+// y el histórico de Cartera 1 se convierten a la divisa de la cuenta al
+// registrarse (TransferBetweenAccountsUseCase, scripts/backfill_exchange_rates.py).
 export function KpiCardsInvestment({ kpi, period, currency }: Props) {
   const lbl = kpiLabel(period);
   return (
@@ -24,8 +24,8 @@ export function KpiCardsInvestment({ kpi, period, currency }: Props) {
       </div>
       <div className="kpi">
         <div className="kpi-label">{`Aportado neto · ${lbl}`}</div>
-        <div className={`kpi-value ${kpi.aportado >= 0 ? 'pos' : 'neg'}`}>{eur(kpi.aportado)}</div>
-        <KpiDelta delta={kpi.aportadoDelta} />
+        <div className={`kpi-value ${kpi.aportado >= 0 ? 'pos' : 'neg'}`}>{money(kpi.aportado, currency)}</div>
+        <KpiDelta delta={kpi.aportadoDelta} currency={currency} />
       </div>
       <div className="kpi">
         <div className="kpi-label">En carteras</div>
@@ -36,8 +36,8 @@ export function KpiCardsInvestment({ kpi, period, currency }: Props) {
       </div>
       <div className="kpi">
         <div className="kpi-label">{`P&L cerrado · ${lbl}`}</div>
-        <div className={`kpi-value ${kpi.pnl >= 0 ? 'pos' : 'neg'}`}>{eur(kpi.pnl)}</div>
-        <KpiDelta delta={kpi.pnlDelta} />
+        <div className={`kpi-value ${kpi.pnl >= 0 ? 'pos' : 'neg'}`}>{money(kpi.pnl, currency)}</div>
+        <KpiDelta delta={kpi.pnlDelta} currency={currency} />
       </div>
     </>
   );

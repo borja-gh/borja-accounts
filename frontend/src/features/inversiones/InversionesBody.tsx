@@ -4,7 +4,7 @@ import type { AccountId, ClosedInvestPosition, OpenInvestPosition, PortfolioHold
 import { DataTable, type Column } from '../../components/DataTable';
 import { SectionKpis, type SectionKpiItem } from '../../components/SectionKpis';
 import { useToast } from '../../components/ToastContext';
-import { eur, fd, money } from '../../lib/format';
+import { fd, money } from '../../lib/format';
 
 function pnlClass(v: number | null): string {
   if (v === null) return '';
@@ -21,7 +21,7 @@ function sectionKpis(report: PortfolioReport, currency: string): SectionKpiItem[
     {
       label: 'Historial',
       value: report.closedCount ? `${report.closedCount} cerrada${report.closedCount !== 1 ? 's' : ''}` : '—',
-      sub: report.closedCount ? `PnL ${eur(report.totalPnL)}` : undefined,
+      sub: report.closedCount ? `PnL ${money(report.totalPnL, currency)}` : undefined,
     },
   ];
 }
@@ -147,20 +147,25 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
   );
 }
 
-const closedColumns: Column<ClosedInvestPosition>[] = [
-  { header: 'Cartera', render: (r) => r.Concepto, cellClass: () => 'nowrap' },
-  { header: 'Inicio', render: (r) => fd(r.fi), cellClass: () => 'nowrap' },
-  { header: 'Cierre', render: (r) => fd(r.fr), cellClass: () => 'nowrap' },
-  { header: 'Capital', headerClass: 'r', render: (r) => eur(r.invertido), cellClass: () => 'r' },
-  { header: 'Devuelto', headerClass: 'r', render: (r) => eur(r.devuelto), cellClass: () => 'r' },
-  { header: 'Balance', headerClass: 'r', render: (r) => eur(r.bal), cellClass: (r) => `r ${r.bal >= 0 ? 'num-pos' : 'num-neg'}` },
-  {
-    header: 'ROI',
-    headerClass: 'r',
-    render: (r) => `${r.roi.toFixed(2)}%`,
-    cellClass: (r) => `r ${r.roi >= 0 ? 'num-pos' : 'num-neg'}`,
-  },
-];
+function buildClosedColumns(currency: string): Column<ClosedInvestPosition>[] {
+  return [
+    { header: 'Cartera', render: (r) => r.Concepto, cellClass: () => 'nowrap' },
+    { header: 'Inicio', render: (r) => fd(r.fi), cellClass: () => 'nowrap' },
+    { header: 'Cierre', render: (r) => fd(r.fr), cellClass: () => 'nowrap' },
+    { header: 'Capital', headerClass: 'r', render: (r) => money(r.invertido, currency), cellClass: () => 'r' },
+    { header: 'Devuelto', headerClass: 'r', render: (r) => money(r.devuelto, currency), cellClass: () => 'r' },
+    {
+      header: 'Balance', headerClass: 'r', render: (r) => money(r.bal, currency),
+      cellClass: (r) => `r ${r.bal >= 0 ? 'num-pos' : 'num-neg'}`,
+    },
+    {
+      header: 'ROI',
+      headerClass: 'r',
+      render: (r) => `${r.roi.toFixed(2)}%`,
+      cellClass: (r) => `r ${r.roi >= 0 ? 'num-pos' : 'num-neg'}`,
+    },
+  ];
+}
 
 interface Props {
   account: AccountId;
@@ -173,8 +178,9 @@ interface Props {
  * ticker, ver docs/ARCHITECTURE.md) -- sin seguimiento de valor de mercado
  * en vivo: es un check de compra/cierre, no un tracker. El PnL de un
  * holding solo aparece cuando se rellena su precio de cierre; el PnL de la
- * cartera solo cuando TODOS sus holdings tienen precio de cierre. Solo el
- * historial legado (Cartera 1, sin CSV) sigue en EUR. */
+ * cartera solo cuando TODOS sus holdings tienen precio de cierre. Todo se
+ * muestra en la divisa nativa de la cuenta, incluido el historial legado
+ * (Cartera 1, sin CSV) -- ver scripts/backfill_exchange_rates.py. */
 export function InversionesBody({ account, report, currency, onSaved }: Props) {
   if (!report.openCount && !report.closedCount) {
     return <div className="empty">No hay carteras registradas todavía.</div>;
@@ -203,7 +209,7 @@ export function InversionesBody({ account, report, currency, onSaved }: Props) {
         <div>
           <div className="closed-pos-header">{`Historial de carteras · ${report.closedPositions.length}`}</div>
           <div style={{ overflowX: 'auto' }}>
-            <DataTable columns={closedColumns} rows={report.closedPositions} rowKey={(r, i) => `${r.Concepto}-${i}`} />
+            <DataTable columns={buildClosedColumns(currency)} rows={report.closedPositions} rowKey={(r, i) => `${r.Concepto}-${i}`} />
           </div>
         </div>
       )}

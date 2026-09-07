@@ -80,7 +80,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
         <PeriodSelector period={period} onChange={setPeriod} allowCustom />
       </div>
       <SectionHeading title="Resumen general" />
-      <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} />}</div>
+      <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} currency={account.currency} />}</div>
       {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} />}
 
       {data && (
@@ -94,7 +94,9 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-label">Evolución del saldo</div>
-          <div style={{ height: 280 }}>{saldoReport && <SaldoChart kind={account.kind} report={saldoReport} theme={account.theme} />}</div>
+          <div style={{ height: 280 }}>
+            {saldoReport && <SaldoChart kind={account.kind} report={saldoReport} currency={account.currency} theme={account.theme} />}
+          </div>
         </div>
         <div className="chart-card">
           <div className="chart-label">Evolución mensual</div>
