@@ -104,7 +104,6 @@ def _seed_sqlite_from_fixture(repo_root, csv_dir, db_path):
     ])
     investment1 = sqlite_repo.get_account("investment1")
     investment1.currency = "USD"
-    investment1.cash_override = 50.0
     sqlite_repo.update_account(investment1)
 
 
@@ -160,7 +159,7 @@ def run_scenario(repo_root):
                 "/api/accounts/cash1/apuestas?range=3m"
             ).json()
             result["investment1_kpis_by_period"] = {
-                period: client.get(f"/api/accounts/investment1/ibkr-kpis?period={period}").json()
+                period: client.get(f"/api/accounts/investment1/investment-kpis?period={period}").json()
                 for period in ("mes", "trimestre", "año")
             }
             # panelFilters.inversiones por defecto en index.html es {type: '3m'}.
@@ -251,8 +250,12 @@ def run_scenario(repo_root):
 
             call("borra_ultimo_cash1", "delete", "/api/movimiento/cash1")
 
+            # exchangeRate obligatorio desde que TransferBetweenAccountsUseCase
+            # exige conversión explícita entre cuentas de distinta divisa
+            # (investment1 es USD, cash1 es EUR) -- ver docs/ARCHITECTURE.md §9.
             call("transferencia_investment1_a_cash1", "post", "/api/transferencia", {
                 "origen": "investment1", "destino": "cash1", "total": 100.00, "fecha": "2026-07-18",
+                "exchangeRate": 0.90,
             })
 
             result["mutation_steps"] = steps

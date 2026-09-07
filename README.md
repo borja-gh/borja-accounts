@@ -1,8 +1,8 @@
 # Cuentas — Panel de control financiero personal
 
-Interfaz web local para llevar el seguimiento de N cuentas de ahorro (CASH) y M cuentas de inversión (INVESTMENT) -- se dan de alta desde la propia interfaz (botón "+ Nueva cuenta" en el header). Permite añadir movimientos, visualizar estadísticas y analizar apuestas/inversiones, con los datos guardados en SQLite. Un CSV por cuenta (nombrado `<id-de-cuenta>.csv`) sigue existiendo como formato de import/export, pero ya no es la base de datos activa.
+Interfaz web local para llevar el seguimiento de N cuentas de ahorro (CASH) y M cuentas de inversión (INVESTMENT) -- se dan de alta desde la propia interfaz (pestaña "+ Cuenta" en el selector de cuentas). Permite añadir movimientos, visualizar estadísticas y analizar apuestas/inversiones, con los datos guardados en SQLite. Un CSV por cuenta (nombrado `<id-de-cuenta>.csv`) sigue existiendo como formato de import/export, pero ya no es la base de datos activa.
 
-Cuentas reales hoy: `cash1` (Openbank, CASH, EUR) e `investment1` (IBKR, INVESTMENT, USD).
+Ejemplo de cuentas: `Personal Account 1` (CASH, EUR) e `Investment Account 1` (INVESTMENT, USD). El id interno (p.ej. `personal-account-1`) sale del slug del nombre al crear la cuenta (`CreateAccountUseCase`), no es un valor que se elija a mano.
 
 ---
 
@@ -17,9 +17,6 @@ borja-accounts/
 ├── frontend/             ← Frontend React + TypeScript + Vite
 │   ├── src/               ← Componentes, features, cliente API
 │   └── dist/              ← Build de producción (gitignored, `npm run build`)
-├── index.html            ← Frontend vanilla previo al rewrite a React (ya no se sirve;
-│                            se conserva solo porque tests/run_frontend_harness.mjs lo
-│                            sigue usando como referencia del golden master, ver tests/README.md)
 ├── pyproject.toml        ← Dependencias Python (gestionadas con uv)
 ├── uv.lock               ← Lockfile de dependencias
 ├── run.sh                ← Arranque (build de frontend + uv run uvicorn, puerto 8000)
@@ -29,7 +26,7 @@ borja-accounts/
 ├── <id-cuenta>.example.csv ← Fixture sintético versionado (mismo formato, sin datos reales)
 ├── scripts/migrate_csv_to_sqlite.py ← Importa movimientos de los CSV a SQLite (una cuenta ya existente)
 ├── docs/ARCHITECTURE.md   ← Historia del refactor a hexagonal + decisiones de dominio (inversión, IBKR)
-└── tests/                 ← Golden-master harness (temporal, ver docs/ARCHITECTURE.md §7)
+└── tests/                 ← Suite de regresión del backend (golden master, ver docs/ARCHITECTURE.md §7)
 ```
 
 ---
@@ -77,7 +74,7 @@ Cada CSV (uno por cuenta) tiene las mismas cinco columnas. Es el formato que ent
 | Total    | float    | Importe en la divisa de la cuenta (siempre positivo) |
 | Saldo    | float    | Saldo acumulado calculado automáticamente |
 
-> La divisa no es una columna del CSV: vive en `accounts.currency` (p.ej. `investment1` es USD, el resto EUR). El importe del CSV siempre está en la divisa nativa de esa cuenta.
+> La divisa no es una columna del CSV: vive en `accounts.currency` (p.ej. `investment1` es USD, el resto EUR). El importe del CSV está siempre en la divisa nativa de esa cuenta -- incluidas las transferencias entrantes desde una cuenta en otra divisa, que se convierten al tipo de cambio introducido al registrar la transferencia (ver "Transferencia entre cuentas" más abajo). Antes de que existiera esa conversión, esas filas se guardaban con el importe crudo de origen sin convertir; el histórico real (`cash1`↔`investment1`) se corrigió retroactivamente con las tasas BCE de cada fecha -- ver `scripts/backfill_exchange_rates.py`.
 
 ---
 
@@ -121,7 +118,7 @@ El saldo se recalcula siempre desde cero (barrido completo) cada vez que se aña
 
 **`Inversión`/`Inversión_r` son un caso especial, no positivo/negativo simple** (`domain/services/ledger.py::recalculate_balances`): abrir una posición (`Inversión`) **no mueve el saldo** — solo se acumula el capital invertido por concepto —, y cerrarla (`Inversión_r`) solo mueve el saldo por la ganancia o pérdida neta (retorno − invertido), no por el retorno bruto.
 
-**`investment1` (INVESTMENT) no usa este saldo directamente para el KPI "Saldo".** Sus carteras abiertas viven en `portfolio_holdings` (ver más abajo, "Análisis de carteras"), no como filas `Inversión` en `movements` — el KPI Saldo de esa cuenta es `cash_override` (efectivo real reportado, snapshot manual en `accounts.cash_override`) + capital invertido (coste, no valor de mercado) en holdings abiertas. `movements.balance` de `investment1` sigue existiendo y alimenta el gráfico "Evolución del saldo" (capital aportado histórico), pero ya no es lo que muestra el KPI.
+**`investment1` (INVESTMENT) deriva el KPI "Saldo" del mismo histórico, no de un snapshot manual aparte.** Sus carteras abiertas viven en `portfolio_holdings` (ver más abajo, "Análisis de carteras"), no como filas `Inversión` reales en `movements` — pero `build_investment_ledger` (`domain/services/portfolio_holdings.py`) fusiona en tiempo de lectura el histórico real con una fila `Inversión` agregada por cartera de holdings (misma regla de arriba: no mueve el saldo al abrir), sin persistir nada en `movements`. El KPI Saldo es el balance final de esa fusión — igual al que se ve en el histórico ("Capital aportado" del gráfico "Evolución del saldo"), sin discrepancia entre ambos.
 
 ---
 
@@ -135,7 +132,7 @@ El saldo se recalcula siempre desde cero (barrido completo) cada vez que se aña
 > fondo con el detalle de UI ya actualizado.
 
 ### Header
-Muestra el patrimonio total (Openbank + IBKR) y el desglose por cuenta. Contiene el botón de transferencia entre cuentas.
+Muestra el patrimonio total (agregado por divisa entre todas las cuentas) y el desglose por cuenta. Contiene el botón de transferencia entre cuentas.
 
 ### Selector de cuenta (tabs)
 Cambia entre la vista de Openbank y la de IBKR. Cada cuenta mantiene de forma independiente su propio estado de filtros: cambiar de pestaña no resetea ni contamina los filtros de la otra.
@@ -243,7 +240,7 @@ Muestra un diálogo de confirmación con los detalles del último registro crono
 
 ### Vista IBKR
 
-Vista de **cartera de inversión** (no cuenta corriente), con identidad visual propia (acento verde, monograma IK), en **USD** (`investment1.currency`):
+Vista de **cartera de inversión** (no cuenta corriente), en **USD** (`investment1.currency`). El acento visual y el monograma se eligen por cuenta individual (tema por defecto: verde para cuentas nuevas de tipo INVESTMENT, editable desde el selector de tema en la cabecera de la cuenta):
 
 - **KPIs:** Saldo (cash + capital invertido, coste — no valor de mercado) · Aportado neto (transferencias OB↔IBKR en el período) · En carteras (capital invertido, snapshot) · P&L cerrado (período)
 - **Evolución del saldo** — traza "Capital aportado · histórico", sin media móvil (viene de `movements.balance`, no del modelo de holdings)
@@ -254,12 +251,13 @@ Vista de **cartera de inversión** (no cuenta corriente), con identidad visual p
 
 #### Análisis de carteras
 
-Cada cartera abierta real (importada de los CSV de `~/Desktop/Borja/Proyectos/carteras/` + reconciliada contra el panel de posiciones de IBKR) es una fila expandible con su **composición por ticker** (`portfolio_holdings`): precio medio, capital, precio de cierre y anotación libre. **No hay seguimiento de valor de mercado en vivo** — es un check de compra/cierre, no un tracker:
+Cada cartera abierta real (importada de los CSV de `~/Desktop/Borja/Proyectos/carteras/` + reconciliada contra el panel de posiciones de IBKR) es una fila expandible con su **composición por ticker** (`portfolio_holdings`): precio medio, capital, precio actual, PnL, estado y precio de cierre.
 
-- El **precio de cierre** (`closePrice`) es un campo editable, vacío hasta que se vende esa aportación concreta. Se guarda al perder el foco (`onBlur`) vía `PUT /api/accounts/{cuenta}/portfolio-holdings/{id}`.
-- El **PnL de un ticker** solo aparece cuando se rellena su precio de cierre.
-- El **PnL de la cartera completa** solo aparece cuando **todos** sus tickers tienen precio de cierre.
-- La **anotación** (`note`) es un campo de texto libre editable igual que el precio de cierre, sin efecto en ningún cálculo.
+- El **precio actual** (`currentPrice`) es editable a mano, o se refresca de golpe para toda la cuenta con el botón "Precios actuales" (`POST .../portfolio-holdings/refresh-prices`, vía yfinance) — un banner resume cuántas posiciones se actualizaron y en cuáles falló la consulta.
+- El **PnL de un ticker** usa el precio de cierre si ya se vendió, si no el último precio actual consultado (no realizado hasta cerrar).
+- El **PnL de la cartera completa** aparece cuando **todos** sus tickers tienen algún precio (de cierre o actual).
+- **Cerrar** una posición (columna Estado) pide confirmar/editar el precio de cierre antes de guardarlo vía `PUT /api/accounts/{cuenta}/portfolio-holdings/{id}`.
+- La **anotación** (`note`) es un campo de texto libre editable, sin efecto en ningún cálculo.
 
 Una única cartera legado (histórica, sin CSV en `../carteras/`, ya cerrada) sigue viviendo en `movements` como flujo de caja (`Inversión`/`Inversión_r`) — se muestra igual que antes, sin composición por ticker.
 
@@ -274,9 +272,11 @@ El botón **Cerrar** (solo en **Análisis de Apuestas**) abre un modal con conce
 ---
 
 ### Transferencia entre cuentas
-El botón "⇄ Transferencia" en el header abre un modal con origen, destino, importe y fecha. Al confirmar, registra automáticamente:
-- `Transferencia` (resta) en la cuenta origen con concepto "A IBKR" / "A OPENBANK"
-- `Ingreso` (suma) en la cuenta destino con concepto "Desde OPENBANK" / "Desde IBKR"
+El botón "⇄ Transferencia" en el header (visible solo con 2 o más cuentas) abre un modal con origen, destino, importe y fecha. Al confirmar, registra automáticamente:
+- `Transferencia` (resta) en la cuenta origen, con el importe en su propia divisa
+- `Ingreso` (suma) en la cuenta destino, con el importe convertido a la divisa de esa cuenta
+
+**Si origen y destino tienen divisas distintas**, el modal pide además el **tipo de cambio** (obligatorio, lo introduce el usuario -- no hay conversión automática contra una cotización externa). El importe que entra en destino es `total origen × tipo de cambio`, redondeado a 2 decimales. El tipo de cambio se persiste en `movements.exchange_rate` en ambas patas de la transferencia, para trazabilidad: se puede ver después a qué cambio se hizo cada transferencia histórica. Si las divisas coinciden, no se pide y `exchange_rate` queda `NULL`.
 
 ---
 
@@ -290,9 +290,10 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | GET    | `/api/patrimonio`                                  | Saldo actual de todas las cuentas (`{id: saldo}`)     |
 | GET    | `/api/accounts`                                    | Lista de cuentas con `id`/`name`/`kind`/`currency`/`saldo` |
 | POST   | `/api/accounts`                                    | Da de alta una cuenta nueva (+ `Saldo Inicial`)       |
+| PUT    | `/api/accounts/{cuenta}`                           | Cambia el `theme` de una cuenta existente             |
 | GET    | `/api/data/{cuenta}`                               | Movimientos JSON (incluye `_idx` por fila)            |
 | GET    | `/api/accounts/{cuenta}/kpis`                      | KPIs de cuenta CASH (saldo, ingresos, gastos, balance + deltas) |
-| GET    | `/api/accounts/{cuenta}/ibkr-kpis`                  | KPIs de cuenta INVESTMENT (saldo, aportado, en carteras, PnL) |
+| GET    | `/api/accounts/{cuenta}/investment-kpis`            | KPIs de cuenta INVESTMENT (saldo, aportado, en carteras, PnL) |
 | GET    | `/api/accounts/{cuenta}/saldo-evolucion`           | Serie temporal de saldo                                |
 | GET    | `/api/accounts/{cuenta}/mensual-evolucion`         | Ingresos/gastos por mes                                |
 | GET    | `/api/accounts/{cuenta}/carteras-ranking`          | Ranking de conceptos `Inversión` (legado, media/total) |
@@ -305,7 +306,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | POST   | `/api/movimiento/{cuenta}`                         | Añade un movimiento y recalcula el saldo                |
 | PUT    | `/api/movimiento/{cuenta}`                         | Edita tipo/concepto/total (fecha intacta)               |
 | DELETE | `/api/movimiento/{cuenta}`                         | Borra el último movimiento y recalcula el saldo         |
-| POST   | `/api/transferencia`                               | Registra una transferencia en ambas cuentas             |
+| POST   | `/api/transferencia`                               | Registra una transferencia en ambas cuentas (con `exchangeRate` si las divisas difieren) |
 
 ---
 
@@ -314,8 +315,8 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 - **Hexagonal.** `domain/` (entidades + servicios puros) no importa nada de `application`/`infrastructure`. `application/` depende solo de `domain` + puertos (`Protocol` en `application/ports/repository.py`). `infrastructure/persistence/sqlite/` es la única implementación real del puerto. Ver `docs/ARCHITECTURE.md` para la historia completa del refactor.
 - **Filtros por panel, no por página.** Rangos `Mes` / `3 meses` / `6 meses` = meses de calendario. Cada panel y el buscador tienen estado independiente.
 - **KPIs de apuestas/carteras son lifetime.** El filtro de período solo controla el historial cerrado (por fecha de cierre `fr`).
-- **`portfolio_holdings` sin seguimiento de valor de mercado en vivo** (decisión explícita, ver `docs/ARCHITECTURE.md` §0 y §4): ninguna tabla de cotizaciones, ningún cálculo de valor de mercado en ningún punto del stack.
-- **Identidad por cuenta.** Acento y fondo cambian según `kind`/cuenta (verde para IBKR); monogramas propios por cuenta.
+- **`portfolio_holdings` con precio de mercado bajo demanda vía yfinance** (ver `docs/ARCHITECTURE.md` §0): `current_price_usd` se refresca a mano, nunca automáticamente. No es una API oficial de cotizaciones — puede fallar por ticker sin avisar en el fetch (el error real es cuando un ticker no cotiza en bolsa y coincide con el símbolo de otro instrumento; ver la fila de la tabla de decisiones).
+- **Identidad por cuenta.** Cada cuenta tiene su propio `theme` (`accounts.theme`, una de seis paletas: clay/forest/slate/plum/amber/teal) que fija acento, fondo y el color del monograma y de los gráficos de línea/barra que llevan color de marca (`frontend/src/styles/themes.ts`). El default al crear una cuenta es por `kind` (clay para CASH, forest para INVESTMENT), editable después desde el selector de tema en la cabecera de cada cuenta.
 - **`run.sh` abre el navegador por defecto** (`open` en macOS, `xdg-open` en Linux) y reconstruye `frontend/dist/` antes de arrancar.
 - **Saldo chart:** sin media móvil en INVESTMENT; media 30d en CASH.
 - **Fechas** en `%Y-%m-%d %H:%M:%S.%f` para ordenamiento estable con `mergesort`.
@@ -326,6 +327,6 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 
 ## Añadir una cuenta nueva
 
-Desde la propia interfaz: botón **"+ Nueva cuenta"** en el header (`POST /api/accounts`, ver `frontend/src/features/accounts/CreateAccountModal.tsx`) — nombre, tipo (CASH/INVESTMENT), divisa y saldo inicial. No hace falta tocar código ni SQL a mano; `TIPOS_POR_KIND` (no `TIPOS_POR_CUENTA`) ya deriva los tipos de movimiento válidos del `kind` de la cuenta, no de su id.
+Desde la propia interfaz: pestaña **"+ Cuenta"** en el selector de cuentas (`POST /api/accounts`, ver `frontend/src/features/accounts/CreateAccountModal.tsx`) — nombre, tipo (CASH/INVESTMENT), divisa y saldo inicial. No hace falta tocar código ni SQL a mano; `TIPOS_POR_KIND` (no `TIPOS_POR_CUENTA`) ya deriva los tipos de movimiento válidos del `kind` de la cuenta, no de su id.
 
 Si la cuenta nueva va a importar histórico desde un CSV externo: darla de alta primero desde la UI, después `uv run python scripts/migrate_csv_to_sqlite.py --db-path accounts.db` con el `<id-cuenta>.csv` correspondiente ya en la raíz del repo (el script solo trae movimientos a una cuenta ya existente, no crea cuentas).

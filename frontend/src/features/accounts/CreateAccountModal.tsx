@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { createAccount } from '../../api/client';
 import type { AccountKind, AccountSummary, Currency } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
+import { DEFAULT_THEME_BY_KIND, type ThemeName } from '../../styles/themes';
+import { ThemePicker } from './ThemePicker';
 
 interface Props {
   open: boolean;
@@ -14,6 +16,7 @@ export function CreateAccountModal({ open, onClose, onCreated }: Props) {
   const [kind, setKind] = useState<AccountKind>('CASH');
   const [currency, setCurrency] = useState<Currency>('EUR');
   const [initialBalance, setInitialBalance] = useState('');
+  const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME_BY_KIND.CASH);
   const showToast = useToast();
 
   useEffect(() => {
@@ -22,8 +25,14 @@ export function CreateAccountModal({ open, onClose, onCreated }: Props) {
       setKind('CASH');
       setCurrency('EUR');
       setInitialBalance('');
+      setTheme(DEFAULT_THEME_BY_KIND.CASH);
     }
   }, [open]);
+
+  function handleKindChange(next: AccountKind) {
+    setKind(next);
+    setTheme(DEFAULT_THEME_BY_KIND[next]);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -48,14 +57,14 @@ export function CreateAccountModal({ open, onClose, onCreated }: Props) {
       return;
     }
     try {
-      const body = await createAccount({ name: trimmedName, kind, currency, initialBalance: saldo });
+      const body = await createAccount({ name: trimmedName, kind, currency, initialBalance: saldo, theme });
       if (!body.ok) {
         showToast(body.error || 'Error al crear la cuenta', 'err');
         return;
       }
       onClose();
       showToast(`Cuenta "${body.name}" creada`, 'ok');
-      onCreated({ id: body.id, name: body.name, kind: body.kind, currency: body.currency, saldo });
+      onCreated({ id: body.id, name: body.name, kind: body.kind, currency: body.currency, saldo, theme: body.theme });
     } catch {
       showToast('Error de conexión', 'err');
     }
@@ -71,10 +80,14 @@ export function CreateAccountModal({ open, onClose, onCreated }: Props) {
         </div>
         <div className="fg">
           <label>Tipo</label>
-          <select value={kind} onChange={(e) => setKind(e.target.value as AccountKind)}>
+          <select value={kind} onChange={(e) => handleKindChange(e.target.value as AccountKind)}>
             <option value="CASH">Ahorro</option>
             <option value="INVESTMENT">Inversión</option>
           </select>
+        </div>
+        <div className="fg">
+          <label>Tema</label>
+          <ThemePicker value={theme} onChange={setTheme} />
         </div>
         <div className="fg">
           <label>Divisa</label>

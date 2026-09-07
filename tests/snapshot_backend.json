@@ -799,9 +799,9 @@
     {
       "Concepto": "Desde INVESTMENT1",
       "Fecha": "2026-07-18 00:00:00",
-      "Saldo": 8720.0,
+      "Saldo": 8710.0,
       "Tipo": "Ingreso",
-      "Total": 100.0,
+      "Total": 90.0,
       "_idx": 47
     }
   ],
@@ -845,6 +845,14 @@
       "Tipo": "Inversión",
       "Total": 250.0,
       "_idx": 4
+    },
+    {
+      "Concepto": "Cartera Prueba",
+      "Fecha": "2026-05-01 00:00:00",
+      "Saldo": 990.0,
+      "Tipo": "Inversión",
+      "Total": 2000.0,
+      "_idx": null
     },
     {
       "Concepto": "Cartera Tech",
@@ -896,8 +904,8 @@
     }
   ],
   "final_patrimonio": {
-    "cash1": 8720.0,
-    "investment1": 2050.0
+    "cash1": 8710.0,
+    "investment1": 1305.0
   },
   "initial_data_cash1": [
     {
@@ -1273,7 +1281,7 @@
     {
       "Concepto": "Cartera Tech",
       "Fecha": "2026-01-10 09:00:00",
-      "Saldo": 700.0,
+      "Saldo": 1000.0,
       "Tipo": "Inversión",
       "Total": 300.0,
       "_idx": 1
@@ -1281,7 +1289,7 @@
     {
       "Concepto": "Cartera Bonos",
       "Fecha": "2026-02-05 09:00:00",
-      "Saldo": 500.0,
+      "Saldo": 1000.0,
       "Tipo": "Inversión",
       "Total": 200.0,
       "_idx": 2
@@ -1289,7 +1297,7 @@
     {
       "Concepto": "Comisión custodia",
       "Fecha": "2026-03-01 09:00:00",
-      "Saldo": 490.0,
+      "Saldo": 990.0,
       "Tipo": "Gasto",
       "Total": 10.0,
       "_idx": 3
@@ -1297,15 +1305,23 @@
     {
       "Concepto": "Cartera Global",
       "Fecha": "2026-04-12 09:00:00",
-      "Saldo": 240.0,
+      "Saldo": 990.0,
       "Tipo": "Inversión",
       "Total": 250.0,
       "_idx": 4
     },
     {
+      "Concepto": "Cartera Prueba",
+      "Fecha": "2026-05-01 00:00:00",
+      "Saldo": 990.0,
+      "Tipo": "Inversión",
+      "Total": 2000.0,
+      "_idx": null
+    },
+    {
       "Concepto": "Cartera Tech",
       "Fecha": "2026-05-10 09:00:00",
-      "Saldo": 640.0,
+      "Saldo": 1090.0,
       "Tipo": "Inversión_r",
       "Total": 400.0,
       "_idx": 5
@@ -1313,7 +1329,7 @@
     {
       "Concepto": "Cartera Bonos",
       "Fecha": "2026-06-08 09:00:00",
-      "Saldo": 790.0,
+      "Saldo": 1040.0,
       "Tipo": "Inversión_r",
       "Total": 150.0,
       "_idx": 6
@@ -1321,7 +1337,7 @@
     {
       "Concepto": "Desde OPENBANK",
       "Fecha": "2026-06-25 10:30:00",
-      "Saldo": 1190.0,
+      "Saldo": 1440.0,
       "Tipo": "Ingreso",
       "Total": 400.0,
       "_idx": 7
@@ -1329,7 +1345,7 @@
     {
       "Concepto": "Dividendo",
       "Fecha": "2026-07-02 09:00:00",
-      "Saldo": 1205.0,
+      "Saldo": 1455.0,
       "Tipo": "Ingreso",
       "Total": 15.0,
       "_idx": 8
@@ -1337,7 +1353,7 @@
   ],
   "initial_patrimonio": {
     "cash1": 8655.0,
-    "investment1": 2300.0
+    "investment1": 1455.0
   },
   "investment1_carteras_ranking_all_total": {
     "entries": [
@@ -1385,6 +1401,7 @@
             "capital": 1000.0,
             "closePrice": null,
             "company": "Apple Inc.",
+            "currentPrice": null,
             "id": 1,
             "note": null,
             "pnl": null,
@@ -1396,6 +1413,7 @@
             "capital": 1000.0,
             "closePrice": 180.0,
             "company": "Microsoft Corp.",
+            "currentPrice": null,
             "id": 2,
             "note": "Vendida con pérdida",
             "pnl": -100.0,
@@ -1434,7 +1452,8 @@
       "pnlDelta": {
         "diff": 50.0
       },
-      "saldo": 2300.0
+      "saldo": 1455.0,
+      "saldoPreventa": 1455.0
     },
     "mes": {
       "aportado": 0,
@@ -1447,7 +1466,8 @@
       "pnlDelta": {
         "diff": 50.0
       },
-      "saldo": 2300.0
+      "saldo": 1455.0,
+      "saldoPreventa": 1455.0
     },
     "trimestre": {
       "aportado": 400.0,
@@ -1460,7 +1480,8 @@
       "pnlDelta": {
         "diff": 50.0
       },
-      "saldo": 2300.0
+      "saldo": 1455.0,
+      "saldoPreventa": 1455.0
     }
   },
   "investment1_saldo_evolucion_all": {
@@ -1608,13 +1629,14 @@
       "path": "/api/transferencia",
       "request": {
         "destino": "cash1",
+        "exchangeRate": 0.9,
         "fecha": "2026-07-18",
         "origen": "investment1",
         "total": 100.0
       },
       "response": {
         "ok": true,
-        "saldo_destino": 8720.0,
+        "saldo_destino": 8710.0,
         "saldo_origen": 1305.0
       },
       "status": 200

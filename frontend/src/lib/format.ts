@@ -5,7 +5,7 @@ export function eur(v: number): string {
   }) + '€';
 }
 
-const CURRENCY_SUFFIX: Record<string, string> = { EUR: '€', USD: '$' };
+export const CURRENCY_SUFFIX: Record<string, string> = { EUR: '€', USD: '$' };
 
 /** Igual que eur() pero para cualquier divisa soportada -- el símbolo va
  * detrás del número en los dos casos que existen hoy (EUR/USD), así que no

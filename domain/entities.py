@@ -14,6 +14,12 @@ class Movement:
     amount: float
     balance: float = 0.0
     id: uuid.UUID = field(default_factory=uuid.uuid4)
+    exchange_rate: float | None = None
+    """Tipo de cambio aplicado cuando este movimiento es una pata de una
+    transferencia entre cuentas de distinta divisa: amount = importe de la
+    otra pata * exchange_rate. None para cualquier movimiento que no sea
+    una transferencia entre divisas distintas (incluida una transferencia
+    entre dos cuentas de la misma divisa)."""
 
 
 @dataclass
@@ -22,7 +28,7 @@ class Account:
     name: str
     kind: AccountKind
     currency: str = "EUR"
-    cash_override: float | None = None
+    theme: str | None = None
 
 
 @dataclass
@@ -46,3 +52,8 @@ class PortfolioHolding:
     fee_usd: float | None = None
     close_price_usd: float | None = None
     note: str | None = None
+    current_price_usd: float | None = None
+    """Último precio de mercado consultado (yfinance), solo informativo
+    mientras la holding sigue abierta -- editable a mano o vía el refresh
+    masivo (RefreshHoldingPricesUseCase). Deja de actualizarse una vez que
+    close_price_usd tiene valor (la posición ya está cerrada)."""

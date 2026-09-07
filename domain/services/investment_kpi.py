@@ -1,4 +1,4 @@
-"""Traducción de computeIbkrKPIs/openCarterasSnapshot (index.html)."""
+"""Traducción de computeIbkrKPIs/openCarterasSnapshot (index.html, cuenta INVESTMENT)."""
 from dataclasses import dataclass
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -26,8 +26,9 @@ class Delta:
 
 
 @dataclass
-class IbkrKPIResult:
+class InvestmentKPIResult:
     saldo: float
+    saldo_preventa: float
     aportado: float
     aportado_delta: Delta
     en_carteras: float
@@ -40,16 +41,16 @@ def _delta(curr: float, prv: float) -> Delta:
     return Delta(diff=_r2(curr - prv))
 
 
-def compute_ibkr_kpis(movements: list[Movement], holdings: list[PortfolioHolding],
-                       cash_override: float | None, kpi_type: str, reference: datetime) -> IbkrKPIResult:
+def compute_investment_kpis(movements: list[Movement], holdings: list[PortfolioHolding],
+                       saldo: float, kpi_type: str, reference: datetime) -> InvestmentKPIResult:
     reference_local = reference.astimezone(TZ)
     slices = period_slices(kpi_type, reference_local)
 
     summary = compute_open_investment_summary(movements, holdings)
     en_carteras_count = summary.count
     en_carteras = summary.capital_usd
-    cash = cash_override if cash_override is not None else 0.0
-    saldo = _r2(cash + en_carteras)
+    saldo = _r2(saldo)
+    saldo_preventa = _r2(saldo + summary.presale_delta_usd)
 
     def aportado(rs):
         rec = sum(m.amount for m in rs if is_transfer_in(m))
@@ -67,8 +68,8 @@ def compute_ibkr_kpis(movements: list[Movement], holdings: list[PortfolioHolding
     curr_p = pnl([c for c in closed if slices.in_curr(c.fr)])
     prv_p = pnl([c for c in closed if slices.in_prv(c.fr)])
 
-    return IbkrKPIResult(
-        saldo=saldo,
+    return InvestmentKPIResult(
+        saldo=saldo, saldo_preventa=saldo_preventa,
         aportado=curr_a, aportado_delta=_delta(curr_a, prv_a),
         en_carteras=en_carteras, en_carteras_count=en_carteras_count,
         pnl=curr_p, pnl_delta=_delta(curr_p, prv_p),

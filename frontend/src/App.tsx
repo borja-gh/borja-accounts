@@ -8,7 +8,9 @@ import { CashAccountView } from './features/cash/CashAccountView';
 import { InvestmentAccountView } from './features/investment/InvestmentAccountView';
 import { TransferModal } from './features/transferencias/TransferModal';
 import { CreateAccountModal } from './features/accounts/CreateAccountModal';
+import { OnboardingEmptyState } from './components/OnboardingEmptyState';
 import type { AccountViewHandle } from './features/shared/viewHandle';
+import { resolveTheme } from './styles/themes';
 import './styles/app.css';
 
 function App() {
@@ -32,10 +34,13 @@ function App() {
   const selected = accounts?.find((a) => a.id === account) ?? null;
 
   useEffect(() => {
-    document.body.classList.remove('acc-cash', 'acc-investment');
-    if (selected) document.body.classList.add(selected.kind === 'INVESTMENT' ? 'acc-investment' : 'acc-cash');
+    if (!selected) return;
+    const colors = resolveTheme(selected.theme, selected.kind);
+    document.body.style.setProperty('--accent', colors.accent);
+    document.body.style.setProperty('--accent-soft', colors.accentSoft);
+    document.body.style.setProperty('--bg', colors.bg);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected?.kind]);
+  }, [selected?.kind, selected?.theme]);
 
   return (
     <ToastProvider>
@@ -49,6 +54,9 @@ function App() {
         />
       )}
       <main className="content">
+        {accounts && accounts.length === 0 && (
+          <OnboardingEmptyState onCreateAccount={() => setCreateAccountModalOpen(true)} />
+        )}
         {selected &&
           (selected.kind === 'CASH' ? (
             <CashAccountView key={selected.id} account={selected} ref={viewRef} onDataChanged={refreshAccounts} />

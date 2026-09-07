@@ -1,7 +1,10 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { AccountMark } from '../../components/AccountMark';
 import { SectionHeading } from '../../components/SectionHeading';
-import { fetchSaldoEvolucion, fetchMensualEvolucion, fetchGastosRanking } from '../../api/client';
+import { fetchSaldoEvolucion, fetchMensualEvolucion, fetchGastosRanking, updateAccountTheme } from '../../api/client';
+import { ThemePicker } from '../accounts/ThemePicker';
+import { DeleteAccountModal } from '../accounts/DeleteAccountModal';
+import { DEFAULT_THEME_BY_KIND, type ThemeName } from '../../styles/themes';
 import { KpiCards } from '../kpis/KpiCards';
 import { PeriodSelector } from '../kpis/PeriodSelector';
 import { useAccountKpis } from '../kpis/useAccountKpis';
@@ -29,6 +32,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
   const [period, setPeriod] = useState<KpiPeriodFilter>({ type: 'mes' });
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [gastosMode, setGastosMode] = useState<RankingMode>('media');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const { kpi, reload: reloadKpis } = useAccountKpis(account.id, period);
   const { data, reload: reloadData } = useAccountData(account.id);
   const { report: saldoReport, reload: reloadSaldo } = useRangeReport(
@@ -60,19 +64,34 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
 
   useImperativeHandle(ref, () => ({ refreshAll }));
 
+  async function handleThemeChange(theme: ThemeName) {
+    await updateAccountTheme(account.id, theme);
+    onDataChanged();
+  }
+
   return (
     <>
       <div className="account-hero">
-        <AccountMark name={account.name} kind={account.kind} />
+        <ThemePicker value={account.theme ?? DEFAULT_THEME_BY_KIND[account.kind]} onChange={handleThemeChange} />
+        <AccountMark name={account.name} kind={account.kind} theme={account.theme} />
         <div>
           <h2>{account.name}</h2>
           <p>Día a día · gastos, nómina y apuestas</p>
         </div>
         <div className="spacer" />
+        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setDeleteModalOpen(true)}>
+          Eliminar cuenta
+        </button>
         <PeriodSelector period={period} onChange={setPeriod} allowCustom />
       </div>
+      <DeleteAccountModal
+        account={account}
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onDeleted={onDataChanged}
+      />
       <SectionHeading title="Resumen general" />
-      <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} />}</div>
+      <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} currency={account.currency} />}</div>
       {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} />}
 
       {data && (
@@ -86,7 +105,9 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-label">Evolución del saldo</div>
-          <div style={{ height: 280 }}>{saldoReport && <SaldoChart kind={account.kind} report={saldoReport} />}</div>
+          <div style={{ height: 280 }}>
+            {saldoReport && <SaldoChart kind={account.kind} report={saldoReport} currency={account.currency} theme={account.theme} />}
+          </div>
         </div>
         <div className="chart-card">
           <div className="chart-label">Evolución mensual</div>
@@ -107,7 +128,9 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
       <ApuestasSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
 
       <SectionHeading title="Movimientos" />
-      {data && <MovimientosSection account={account.id} kind={account.kind} data={data} onDataChanged={refreshAll} />}
+      {data && (
+        <MovimientosSection account={account.id} kind={account.kind} currency={account.currency} data={data} onDataChanged={refreshAll} />
+      )}
     </>
   );
 });

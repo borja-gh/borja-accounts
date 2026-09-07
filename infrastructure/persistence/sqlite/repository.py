@@ -35,7 +35,7 @@ class SQLiteMovementRepository:
     def load(self, account_id: str) -> list[Movement]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT id, account_id, occurred_at, type, concept, amount, balance, rowid "
+                "SELECT id, account_id, occurred_at, type, concept, amount, balance, exchange_rate, rowid "
                 "FROM movements WHERE account_id = ? ORDER BY occurred_at, rowid",
                 (account_id,),
             ).fetchall()
@@ -48,6 +48,7 @@ class SQLiteMovementRepository:
                 concept=r[4],
                 amount=r[5],
                 balance=r[6],
+                exchange_rate=r[7],
             )
             for r in rows
         ]
@@ -58,12 +59,12 @@ class SQLiteMovementRepository:
             try:
                 conn.execute("DELETE FROM movements WHERE account_id = ?", (account_id,))
                 conn.executemany(
-                    "INSERT INTO movements (id, account_id, occurred_at, type, concept, amount, balance) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO movements (id, account_id, occurred_at, type, concept, amount, balance, exchange_rate) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     [
                         (
                             str(m.id), m.account_id, m.occurred_at.strftime(_DATE_FORMAT),
-                            m.type, m.concept, m.amount, m.balance,
+                            m.type, m.concept, m.amount, m.balance, m.exchange_rate,
                         )
                         for m in movements
                     ],
@@ -77,27 +78,27 @@ class SQLiteMovementRepository:
     def list_accounts(self) -> list[Account]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT id, name, kind, currency, cash_override FROM accounts ORDER BY rowid"
+                "SELECT id, name, kind, currency, theme FROM accounts ORDER BY rowid"
             ).fetchall()
         return [
-            Account(id=r[0], name=r[1], kind=AccountKind(r[2]), currency=r[3], cash_override=r[4])
+            Account(id=r[0], name=r[1], kind=AccountKind(r[2]), currency=r[3], theme=r[4])
             for r in rows
         ]
 
     def get_account(self, account_id: str) -> Account:
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT id, name, kind, currency, cash_override FROM accounts WHERE id = ?", (account_id,)
+                "SELECT id, name, kind, currency, theme FROM accounts WHERE id = ?", (account_id,)
             ).fetchone()
         if row is None:
             raise AccountNotFoundError(f"Cuenta '{account_id}' no encontrada")
-        return Account(id=row[0], name=row[1], kind=AccountKind(row[2]), currency=row[3], cash_override=row[4])
+        return Account(id=row[0], name=row[1], kind=AccountKind(row[2]), currency=row[3], theme=row[4])
 
     def list_portfolio_holdings(self, account_id: str) -> list[PortfolioHolding]:
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT id, account_id, portfolio, ticker, company, shares, price_usd, "
-                "capital_usd, fee_usd, contributed_at, source_file, close_price_usd, note "
+                "capital_usd, fee_usd, contributed_at, source_file, close_price_usd, note, current_price_usd "
                 "FROM portfolio_holdings WHERE account_id = ? ORDER BY contributed_at, id",
                 (account_id,),
             ).fetchall()
@@ -106,6 +107,7 @@ class SQLiteMovementRepository:
                 id=r[0], account_id=r[1], portfolio=r[2], ticker=r[3], company=r[4],
                 shares=r[5], price_usd=r[6], capital_usd=r[7], fee_usd=r[8],
                 contributed_at=r[9], source_file=r[10], close_price_usd=r[11], note=r[12],
+                current_price_usd=r[13],
             )
             for r in rows
         ]
@@ -120,22 +122,25 @@ class SQLiteMovementRepository:
             conn.execute("BEGIN IMMEDIATE")
             try:
                 existing = conn.execute(
-                    "SELECT portfolio, ticker, contributed_at, close_price_usd, note "
+                    "SELECT portfolio, ticker, contributed_at, close_price_usd, note, current_price_usd "
                     "FROM portfolio_holdings WHERE account_id = ?",
                     (account_id,),
                 ).fetchall()
-                preserved = {(r[0], r[1], r[2]): (r[3], r[4]) for r in existing}
+                preserved = {(r[0], r[1], r[2]): (r[3], r[4], r[5]) for r in existing}
                 conn.execute("DELETE FROM portfolio_holdings WHERE account_id = ?", (account_id,))
                 conn.executemany(
                     "INSERT INTO portfolio_holdings "
                     "(account_id, portfolio, ticker, company, shares, price_usd, capital_usd, fee_usd, "
-                    "contributed_at, source_file, close_price_usd, note) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "contributed_at, source_file, close_price_usd, note, current_price_usd) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [
                         (
                             h.account_id, h.portfolio, h.ticker, h.company, h.shares,
                             h.price_usd, h.capital_usd, h.fee_usd, h.contributed_at, h.source_file,
-                            *preserved.get((h.portfolio, h.ticker, h.contributed_at), (h.close_price_usd, h.note)),
+                            *preserved.get(
+                                (h.portfolio, h.ticker, h.contributed_at),
+                                (h.close_price_usd, h.note, h.current_price_usd),
+                            ),
                         )
                         for h in holdings
                     ],
@@ -146,19 +151,49 @@ class SQLiteMovementRepository:
             else:
                 conn.execute("COMMIT")
 
-    def update_portfolio_holding(self, holding_id: int, close_price_usd: float | None, note: str | None) -> None:
+    def update_portfolio_holding(self, holding_id: int, close_price_usd: float | None, note: str | None,
+                                  current_price_usd: float | None) -> None:
         with self._connect() as conn:
             conn.execute(
-                "UPDATE portfolio_holdings SET close_price_usd = ?, note = ? WHERE id = ?",
-                (close_price_usd, note, holding_id),
+                "UPDATE portfolio_holdings SET close_price_usd = ?, note = ?, current_price_usd = ? WHERE id = ?",
+                (close_price_usd, note, current_price_usd, holding_id),
             )
+
+    def update_holdings_current_prices(self, updates: dict[int, float]) -> None:
+        """Upsert en batch de current_price_usd -- una única transacción
+        (usado por RefreshHoldingPricesUseCase tras consultar yfinance)."""
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                conn.executemany(
+                    "UPDATE portfolio_holdings SET current_price_usd = ? WHERE id = ?",
+                    [(price, holding_id) for holding_id, price in updates.items()],
+                )
+            except Exception:
+                conn.execute("ROLLBACK")
+                raise
+            else:
+                conn.execute("COMMIT")
 
     def update_account(self, account: Account) -> None:
         with self._connect() as conn:
             conn.execute(
-                "UPDATE accounts SET currency = ?, cash_override = ? WHERE id = ?",
-                (account.currency, account.cash_override, account.id),
+                "UPDATE accounts SET currency = ?, theme = ? WHERE id = ?",
+                (account.currency, account.theme, account.id),
             )
+
+    def delete_account(self, account_id: str) -> None:
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                conn.execute("DELETE FROM portfolio_holdings WHERE account_id = ?", (account_id,))
+                conn.execute("DELETE FROM movements WHERE account_id = ?", (account_id,))
+                conn.execute("DELETE FROM accounts WHERE id = ?", (account_id,))
+            except Exception:
+                conn.execute("ROLLBACK")
+                raise
+            else:
+                conn.execute("COMMIT")
 
     def create_account(self, account: Account, initial_movement: Movement | None = None) -> None:
         """Da de alta la cuenta y, si se pasa, su movimiento de saldo
@@ -168,8 +203,8 @@ class SQLiteMovementRepository:
             conn.execute("BEGIN IMMEDIATE")
             try:
                 conn.execute(
-                    "INSERT INTO accounts (id, name, kind, currency) VALUES (?, ?, ?, ?)",
-                    (account.id, account.name, account.kind.value, account.currency),
+                    "INSERT INTO accounts (id, name, kind, currency, theme) VALUES (?, ?, ?, ?, ?)",
+                    (account.id, account.name, account.kind.value, account.currency, account.theme),
                 )
                 if initial_movement is not None:
                     m = initial_movement

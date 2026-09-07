@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { backendFixture, rawFrontendSnapshot } from '../../test/goldenMaster';
+import { backendFixture, rawFrontendSnapshot, withCurrentFont } from '../../test/goldenMaster';
 import { GastosChart } from './GastosChart';
 
 const newPlot = vi.fn();
@@ -17,6 +17,6 @@ describe('GastosChart', () => {
     const [, traces, layout] = newPlot.mock.calls[0];
     const expected = rawFrontendSnapshot.cash1_charts_all['c-gastos'];
     expect(traces).toEqual(expected.traces);
-    expect(layout).toEqual(expected.layout);
+    expect(layout).toEqual(withCurrentFont(expected.layout));
   });
 });

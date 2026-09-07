@@ -1,23 +1,26 @@
 """
-Extrae de snapshot_frontend.json (generado con el vanilla JS de los Bloques
-0-4, ver run_frontend_harness.mjs) los VALORES DE TEXTO VISIBLES -- montos,
-porcentajes, conteos, etiquetas -- que el Bloque 5 (React) debe seguir
-mostrando. No se compara HTML string a string: la tecnología de renderizado
-cambia de interpolación de template literals a componentes con DOM real, y
-un componente React nunca produce el mismo string byte a byte (orden de
-atributos, self-closing, whitespace) aunque el contenido semántico sea
-idéntico. Lo que hay que proteger es el conjunto de textos visibles, no el
-marcado.
+Extrae de snapshot_frontend.json (generado en su día con el vanilla JS de
+los Bloques 0-4, ejecutado por el ya retirado run_frontend_harness.mjs)
+los VALORES DE TEXTO VISIBLES -- montos, porcentajes, conteos, etiquetas --
+que el Bloque 5 (React) debe seguir mostrando. No se compara HTML string a
+string: la tecnología de renderizado cambia de interpolación de template
+literals a componentes con DOM real, y un componente React nunca produce
+el mismo string byte a byte (orden de atributos, self-closing, whitespace)
+aunque el contenido semántico sea idéntico. Lo que hay que proteger es el
+conjunto de textos visibles, no el marcado.
 
-Se genera UNA SOLA VEZ, antes de escribir ningún componente React, mientras
-snapshot_frontend.json todavía refleja el comportamiento vanilla ya
-verificado contra snapshot_backend.json (Bloque 4). El fichero de salida,
-snapshot_frontend_values.json, se congela igual que cualquier otro
-snapshot del golden master: no se regenera para que un test en rojo se
-calle solo, solo ante un cambio de comportamiento deliberado.
+Se generó UNA SOLA VEZ, antes de escribir ningún componente React, mientras
+snapshot_frontend.json todavía reflejaba el comportamiento vanilla ya
+verificado contra snapshot_backend.json (Bloque 4). El vanilla (index.html,
+run_frontend_harness.mjs) se retiró del repo una vez el rewrite a React
+quedó consolidado -- este script ya no es re-ejecutable de fondo a fondo
+(no hay generador vivo de snapshot_frontend.json), se conserva como
+documentación de cómo se obtuvo snapshot_frontend_values.json, que sigue
+siendo el fixture "expected" que consumen los tests de componentes React
+(ver frontend/src/test/goldenMaster.ts). Ambos JSON son ahora fixtures
+congelados y definitivos, igual que snapshot_backend.json.
 
-Uso: python3 extract_frontend_values.py > snapshot_frontend_values.json
-     (o simplemente ejecutar el módulo: escribe el fichero directamente)
+Uso histórico: python3 extract_frontend_values.py > snapshot_frontend_values.json
 
 Exclusiones deliberadas (limpieza de UI acordada, docs/ARCHITECTURE.md §0):
 - cash1_top_merchants: sección completa "Top del mes" (chips), eliminada
