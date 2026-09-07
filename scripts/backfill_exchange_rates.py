@@ -1,31 +1,36 @@
 #!/usr/bin/env python3
 """
-Corrige retroactivamente las 5 transferencias reales cash1 (EUR) <->
-investment1 (USD) registradas antes de que TransferBetweenAccountsUseCase
-exigiera un tipo de cambio explícito (ver docs/ARCHITECTURE.md §0,
-"Transferencias entre cuentas de distinta divisa").
+Corrige retroactivamente los movimientos reales de investment1 (USD) que
+se registraron con su importe anotado en EUR en vez de convertir a la
+divisa nativa de la cuenta. Objetivo: ninguna cuenta mezcla divisas
+internamente -- todas las métricas/movimientos de investment1 quedan en
+USD (ver docs/ARCHITECTURE.md §0, "Transferencias entre cuentas de
+distinta divisa" y la nota sobre Cartera 1).
 
-El importe que ya existe en la BD para cada transferencia (idéntico en
-ambas patas hoy) es el valor real en EUR -- el usuario lo registró
-mirando siempre el extracto de Openbank (EUR), incluida la única
-transferencia en sentido investment1 -> cash1. cash1 no se toca en
-ningún caso: su número ya es el correcto. Solo se corrige la pata de
-investment1, multiplicando por la tasa EUR/USD de esa fecha exacta para
-obtener el equivalente real en USD (la divisa nativa de esa cuenta).
+Primera tanda (ya aplicada, 2026-09-07): las 5 transferencias reales
+cash1<->investment1 -- ver historial de commits, esos movimientos ya NO
+coinciden con su importe original y no se repiten aquí.
 
-Tasas: referencia diaria del BCE para cada fecha exacta, obtenidas vía la
-API pública api.frankfurter.dev (agregador de datos del BCE). 2026-08-30
-es domingo -- el BCE no publica esa fecha, se usa el último día hábil
-anterior (2026-08-28), igual que hace la propia API.
+Segunda tanda (este script): el resto de movimientos reales de
+investment1 anotados en EUR -- confirmados uno a uno con el usuario, no
+asumidos por concepto:
+- Apertura de cuenta (Saldo Inicial, 11/03/2026)
+- Ingreso "Openbank" y "Ingreso" "Revolut" (12/03/2026)
+- Cartera 1 (Inversión 12/03/2026 + Inversión_r 27/07/2026) -- el legado
+  histórico documentado en README/ARCHITECTURE, hasta ahora tratado como
+  "EUR por diseño"; deja de ser un caso especial de divisa distinta.
+- Ingreso "Dividendos" (30/08/2026)
+
+Tasas: referencia diaria del BCE para cada fecha exacta, vía la API
+pública api.frankfurter.dev. Fines de semana sin cotización usan el
+último día hábil anterior (la propia API ya lo resuelve así).
 
 Reglas de seguridad (mismo patrón que scripts/migrate_csv_to_sqlite.py):
 - --dry-run (por defecto): no escribe nada, solo muestra qué cambiaría.
 - --apply: escribe de verdad. Antes hace un backup íntegro de la DB en
   backups/accounts.db.pre-exchange-rate-<timestamp>.
-- Localiza cada movimiento por (account_id, occurred_at, concept, amount)
-  exacto -- si no encuentra una coincidencia exacta, aborta sin tocar nada
-  (mejor fallar ruidoso que corregir el movimiento equivocado).
-- Solo escribe en investment1. cash1 nunca se abre en modo escritura.
+- Localiza cada movimiento por (occurred_at, concept, amount) exacto --
+  si no encuentra una coincidencia exacta, aborta sin tocar nada.
 
 Uso:
     python scripts/backfill_exchange_rates.py --db-path accounts.db
@@ -48,12 +53,13 @@ _ACCOUNT = "investment1"
 # (occurred_at, concept, amount_eur_actual, tasa_eur_usd_de_esa_fecha)
 # amount_corregido_usd = amount_eur_actual * tasa. BCE vía api.frankfurter.dev.
 _CORRECTIONS = [
-    ("2026-06-05 00:00:00.000000", "Desde OPENBANK", 1000.0, 1.1640),
-    ("2026-07-14 00:00:00.000000", "Desde OPENBANK", 500.0, 1.1405),
-    ("2026-07-27 00:00:00.000000", "A OPENBANK", 321.58, 1.1389),
-    ("2026-07-30 00:00:00.000000", "Desde OPENBANK", 1300.0, 1.1476),
+    ("2026-03-11 12:08:37.886000", "Apertura de cuenta", 300.0, 1.1581),
+    ("2026-03-12 10:24:07.357000", "Openbank", 10.0, 1.1547),
+    ("2026-03-12 10:41:52.946000", "Revolut", 5.0, 1.1547),
+    ("2026-03-12 12:32:58.289000", "Cartera 1", 311.7, 1.1547),
+    ("2026-07-27 00:00:00.000000", "Cartera 1", 321.58, 1.1389),
     # 2026-08-30 es domingo, sin cotización BCE -> último hábil 2026-08-28.
-    ("2026-08-30 00:00:00.000000", "Desde OPENBANK", 1100.0, 1.1643),
+    ("2026-08-30 00:00:00.000000", "Dividendos", 40.0, 1.1643),
 ]
 
 
