@@ -17,9 +17,6 @@ borja-accounts/
 ├── frontend/             ← Frontend React + TypeScript + Vite
 │   ├── src/               ← Componentes, features, cliente API
 │   └── dist/              ← Build de producción (gitignored, `npm run build`)
-├── index.html            ← Frontend vanilla previo al rewrite a React (ya no se sirve;
-│                            se conserva solo porque tests/run_frontend_harness.mjs lo
-│                            sigue usando como referencia del golden master, ver tests/README.md)
 ├── pyproject.toml        ← Dependencias Python (gestionadas con uv)
 ├── uv.lock               ← Lockfile de dependencias
 ├── run.sh                ← Arranque (build de frontend + uv run uvicorn, puerto 8000)
@@ -29,7 +26,7 @@ borja-accounts/
 ├── <id-cuenta>.example.csv ← Fixture sintético versionado (mismo formato, sin datos reales)
 ├── scripts/migrate_csv_to_sqlite.py ← Importa movimientos de los CSV a SQLite (una cuenta ya existente)
 ├── docs/ARCHITECTURE.md   ← Historia del refactor a hexagonal + decisiones de dominio (inversión, IBKR)
-└── tests/                 ← Golden-master harness (temporal, ver docs/ARCHITECTURE.md §7)
+└── tests/                 ← Suite de regresión del backend (golden master, ver docs/ARCHITECTURE.md §7)
 ```
 
 ---
