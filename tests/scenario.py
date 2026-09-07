@@ -251,8 +251,12 @@ def run_scenario(repo_root):
 
             call("borra_ultimo_cash1", "delete", "/api/movimiento/cash1")
 
+            # exchangeRate obligatorio desde que TransferBetweenAccountsUseCase
+            # exige conversión explícita entre cuentas de distinta divisa
+            # (investment1 es USD, cash1 es EUR) -- ver docs/ARCHITECTURE.md §9.
             call("transferencia_investment1_a_cash1", "post", "/api/transferencia", {
                 "origen": "investment1", "destino": "cash1", "total": 100.00, "fecha": "2026-07-18",
+                "exchangeRate": 0.90,
             })
 
             result["mutation_steps"] = steps

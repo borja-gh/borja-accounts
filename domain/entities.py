@@ -14,6 +14,12 @@ class Movement:
     amount: float
     balance: float = 0.0
     id: uuid.UUID = field(default_factory=uuid.uuid4)
+    exchange_rate: float | None = None
+    """Tipo de cambio aplicado cuando este movimiento es una pata de una
+    transferencia entre cuentas de distinta divisa: amount = importe de la
+    otra pata * exchange_rate. None para cualquier movimiento que no sea
+    una transferencia entre divisas distintas (incluida una transferencia
+    entre dos cuentas de la misma divisa)."""
 
 
 @dataclass

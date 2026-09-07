@@ -799,9 +799,9 @@
     {
       "Concepto": "Desde INVESTMENT1",
       "Fecha": "2026-07-18 00:00:00",
-      "Saldo": 8720.0,
+      "Saldo": 8710.0,
       "Tipo": "Ingreso",
-      "Total": 100.0,
+      "Total": 90.0,
       "_idx": 47
     }
   ],
@@ -896,7 +896,7 @@
     }
   ],
   "final_patrimonio": {
-    "cash1": 8720.0,
+    "cash1": 8710.0,
     "investment1": 2050.0
   },
   "initial_data_cash1": [
@@ -1608,13 +1608,14 @@
       "path": "/api/transferencia",
       "request": {
         "destino": "cash1",
+        "exchangeRate": 0.9,
         "fecha": "2026-07-18",
         "origen": "investment1",
         "total": 100.0
       },
       "response": {
         "ok": true,
-        "saldo_destino": 8720.0,
+        "saldo_destino": 8710.0,
         "saldo_origen": 1305.0
       },
       "status": 200
