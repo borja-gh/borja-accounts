@@ -18,13 +18,17 @@ describe('SaldoChart', () => {
     purge.mockClear();
   });
 
-  it('INVESTMENT: coincide 1:1 con el golden master (sin media móvil, el backend nunca la calcula para INVESTMENT)', () => {
+  it('INVESTMENT: coincide con el golden master salvo el nombre de la traza (ahora "Capital aportado", no "Saldo" -- ver SaldoChart.tsx sobre por qué)', () => {
     const report = backendFixture.investment1_saldo_evolucion_all;
     render(<SaldoChart kind="INVESTMENT" report={report} />);
     expect(newPlot).toHaveBeenCalledTimes(1);
     const [, traces, layout] = newPlot.mock.calls[0];
     const expected = rawFrontendSnapshot.investment1_charts_all['c-saldo'];
-    expect(traces).toEqual(expected.traces);
+    const expectedTraces = expected.traces.map((t: { name: string }) => ({
+      ...t,
+      name: t.name.replace('Saldo', 'Capital aportado'),
+    }));
+    expect(traces).toEqual(expectedTraces);
     expect(layout).toEqual(expected.layout);
   });
 

@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from domain.entities import Account, Movement
+from domain.entities import Account, Movement, PortfolioHolding
 
 
 class MovementRepository(Protocol):
@@ -27,4 +27,26 @@ class MovementRepository(Protocol):
     def create_account(self, account: Account, initial_movement: Movement | None = None) -> None:
         """Da de alta una cuenta nueva (id único) y, si se pasa, su
         movimiento de saldo inicial -- ambos en una única transacción."""
+        ...
+
+    def list_portfolio_holdings(self, account_id: str) -> list[PortfolioHolding]:
+        """Aportaciones reales (una fila por fila de un CSV de carteras/)
+        de las carteras de tipo INVESTMENT que se gestionan por holdings
+        en vez de por movements, ordenadas por fecha de aportación."""
+        ...
+
+    def replace_portfolio_holdings(self, account_id: str, holdings: list[PortfolioHolding]) -> None:
+        """Sustituye todas las holdings de la cuenta -- se reimporta el
+        conjunto completo cada vez que cambian los CSV de origen, no se
+        actualiza fila a fila."""
+        ...
+
+    def update_portfolio_holding(self, holding_id: int, close_price_usd: float | None, note: str | None) -> None:
+        """Actualiza close_price_usd/note de una holding existente (edición
+        desde la UI: precio de cierre al vender, o anotación libre)."""
+        ...
+
+    def update_account(self, account: Account) -> None:
+        """Actualiza currency/cash_override de una cuenta existente (id/
+        kind son inmutables tras el alta)."""
         ...

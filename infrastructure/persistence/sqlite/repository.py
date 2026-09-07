@@ -12,7 +12,7 @@ import uuid
 
 import pandas as pd
 
-from domain.entities import Account, Movement
+from domain.entities import Account, Movement, PortfolioHolding
 from domain.exceptions import AccountNotFoundError
 from domain.value_objects import AccountKind
 
@@ -77,18 +77,88 @@ class SQLiteMovementRepository:
     def list_accounts(self) -> list[Account]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT id, name, kind, currency FROM accounts ORDER BY rowid"
+                "SELECT id, name, kind, currency, cash_override FROM accounts ORDER BY rowid"
             ).fetchall()
-        return [Account(id=r[0], name=r[1], kind=AccountKind(r[2]), currency=r[3]) for r in rows]
+        return [
+            Account(id=r[0], name=r[1], kind=AccountKind(r[2]), currency=r[3], cash_override=r[4])
+            for r in rows
+        ]
 
     def get_account(self, account_id: str) -> Account:
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT id, name, kind, currency FROM accounts WHERE id = ?", (account_id,)
+                "SELECT id, name, kind, currency, cash_override FROM accounts WHERE id = ?", (account_id,)
             ).fetchone()
         if row is None:
             raise AccountNotFoundError(f"Cuenta '{account_id}' no encontrada")
-        return Account(id=row[0], name=row[1], kind=AccountKind(row[2]), currency=row[3])
+        return Account(id=row[0], name=row[1], kind=AccountKind(row[2]), currency=row[3], cash_override=row[4])
+
+    def list_portfolio_holdings(self, account_id: str) -> list[PortfolioHolding]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT id, account_id, portfolio, ticker, company, shares, price_usd, "
+                "capital_usd, fee_usd, contributed_at, source_file, close_price_usd, note "
+                "FROM portfolio_holdings WHERE account_id = ? ORDER BY contributed_at, id",
+                (account_id,),
+            ).fetchall()
+        return [
+            PortfolioHolding(
+                id=r[0], account_id=r[1], portfolio=r[2], ticker=r[3], company=r[4],
+                shares=r[5], price_usd=r[6], capital_usd=r[7], fee_usd=r[8],
+                contributed_at=r[9], source_file=r[10], close_price_usd=r[11], note=r[12],
+            )
+            for r in rows
+        ]
+
+    def replace_portfolio_holdings(self, account_id: str, holdings: list[PortfolioHolding]) -> None:
+        """Reimporta las holdings de una cuenta (p.ej. tras actualizar los
+        CSV de origen). close_price_usd/note son datos editados a mano
+        desde la UI -- no vienen del CSV -- así que se preservan por
+        (portfolio, ticker, contributed_at) entre el borrado y la
+        reinserción, para que un reimport no los destruya."""
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                existing = conn.execute(
+                    "SELECT portfolio, ticker, contributed_at, close_price_usd, note "
+                    "FROM portfolio_holdings WHERE account_id = ?",
+                    (account_id,),
+                ).fetchall()
+                preserved = {(r[0], r[1], r[2]): (r[3], r[4]) for r in existing}
+                conn.execute("DELETE FROM portfolio_holdings WHERE account_id = ?", (account_id,))
+                conn.executemany(
+                    "INSERT INTO portfolio_holdings "
+                    "(account_id, portfolio, ticker, company, shares, price_usd, capital_usd, fee_usd, "
+                    "contributed_at, source_file, close_price_usd, note) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [
+                        (
+                            h.account_id, h.portfolio, h.ticker, h.company, h.shares,
+                            h.price_usd, h.capital_usd, h.fee_usd, h.contributed_at, h.source_file,
+                            *preserved.get((h.portfolio, h.ticker, h.contributed_at), (h.close_price_usd, h.note)),
+                        )
+                        for h in holdings
+                    ],
+                )
+            except Exception:
+                conn.execute("ROLLBACK")
+                raise
+            else:
+                conn.execute("COMMIT")
+
+    def update_portfolio_holding(self, holding_id: int, close_price_usd: float | None, note: str | None) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE portfolio_holdings SET close_price_usd = ?, note = ? WHERE id = ?",
+                (close_price_usd, note, holding_id),
+            )
+
+    def update_account(self, account: Account) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE accounts SET currency = ?, cash_override = ? WHERE id = ?",
+                (account.currency, account.cash_override, account.id),
+            )
 
     def create_account(self, account: Account, initial_movement: Movement | None = None) -> None:
         """Da de alta la cuenta y, si se pasa, su movimiento de saldo

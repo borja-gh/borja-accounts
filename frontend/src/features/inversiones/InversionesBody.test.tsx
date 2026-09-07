@@ -1,13 +1,96 @@
-import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { backendFixture, expectedValues } from '../../test/goldenMaster';
-import { extractVisibleText } from '../../test/extractVisibleText';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ToastProvider } from '../../components/ToastContext';
+import { backendFixture } from '../../test/goldenMaster';
 import { InversionesBody } from './InversionesBody';
 
+function renderBody(props: Parameters<typeof InversionesBody>[0]) {
+  return render(
+    <ToastProvider>
+      <InversionesBody {...props} />
+    </ToastProvider>,
+  );
+}
+
+// El vanilla nunca tuvo el modelo de holdings (composición por ticker, sin
+// seguimiento de valor de mercado en vivo -- el PnL solo aparece al
+// rellenar el precio de cierre real) -- comparar contra su HTML dejó de
+// tener sentido, así que este es un test funcional directo sobre datos
+// reales del fixture, no un golden master.
 describe('InversionesBody', () => {
-  it('coincide con el golden master (rango 3m del fixture)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('muestra capital y PnL (solo cuando cierre) de las carteras basadas en holdings', () => {
     const report = backendFixture.investment1_carteras_report_3m;
-    const { container } = render(<InversionesBody report={report} onClosePosition={() => {}} />);
-    expect(extractVisibleText(container)).toEqual(expectedValues.investment1_inversiones_body);
+    renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
+
+    expect(screen.getByText('Cartera Prueba')).toBeInTheDocument();
+    expect(screen.getByText('2000,00$')).toBeInTheDocument(); // capital invertido
+
+    // Legado sin holdings (Cartera Global): sigue apareciendo.
+    expect(screen.getByText('Cartera Global')).toBeInTheDocument();
+
+    // Historial (legado cerrado, Cartera Tech/Bonos) sigue en eur().
+    expect(screen.getByText('Cartera Tech')).toBeInTheDocument();
+    expect(screen.getByText('Cartera Bonos')).toBeInTheDocument();
+  });
+
+  it('la cartera abierta empieza colapsada y se expande al hacer click, mostrando el detalle por ticker', () => {
+    const report = backendFixture.investment1_carteras_report_3m;
+    const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
+
+    const details = container.querySelector('details.portfolio-holding-details') as HTMLDetailsElement;
+    expect(details).toBeTruthy();
+    expect(details.open).toBe(false);
+
+    fireEvent.click(details.querySelector('summary')!);
+
+    expect(details.open).toBe(true);
+    expect(screen.getByText('AAPL')).toBeInTheDocument();
+    expect(screen.getByText('MSFT')).toBeInTheDocument();
+    expect(screen.getByText('Apple Inc.')).toBeInTheDocument();
+  });
+
+  it('AAPL (sin cierre) no muestra PnL; MSFT (ya vendida) muestra PnL y su anotación', () => {
+    const report = backendFixture.investment1_carteras_report_3m;
+    const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
+    fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
+
+    const rows = Array.from(container.querySelectorAll('tbody tr'));
+    const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
+    const msftRow = rows.find((r) => r.textContent?.includes('MSFT'))!;
+
+    expect(aaplRow.textContent).toContain('—');
+    expect(msftRow.textContent).toContain('-100,00$');
+    expect((msftRow.querySelector('input[type="text"]') as HTMLInputElement).value).toBe('Vendida con pérdida');
+    // La cartera en su conjunto tampoco muestra PnL porque no todos sus holdings están cerrados.
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+  });
+
+  it('editar el precio de cierre guarda vía la API y recarga el reporte', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, closePrice: 130, note: null }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const report = backendFixture.investment1_carteras_report_3m;
+    const onSaved = vi.fn();
+    const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved });
+    fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
+
+    const rows = Array.from(container.querySelectorAll('tbody tr'));
+    const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
+    const priceInput = aaplRow.querySelector('input[type="number"]') as HTMLInputElement;
+
+    fireEvent.change(priceInput, { target: { value: '130' } });
+    fireEvent.blur(priceInput);
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/accounts/investment1/portfolio-holdings/1',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+    await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
   });
 });

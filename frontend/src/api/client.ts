@@ -21,6 +21,8 @@ import type {
   SaldoEvolucionReport,
   TransferRequest,
   TransferResult,
+  UpdatePortfolioHoldingRequest,
+  UpdatePortfolioHoldingResult,
 } from './types';
 import type { RangeFilter } from '../features/filters/RangeFilter';
 
@@ -104,6 +106,20 @@ export function fetchApuestas(cuenta: string, filter: RangeFilter): Promise<Bett
 
 export function fetchCarteras(cuenta: string, filter: RangeFilter): Promise<PortfolioReport> {
   return fetchRangeReport(`/api/accounts/${cuenta}/carteras`, filter);
+}
+
+export async function updatePortfolioHolding(
+  cuenta: string,
+  holdingId: number,
+  body: UpdatePortfolioHoldingRequest,
+): Promise<UpdatePortfolioHoldingResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings/${holdingId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
 }
 
 export async function submitTransfer(body: TransferRequest): Promise<TransferResult> {

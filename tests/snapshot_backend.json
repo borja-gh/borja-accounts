@@ -47,24 +47,6 @@
     ]
   },
   "cash1_gastos_ranking_3m_media": {
-    "donut": {
-      "hasGastos": true,
-      "hoverSuffix": "€/mes",
-      "labels": [
-        "Alquiler",
-        "Supermercado",
-        "Transporte",
-        "Gimnasio",
-        "Restaurante"
-      ],
-      "values": [
-        900.0,
-        196.67,
-        60.0,
-        26.67,
-        15.0
-      ]
-    },
     "ranking": {
       "entries": [
         {
@@ -93,26 +75,6 @@
     }
   },
   "cash1_gastos_ranking_all_media": {
-    "donut": {
-      "hasGastos": true,
-      "hoverSuffix": "€/mes",
-      "labels": [
-        "Alquiler",
-        "Supermercado",
-        "Transporte",
-        "Gimnasio",
-        "Reparación bici",
-        "Restaurante"
-      ],
-      "values": [
-        900.0,
-        220.0,
-        60.0,
-        34.29,
-        12.14,
-        6.43
-      ]
-    },
     "ranking": {
       "entries": [
         {
@@ -935,7 +897,7 @@
   ],
   "final_patrimonio": {
     "cash1": 8720.0,
-    "investment1": 1305.0
+    "investment1": 2050.0
   },
   "initial_data_cash1": [
     {
@@ -1375,24 +1337,16 @@
   ],
   "initial_patrimonio": {
     "cash1": 8655.0,
-    "investment1": 1205.0
+    "investment1": 2300.0
   },
   "investment1_carteras_ranking_all_total": {
     "entries": [
       {
-        "concepto": "Cartera Tech",
-        "valor": 300.0
-      },
-      {
-        "concepto": "Cartera Global",
-        "valor": 250.0
-      },
-      {
-        "concepto": "Cartera Bonos",
-        "valor": 200.0
+        "concepto": "Cartera Prueba",
+        "valor": 2000.0
       }
     ],
-    "hoverSuffix": "€"
+    "hoverSuffix": "$"
   },
   "investment1_carteras_report_3m": {
     "closedCount": 2,
@@ -1420,17 +1374,51 @@
         "roiH": 10.0
       }
     ],
-    "openCount": 1,
+    "openCount": 2,
     "openPositions": [
+      {
+        "concepto": "Cartera Prueba",
+        "fi": "2026-05-01",
+        "holdings": [
+          {
+            "avgPrice": 100.0,
+            "capital": 1000.0,
+            "closePrice": null,
+            "company": "Apple Inc.",
+            "id": 1,
+            "note": null,
+            "pnl": null,
+            "pnlPct": null,
+            "ticker": "AAPL"
+          },
+          {
+            "avgPrice": 200.0,
+            "capital": 1000.0,
+            "closePrice": 180.0,
+            "company": "Microsoft Corp.",
+            "id": 2,
+            "note": "Vendida con pérdida",
+            "pnl": -100.0,
+            "pnlPct": -10.0,
+            "ticker": "MSFT"
+          }
+        ],
+        "invertido": 2000.0,
+        "pnl": null,
+        "pnlPct": null
+      },
       {
         "concepto": "Cartera Global",
         "fi": "2026-04-12 09:00:00",
-        "invertido": 250.0
+        "holdings": [],
+        "invertido": 250.0,
+        "pnl": null,
+        "pnlPct": null
       }
     ],
-    "openTotal": 250.0,
-    "totalCarteras": 3,
-    "totalInv": 750.0,
+    "openTotal": 2250.0,
+    "totalCarteras": 4,
+    "totalInv": 2250.0,
     "totalPnL": 50.0,
     "totalRoi": 10.0
   },
@@ -1440,39 +1428,39 @@
       "aportadoDelta": {
         "diff": 400.0
       },
-      "enCarteras": 250.0,
-      "enCarterasCount": 1,
+      "enCarteras": 2250.0,
+      "enCarterasCount": 2,
       "pnl": 50.0,
       "pnlDelta": {
         "diff": 50.0
       },
-      "saldo": 1205.0
+      "saldo": 2300.0
     },
     "mes": {
       "aportado": 0,
       "aportadoDelta": {
         "diff": -400.0
       },
-      "enCarteras": 250.0,
-      "enCarterasCount": 1,
+      "enCarteras": 2250.0,
+      "enCarterasCount": 2,
       "pnl": 0,
       "pnlDelta": {
         "diff": 50.0
       },
-      "saldo": 1205.0
+      "saldo": 2300.0
     },
     "trimestre": {
       "aportado": 400.0,
       "aportadoDelta": {
         "diff": 400.0
       },
-      "enCarteras": 250.0,
-      "enCarterasCount": 1,
+      "enCarteras": 2250.0,
+      "enCarterasCount": 2,
       "pnl": 50.0,
       "pnlDelta": {
         "diff": 50.0
       },
-      "saldo": 1205.0
+      "saldo": 2300.0
     }
   },
   "investment1_saldo_evolucion_all": {

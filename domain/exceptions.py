@@ -50,3 +50,7 @@ class InvalidAccountError(DomainError):
 
 class AccountNotFoundError(DomainError):
     status_code = 404
+
+
+class PortfolioHoldingNotFoundError(DomainError):
+    status_code = 404

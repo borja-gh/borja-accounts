@@ -602,6 +602,20 @@
     .open-pos-header { padding:7px 14px 5px; font-size:10px; color:var(--ink); text-transform:uppercase; letter-spacing:.08em; font-weight:600; background:rgba(0,0,0,.03); }
     .closed-pos-header { padding:7px 14px 5px; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600; }
 
+    .portfolio-holding-header, .portfolio-holding-summary {
+      display: grid;
+      grid-template-columns: 1.6fr .9fr 1fr 1.3fr .9fr;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 14px;
+    }
+    .portfolio-holding-header { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+    .portfolio-holding-details { border-top: 1px solid var(--border); }
+    .portfolio-holding-summary { cursor: pointer; list-style: none; font-size: 13px; }
+    .portfolio-holding-summary::-webkit-details-marker { display: none; }
+    .portfolio-holding-name { font-weight: 600; }
+    .portfolio-holding-details[open] .portfolio-holding-summary { background: rgba(0,0,0,.02); }
+
     .soft-alert {
       display: flex;
       align-items: center;
