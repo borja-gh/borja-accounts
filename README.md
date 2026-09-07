@@ -1,8 +1,8 @@
 # Cuentas — Panel de control financiero personal
 
-Interfaz web local para llevar el seguimiento de N cuentas de ahorro (CASH) y M cuentas de inversión (INVESTMENT) -- se dan de alta desde la propia interfaz (botón "+ Nueva cuenta" en el header). Permite añadir movimientos, visualizar estadísticas y analizar apuestas/inversiones, con los datos guardados en SQLite. Un CSV por cuenta (nombrado `<id-de-cuenta>.csv`) sigue existiendo como formato de import/export, pero ya no es la base de datos activa.
+Interfaz web local para llevar el seguimiento de N cuentas de ahorro (CASH) y M cuentas de inversión (INVESTMENT) -- se dan de alta desde la propia interfaz (pestaña "+ Cuenta" en el selector de cuentas). Permite añadir movimientos, visualizar estadísticas y analizar apuestas/inversiones, con los datos guardados en SQLite. Un CSV por cuenta (nombrado `<id-de-cuenta>.csv`) sigue existiendo como formato de import/export, pero ya no es la base de datos activa.
 
-Cuentas reales hoy: `cash1` (Openbank, CASH, EUR) e `investment1` (IBKR, INVESTMENT, USD).
+Ejemplo de cuentas: `Personal Account 1` (CASH, EUR) e `Investment Account 1` (INVESTMENT, USD). El id interno (p.ej. `personal-account-1`) sale del slug del nombre al crear la cuenta (`CreateAccountUseCase`), no es un valor que se elija a mano.
 
 ---
 
@@ -77,7 +77,7 @@ Cada CSV (uno por cuenta) tiene las mismas cinco columnas. Es el formato que ent
 | Total    | float    | Importe en la divisa de la cuenta (siempre positivo) |
 | Saldo    | float    | Saldo acumulado calculado automáticamente |
 
-> La divisa no es una columna del CSV: vive en `accounts.currency` (p.ej. `investment1` es USD, el resto EUR). El importe del CSV siempre está en la divisa nativa de esa cuenta.
+> La divisa no es una columna del CSV: vive en `accounts.currency` (p.ej. `investment1` es USD, el resto EUR). El importe del CSV está en la divisa nativa de esa cuenta salvo una excepción documentada: los `movements` crudos de una cuenta INVESTMENT pueden incluir transferencias reales recibidas en la divisa de origen (p.ej. EUR entrando en una cuenta USD) cuando esa cuenta recibe capital transferido desde una cuenta en otra divisa. Esas filas no se convierten en la tabla de movimientos (ver comentario en `frontend/src/features/movimientos/MovimientosTable.tsx`); solo el modelo de holdings y los KPIs operan estrictamente en la divisa nativa de la cuenta.
 
 ---
 
@@ -135,7 +135,7 @@ El saldo se recalcula siempre desde cero (barrido completo) cada vez que se aña
 > fondo con el detalle de UI ya actualizado.
 
 ### Header
-Muestra el patrimonio total (Openbank + IBKR) y el desglose por cuenta. Contiene el botón de transferencia entre cuentas.
+Muestra el patrimonio total (agregado por divisa entre todas las cuentas) y el desglose por cuenta. Contiene el botón de transferencia entre cuentas.
 
 ### Selector de cuenta (tabs)
 Cambia entre la vista de Openbank y la de IBKR. Cada cuenta mantiene de forma independiente su propio estado de filtros: cambiar de pestaña no resetea ni contamina los filtros de la otra.
@@ -243,7 +243,7 @@ Muestra un diálogo de confirmación con los detalles del último registro crono
 
 ### Vista IBKR
 
-Vista de **cartera de inversión** (no cuenta corriente), con identidad visual propia (acento verde, monograma IK), en **USD** (`investment1.currency`):
+Vista de **cartera de inversión** (no cuenta corriente), en **USD** (`investment1.currency`). Hoy el acento visual (verde) y el monograma son compartidos por todas las cuentas INVESTMENT (identidad por `kind`, no por cuenta individual — selector de tema por cuenta pendiente, ver `docs/ARCHITECTURE.md` §9):
 
 - **KPIs:** Saldo (cash + capital invertido, coste — no valor de mercado) · Aportado neto (transferencias OB↔IBKR en el período) · En carteras (capital invertido, snapshot) · P&L cerrado (período)
 - **Evolución del saldo** — traza "Capital aportado · histórico", sin media móvil (viene de `movements.balance`, no del modelo de holdings)
@@ -315,7 +315,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 - **Filtros por panel, no por página.** Rangos `Mes` / `3 meses` / `6 meses` = meses de calendario. Cada panel y el buscador tienen estado independiente.
 - **KPIs de apuestas/carteras son lifetime.** El filtro de período solo controla el historial cerrado (por fecha de cierre `fr`).
 - **`portfolio_holdings` sin seguimiento de valor de mercado en vivo** (decisión explícita, ver `docs/ARCHITECTURE.md` §0 y §4): ninguna tabla de cotizaciones, ningún cálculo de valor de mercado en ningún punto del stack.
-- **Identidad por cuenta.** Acento y fondo cambian según `kind`/cuenta (verde para IBKR); monogramas propios por cuenta.
+- **Identidad por `kind`, no por cuenta (hoy).** Acento y fondo cambian según `kind` (verde para INVESTMENT); el monograma comparte color entre todas las cuentas del mismo `kind`. Selector de tema por cuenta individual: pendiente, ver `docs/ARCHITECTURE.md` §9.
 - **`run.sh` abre el navegador por defecto** (`open` en macOS, `xdg-open` en Linux) y reconstruye `frontend/dist/` antes de arrancar.
 - **Saldo chart:** sin media móvil en INVESTMENT; media 30d en CASH.
 - **Fechas** en `%Y-%m-%d %H:%M:%S.%f` para ordenamiento estable con `mergesort`.
@@ -326,6 +326,6 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 
 ## Añadir una cuenta nueva
 
-Desde la propia interfaz: botón **"+ Nueva cuenta"** en el header (`POST /api/accounts`, ver `frontend/src/features/accounts/CreateAccountModal.tsx`) — nombre, tipo (CASH/INVESTMENT), divisa y saldo inicial. No hace falta tocar código ni SQL a mano; `TIPOS_POR_KIND` (no `TIPOS_POR_CUENTA`) ya deriva los tipos de movimiento válidos del `kind` de la cuenta, no de su id.
+Desde la propia interfaz: pestaña **"+ Cuenta"** en el selector de cuentas (`POST /api/accounts`, ver `frontend/src/features/accounts/CreateAccountModal.tsx`) — nombre, tipo (CASH/INVESTMENT), divisa y saldo inicial. No hace falta tocar código ni SQL a mano; `TIPOS_POR_KIND` (no `TIPOS_POR_CUENTA`) ya deriva los tipos de movimiento válidos del `kind` de la cuenta, no de su id.
 
 Si la cuenta nueva va a importar histórico desde un CSV externo: darla de alta primero desde la UI, después `uv run python scripts/migrate_csv_to_sqlite.py --db-path accounts.db` con el `<id-cuenta>.csv` correspondiente ya en la raíz del repo (el script solo trae movimientos a una cuenta ya existente, no crea cuentas).

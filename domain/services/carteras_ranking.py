@@ -1,4 +1,4 @@
-"""Traducción de la parte de cálculo de chartCarteras (index.html, cuenta IBKR)."""
+"""Traducción de la parte de cálculo de chartCarteras (index.html, cuenta INVESTMENT)."""
 from datetime import datetime
 
 from domain.entities import Movement
