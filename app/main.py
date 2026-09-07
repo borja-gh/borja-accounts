@@ -27,6 +27,7 @@ from fastapi.staticfiles import StaticFiles
 
 from application.use_cases.add_movement import AddMovementUseCase
 from application.use_cases.create_account import CreateAccountUseCase
+from application.use_cases.delete_account import DeleteAccountUseCase
 from application.use_cases.delete_movement import DeleteMovementUseCase
 from application.use_cases.edit_movement import EditMovementUseCase
 from application.use_cases.get_account_kpis import GetAccountKPIsUseCase
@@ -39,12 +40,15 @@ from application.use_cases.get_carteras_ranking import GetCarterasRankingUseCase
 from application.use_cases.get_gastos_mes_actual import GetGastosMesActualUseCase
 from application.use_cases.get_gastos_ranking import GetGastosRankingUseCase
 from application.use_cases.get_transfers_report import GetTransfersReportUseCase
+from application.use_cases.refresh_holding_prices import RefreshHoldingPricesUseCase
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
 from application.use_cases.update_account_theme import UpdateAccountThemeUseCase
 from application.use_cases.update_portfolio_holding import UpdatePortfolioHoldingUseCase
 from domain.exceptions import DomainError
 from domain.services.ledger import LedgerService
-from domain.services.portfolio_holdings import compute_investment_saldo
+from domain.services.portfolio_holdings import build_investment_ledger
+from domain.value_objects import AccountKind
+from infrastructure.market_data.yfinance_provider import YFinanceProvider
 from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository
 
 BASE_DIR = _REPO_ROOT
@@ -59,6 +63,7 @@ app = FastAPI()
 
 repository = SQLiteMovementRepository(DB_PATH)
 ledger = LedgerService()
+market_data = YFinanceProvider()
 
 
 def _known_account_ids() -> set[str]:
@@ -66,6 +71,18 @@ def _known_account_ids() -> set[str]:
     cuentas dadas de alta dinámicamente (POST /api/accounts) esto ya no es
     un conjunto fijo calculado una sola vez al arrancar."""
     return {a.id for a in repository.list_accounts()}
+
+
+def _combined_ledger(account, movements):
+    """Histórico + Saldo de una cuenta -- para INVESTMENT con holdings,
+    fusiona movements con una fila 'Inversión' por cartera de holdings
+    (ver build_investment_ledger); el resto de cuentas usan movements tal
+    cual."""
+    if account.kind == AccountKind.INVESTMENT:
+        holdings = repository.list_portfolio_holdings(account.id)
+        if holdings:
+            return build_investment_ledger(account.id, movements, holdings, ledger)
+    return movements
 
 
 # Bloque 5: el frontend pasa de index.html (vanilla, retirado del repo tras
@@ -121,12 +138,8 @@ def get_patrimonio():
     for cuenta in _known_account_ids():
         try:
             account = repository.get_account(cuenta)
-            movements = repository.load(cuenta)
-            holdings = repository.list_portfolio_holdings(cuenta)
-            if account.kind.value == "INVESTMENT" and holdings:
-                result[cuenta] = compute_investment_saldo(movements, holdings, account.cash_override)
-            else:
-                result[cuenta] = round(float(movements[-1].balance), 2) if movements else 0.0
+            combined = _combined_ledger(account, repository.load(cuenta))
+            result[cuenta] = round(float(combined[-1].balance), 2) if combined else 0.0
         except Exception:
             result[cuenta] = 0.0
     return result
@@ -136,12 +149,8 @@ def get_patrimonio():
 def get_accounts():
     result = []
     for account in repository.list_accounts():
-        movements = repository.load(account.id)
-        holdings = repository.list_portfolio_holdings(account.id)
-        if account.kind.value == "INVESTMENT" and holdings:
-            saldo = compute_investment_saldo(movements, holdings, account.cash_override)
-        else:
-            saldo = round(float(movements[-1].balance), 2) if movements else 0.0
+        combined = _combined_ledger(account, repository.load(account.id))
+        saldo = round(float(combined[-1].balance), 2) if combined else 0.0
         result.append({
             "id": account.id, "name": account.name, "kind": account.kind.value,
             "currency": account.currency, "saldo": saldo, "theme": account.theme,
@@ -176,6 +185,16 @@ async def update_account_theme(cuenta: str, request: Request):
     return {"ok": True, "id": account.id, "theme": account.theme}
 
 
+@app.delete("/api/accounts/{cuenta}")
+def delete_account(cuenta: str):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    _, err = _run(DeleteAccountUseCase(repository).execute, cuenta)
+    if err:
+        return err
+    return {"ok": True}
+
+
 @app.get("/api/data/{cuenta}")
 def get_data(cuenta: str):
     if cuenta not in _known_account_ids():
@@ -183,6 +202,9 @@ def get_data(cuenta: str):
     movements, err = _run(repository.load, cuenta)
     if err:
         return err
+    account = repository.get_account(cuenta)
+    combined = _combined_ledger(account, movements)
+    idx_by_id = {m.id: i for i, m in enumerate(movements)}
     return [
         {
             "Fecha": m.occurred_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(m.occurred_at, "strftime") else str(m.occurred_at),
@@ -190,9 +212,9 @@ def get_data(cuenta: str):
             "Concepto": m.concept,
             "Total": m.amount,
             "Saldo": m.balance,
-            "_idx": i,
+            "_idx": idx_by_id.get(m.id),
         }
-        for i, m in enumerate(movements)
+        for m in combined
     ]
 
 
@@ -215,11 +237,11 @@ def get_account_kpis(cuenta: str, period: str = "mes", year: str | None = None):
 def get_investment_kpis(cuenta: str, period: str = "mes"):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
-    kpi, err = _run(GetInvestmentKPIsUseCase(repository).execute, cuenta, period, _reference_now())
+    kpi, err = _run(GetInvestmentKPIsUseCase(repository, ledger).execute, cuenta, period, _reference_now())
     if err:
         return err
     return {
-        "saldo": kpi.saldo,
+        "saldo": kpi.saldo, "saldoPreventa": kpi.saldo_preventa,
         "aportado": kpi.aportado, "aportadoDelta": {"diff": kpi.aportado_delta.diff},
         "enCarteras": kpi.en_carteras, "enCarterasCount": kpi.en_carteras_count,
         "pnl": kpi.pnl, "pnlDelta": {"diff": kpi.pnl_delta.diff},
@@ -311,6 +333,16 @@ async def update_portfolio_holding(cuenta: str, holding_id: int, request: Reques
     if err:
         return err
     return result
+
+
+@app.post("/api/accounts/{cuenta}/portfolio-holdings/refresh-prices")
+def refresh_holding_prices(cuenta: str):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    result, err = _run(RefreshHoldingPricesUseCase(repository, market_data).execute, cuenta)
+    if err:
+        return err
+    return {"ok": True, **result}
 
 
 @app.get("/api/accounts/{cuenta}/apuestas")

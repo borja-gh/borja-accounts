@@ -47,6 +47,11 @@ export interface UpdateAccountThemeResult {
   error?: string;
 }
 
+export interface DeleteAccountResult {
+  ok: boolean;
+  error?: string;
+}
+
 export interface Delta {
   diff: number;
 }
@@ -63,6 +68,7 @@ export interface AccountKpis {
 
 export interface InvestmentKpis {
   saldo: number;
+  saldoPreventa: number;
   aportado: number;
   aportadoDelta: Delta;
   enCarteras: number;
@@ -147,6 +153,7 @@ export interface PortfolioHoldingDetail {
   avgPrice: number;
   capital: number;
   closePrice: number | null;
+  currentPrice: number | null;
   pnl: number | null;
   pnlPct: number | null;
   note: string | null;
@@ -202,13 +209,23 @@ export interface TransferResult {
 
 export interface UpdatePortfolioHoldingRequest {
   closePrice?: number | null;
+  currentPrice?: number | null;
   note?: string | null;
 }
 
 export interface UpdatePortfolioHoldingResult {
   ok: boolean;
   closePrice: number | null;
+  currentPrice: number | null;
   note: string | null;
+  error?: string;
+}
+
+export interface RefreshHoldingPricesResult {
+  ok: boolean;
+  updated: number;
+  total: number;
+  failedTickers: string[];
   error?: string;
 }
 

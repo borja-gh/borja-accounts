@@ -118,7 +118,7 @@ El saldo se recalcula siempre desde cero (barrido completo) cada vez que se aña
 
 **`Inversión`/`Inversión_r` son un caso especial, no positivo/negativo simple** (`domain/services/ledger.py::recalculate_balances`): abrir una posición (`Inversión`) **no mueve el saldo** — solo se acumula el capital invertido por concepto —, y cerrarla (`Inversión_r`) solo mueve el saldo por la ganancia o pérdida neta (retorno − invertido), no por el retorno bruto.
 
-**`investment1` (INVESTMENT) no usa este saldo directamente para el KPI "Saldo".** Sus carteras abiertas viven en `portfolio_holdings` (ver más abajo, "Análisis de carteras"), no como filas `Inversión` en `movements` — el KPI Saldo de esa cuenta es `cash_override` (efectivo real reportado, snapshot manual en `accounts.cash_override`) + capital invertido (coste, no valor de mercado) en holdings abiertas. `movements.balance` de `investment1` sigue existiendo y alimenta el gráfico "Evolución del saldo" (capital aportado histórico), pero ya no es lo que muestra el KPI.
+**`investment1` (INVESTMENT) deriva el KPI "Saldo" del mismo histórico, no de un snapshot manual aparte.** Sus carteras abiertas viven en `portfolio_holdings` (ver más abajo, "Análisis de carteras"), no como filas `Inversión` reales en `movements` — pero `build_investment_ledger` (`domain/services/portfolio_holdings.py`) fusiona en tiempo de lectura el histórico real con una fila `Inversión` agregada por cartera de holdings (misma regla de arriba: no mueve el saldo al abrir), sin persistir nada en `movements`. El KPI Saldo es el balance final de esa fusión — igual al que se ve en el histórico ("Capital aportado" del gráfico "Evolución del saldo"), sin discrepancia entre ambos.
 
 ---
 
@@ -251,12 +251,13 @@ Vista de **cartera de inversión** (no cuenta corriente), en **USD** (`investmen
 
 #### Análisis de carteras
 
-Cada cartera abierta real (importada de los CSV de `~/Desktop/Borja/Proyectos/carteras/` + reconciliada contra el panel de posiciones de IBKR) es una fila expandible con su **composición por ticker** (`portfolio_holdings`): precio medio, capital, precio de cierre y anotación libre. **No hay seguimiento de valor de mercado en vivo** — es un check de compra/cierre, no un tracker:
+Cada cartera abierta real (importada de los CSV de `~/Desktop/Borja/Proyectos/carteras/` + reconciliada contra el panel de posiciones de IBKR) es una fila expandible con su **composición por ticker** (`portfolio_holdings`): precio medio, capital, precio actual, PnL, estado y precio de cierre.
 
-- El **precio de cierre** (`closePrice`) es un campo editable, vacío hasta que se vende esa aportación concreta. Se guarda al perder el foco (`onBlur`) vía `PUT /api/accounts/{cuenta}/portfolio-holdings/{id}`.
-- El **PnL de un ticker** solo aparece cuando se rellena su precio de cierre.
-- El **PnL de la cartera completa** solo aparece cuando **todos** sus tickers tienen precio de cierre.
-- La **anotación** (`note`) es un campo de texto libre editable igual que el precio de cierre, sin efecto en ningún cálculo.
+- El **precio actual** (`currentPrice`) es editable a mano, o se refresca de golpe para toda la cuenta con el botón "Precios actuales" (`POST .../portfolio-holdings/refresh-prices`, vía yfinance) — un banner resume cuántas posiciones se actualizaron y en cuáles falló la consulta.
+- El **PnL de un ticker** usa el precio de cierre si ya se vendió, si no el último precio actual consultado (no realizado hasta cerrar).
+- El **PnL de la cartera completa** aparece cuando **todos** sus tickers tienen algún precio (de cierre o actual).
+- **Cerrar** una posición (columna Estado) pide confirmar/editar el precio de cierre antes de guardarlo vía `PUT /api/accounts/{cuenta}/portfolio-holdings/{id}`.
+- La **anotación** (`note`) es un campo de texto libre editable, sin efecto en ningún cálculo.
 
 Una única cartera legado (histórica, sin CSV en `../carteras/`, ya cerrada) sigue viviendo en `movements` como flujo de caja (`Inversión`/`Inversión_r`) — se muestra igual que antes, sin composición por ticker.
 
@@ -314,7 +315,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 - **Hexagonal.** `domain/` (entidades + servicios puros) no importa nada de `application`/`infrastructure`. `application/` depende solo de `domain` + puertos (`Protocol` en `application/ports/repository.py`). `infrastructure/persistence/sqlite/` es la única implementación real del puerto. Ver `docs/ARCHITECTURE.md` para la historia completa del refactor.
 - **Filtros por panel, no por página.** Rangos `Mes` / `3 meses` / `6 meses` = meses de calendario. Cada panel y el buscador tienen estado independiente.
 - **KPIs de apuestas/carteras son lifetime.** El filtro de período solo controla el historial cerrado (por fecha de cierre `fr`).
-- **`portfolio_holdings` sin seguimiento de valor de mercado en vivo** (decisión explícita, ver `docs/ARCHITECTURE.md` §0 y §4): ninguna tabla de cotizaciones, ningún cálculo de valor de mercado en ningún punto del stack.
+- **`portfolio_holdings` con precio de mercado bajo demanda vía yfinance** (ver `docs/ARCHITECTURE.md` §0): `current_price_usd` se refresca a mano, nunca automáticamente. No es una API oficial de cotizaciones — puede fallar por ticker sin avisar en el fetch (el error real es cuando un ticker no cotiza en bolsa y coincide con el símbolo de otro instrumento; ver la fila de la tabla de decisiones).
 - **Identidad por cuenta.** Cada cuenta tiene su propio `theme` (`accounts.theme`, una de seis paletas: clay/forest/slate/plum/amber/teal) que fija acento, fondo y el color del monograma y de los gráficos de línea/barra que llevan color de marca (`frontend/src/styles/themes.ts`). El default al crear una cuenta es por `kind` (clay para CASH, forest para INVESTMENT), editable después desde el selector de tema en la cabecera de cada cuenta.
 - **`run.sh` abre el navegador por defecto** (`open` en macOS, `xdg-open` en Linux) y reconstruye `frontend/dist/` antes de arrancar.
 - **Saldo chart:** sin media móvil en INVESTMENT; media 30d en CASH.

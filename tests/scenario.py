@@ -104,7 +104,6 @@ def _seed_sqlite_from_fixture(repo_root, csv_dir, db_path):
     ])
     investment1 = sqlite_repo.get_account("investment1")
     investment1.currency = "USD"
-    investment1.cash_override = 50.0
     sqlite_repo.update_account(investment1)
 
 

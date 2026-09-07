@@ -41,11 +41,25 @@ describe('MovimientosTable', () => {
     const { container } = render(
       <MovimientosTable rows={rows} currency="USD" onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
     );
-    // El vanilla nunca distinguió divisa por cuenta (siempre € fijo); ahora
-    // que MovimientosTable usa money(v, currency) (ver MovimientosTable.tsx),
-    // los importes de una cuenta USD se muestran en $ -- se transforma el
-    // símbolo en el expected, los montos numéricos no cambian.
-    const expected = expectedValues.investment1_movimientos_default.map((s: string) => s.replace(/€/g, '$'));
+    // Ya no es una transformación ligera del fixture congelado del vanilla:
+    // build_investment_ledger (get_investment_kpis.py) ahora fusiona el
+    // histórico con una fila "Inversión" por cartera de holdings ("Cartera
+    // Prueba" aquí, ver tests/scenario.py), sin _idx real (no editable) y
+    // sin signo (Inversión no mueve el saldo al abrir, ver ledger.py) --
+    // esto desplaza todos los saldos posteriores respecto al vanilla.
+    const expected = [
+      'Fecha', 'Tipo', 'Concepto', 'Importe', 'Saldo',
+      '02/07/2026', 'Ingreso', 'Dividendo', '+15.00$', '1455.00$', 'Duplicar', 'Editar',
+      '25/06/2026', 'Ingreso', 'Desde OPENBANK', '+400.00$', '1440.00$', 'Duplicar', 'Editar',
+      '08/06/2026', 'Retorno inv.', 'Cartera Bonos', '+150.00$', '1040.00$', 'Duplicar', 'Editar',
+      '10/05/2026', 'Retorno inv.', 'Cartera Tech', '+400.00$', '1090.00$', 'Duplicar', 'Editar',
+      '01/05/2026', 'Inversión', 'Cartera Prueba', '2000.00$', '990.00$',
+      '12/04/2026', 'Inversión', 'Cartera Global', '250.00$', '990.00$', 'Duplicar', 'Editar',
+      '01/03/2026', 'Gasto', 'Comisión custodia', '-10.00$', '990.00$', 'Duplicar', 'Editar',
+      '05/02/2026', 'Inversión', 'Cartera Bonos', '200.00$', '1000.00$', 'Duplicar', 'Editar',
+      '10/01/2026', 'Inversión', 'Cartera Tech', '300.00$', '1000.00$', 'Duplicar', 'Editar',
+      '01/01/2026', 'Saldo Inicial', 'Apertura de cuenta', '+1000.00$', '1000.00$',
+    ];
     expect(extractVisibleText(container)).toEqual(expected);
   });
 });
