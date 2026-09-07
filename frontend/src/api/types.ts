@@ -61,7 +61,7 @@ export interface AccountKpis {
   balanceDelta: Delta;
 }
 
-export interface IbkrKpis {
+export interface InvestmentKpis {
   saldo: number;
   aportado: number;
   aportadoDelta: Delta;

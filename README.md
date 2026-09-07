@@ -293,7 +293,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | PUT    | `/api/accounts/{cuenta}`                           | Cambia el `theme` de una cuenta existente             |
 | GET    | `/api/data/{cuenta}`                               | Movimientos JSON (incluye `_idx` por fila)            |
 | GET    | `/api/accounts/{cuenta}/kpis`                      | KPIs de cuenta CASH (saldo, ingresos, gastos, balance + deltas) |
-| GET    | `/api/accounts/{cuenta}/ibkr-kpis`                  | KPIs de cuenta INVESTMENT (saldo, aportado, en carteras, PnL) |
+| GET    | `/api/accounts/{cuenta}/investment-kpis`            | KPIs de cuenta INVESTMENT (saldo, aportado, en carteras, PnL) |
 | GET    | `/api/accounts/{cuenta}/saldo-evolucion`           | Serie temporal de saldo                                |
 | GET    | `/api/accounts/{cuenta}/mensual-evolucion`         | Ingresos/gastos por mes                                |
 | GET    | `/api/accounts/{cuenta}/carteras-ranking`          | Ranking de conceptos `Inversión` (legado, media/total) |

@@ -1,10 +1,10 @@
-import type { IbkrKpis, KpiPeriod } from '../../api/types';
+import type { InvestmentKpis, KpiPeriod } from '../../api/types';
 import { eur, money } from '../../lib/format';
 import { kpiLabel } from './kpiLabel';
 import { KpiDelta } from './KpiDelta';
 
 interface Props {
-  kpi: IbkrKpis;
+  kpi: InvestmentKpis;
   period: KpiPeriod;
   currency: string;
 }
@@ -14,7 +14,7 @@ interface Props {
  * CSV, cerrada antes del cambio de divisa) -- ver docs/ARCHITECTURE.md.
  * Solo Saldo/En carteras reflejan el valor de mercado en la divisa real
  * de la cuenta (USD). */
-export function KpiCardsIbkr({ kpi, period, currency }: Props) {
+export function KpiCardsInvestment({ kpi, period, currency }: Props) {
   const lbl = kpiLabel(period);
   return (
     <>

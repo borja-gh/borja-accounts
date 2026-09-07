@@ -10,7 +10,7 @@ import type {
   EditMovementRequest,
   GastosMesActualReport,
   GastosRankingReport,
-  IbkrKpis,
+  InvestmentKpis,
   KpiPeriod,
   KpiPeriodFilter,
   MensualEvolucionReport,
@@ -76,8 +76,8 @@ export async function fetchAccountKpis(cuenta: string, period: KpiPeriodFilter):
   return res.json();
 }
 
-export async function fetchInvestmentKpis(cuenta: string, period: KpiPeriod): Promise<IbkrKpis> {
-  const res = await fetch(`/api/accounts/${cuenta}/ibkr-kpis?period=${encodeURIComponent(period)}`);
+export async function fetchInvestmentKpis(cuenta: string, period: KpiPeriod): Promise<InvestmentKpis> {
+  const res = await fetch(`/api/accounts/${cuenta}/investment-kpis?period=${encodeURIComponent(period)}`);
   return res.json();
 }
 

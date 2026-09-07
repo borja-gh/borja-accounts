@@ -31,7 +31,7 @@ from application.use_cases.delete_movement import DeleteMovementUseCase
 from application.use_cases.edit_movement import EditMovementUseCase
 from application.use_cases.get_account_kpis import GetAccountKPIsUseCase
 from application.use_cases.get_betting_report import GetBettingReportUseCase
-from application.use_cases.get_ibkr_kpis import GetIbkrKPIsUseCase
+from application.use_cases.get_investment_kpis import GetInvestmentKPIsUseCase
 from application.use_cases.get_mensual_evolucion import GetMensualEvolucionUseCase
 from application.use_cases.get_portfolio_report import GetPortfolioReportUseCase
 from application.use_cases.get_saldo_evolucion import GetSaldoEvolucionUseCase
@@ -213,11 +213,11 @@ def get_account_kpis(cuenta: str, period: str = "mes", year: str | None = None):
     }
 
 
-@app.get("/api/accounts/{cuenta}/ibkr-kpis")
-def get_ibkr_kpis(cuenta: str, period: str = "mes"):
+@app.get("/api/accounts/{cuenta}/investment-kpis")
+def get_investment_kpis(cuenta: str, period: str = "mes"):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
-    kpi, err = _run(GetIbkrKPIsUseCase(repository).execute, cuenta, period, _reference_now())
+    kpi, err = _run(GetInvestmentKPIsUseCase(repository).execute, cuenta, period, _reference_now())
     if err:
         return err
     return {

@@ -28,7 +28,7 @@ TIPOS_POSITIVOS = {"Ingreso", "Saldo Inicial", "Nómina", "Devolución", "Apuest
 # recalculate_balances (ledger.py) las trata como un par especial: abrir
 # una posición no cambia el saldo (el dinero invertido sigue siendo del
 # usuario, solo pasa de líquido a "en cartera" -- ver en_carteras en
-# ibkr_kpi.py, que ya lo reporta como vista separada del saldo), cerrarla
+# investment_kpi.py, que ya lo reporta como vista separada del saldo), cerrarla
 # solo mueve el saldo por la ganancia/pérdida neta, nunca por el importe
 # devuelto bruto (que ya "estaba" en el saldo desde que se abrió).
 # Apuestas/Apuestas_r NO sigue este tratamiento -- decisión explícita del
