@@ -1,9 +1,5 @@
 import type { AccountKind } from '../api/types';
-
-const FILL_BY_KIND: Record<AccountKind, string> = {
-  CASH: '#8B5E3C',
-  INVESTMENT: '#2F5D50',
-};
+import { resolveTheme, type ThemeName } from '../styles/themes';
 
 function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -12,8 +8,15 @@ function initials(name: string): string {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-export function AccountMark({ name, kind, small = false }: { name: string; kind: AccountKind; small?: boolean }) {
-  const fill = FILL_BY_KIND[kind];
+interface Props {
+  name: string;
+  kind: AccountKind;
+  theme?: ThemeName | null;
+  small?: boolean;
+}
+
+export function AccountMark({ name, kind, theme, small = false }: Props) {
+  const fill = resolveTheme(theme, kind).accent;
   const label = initials(name);
   return (
     <svg className={`mark ${small ? 'mark-sm' : ''}`} viewBox="0 0 32 32" aria-hidden="true">

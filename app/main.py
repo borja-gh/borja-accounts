@@ -40,6 +40,7 @@ from application.use_cases.get_gastos_mes_actual import GetGastosMesActualUseCas
 from application.use_cases.get_gastos_ranking import GetGastosRankingUseCase
 from application.use_cases.get_transfers_report import GetTransfersReportUseCase
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
+from application.use_cases.update_account_theme import UpdateAccountThemeUseCase
 from application.use_cases.update_portfolio_holding import UpdatePortfolioHoldingUseCase
 from domain.exceptions import DomainError
 from domain.services.ledger import LedgerService
@@ -145,7 +146,7 @@ def get_accounts():
             saldo = round(float(movements[-1].balance), 2) if movements else 0.0
         result.append({
             "id": account.id, "name": account.name, "kind": account.kind.value,
-            "currency": account.currency, "saldo": saldo,
+            "currency": account.currency, "saldo": saldo, "theme": account.theme,
         })
     return result
 
@@ -158,7 +159,23 @@ async def create_account(request: Request):
     account, err = _run(CreateAccountUseCase(repository, ledger).execute, data)
     if err:
         return err
-    return {"ok": True, "id": account.id, "name": account.name, "kind": account.kind.value, "currency": account.currency}
+    return {
+        "ok": True, "id": account.id, "name": account.name, "kind": account.kind.value,
+        "currency": account.currency, "theme": account.theme,
+    }
+
+
+@app.put("/api/accounts/{cuenta}")
+async def update_account_theme(cuenta: str, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    account, err = _run(UpdateAccountThemeUseCase(repository).execute, cuenta, data)
+    if err:
+        return err
+    return {"ok": True, "id": account.id, "theme": account.theme}
 
 
 @app.get("/api/data/{cuenta}")

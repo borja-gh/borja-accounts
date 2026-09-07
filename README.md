@@ -243,7 +243,7 @@ Muestra un diálogo de confirmación con los detalles del último registro crono
 
 ### Vista IBKR
 
-Vista de **cartera de inversión** (no cuenta corriente), en **USD** (`investment1.currency`). Hoy el acento visual (verde) y el monograma son compartidos por todas las cuentas INVESTMENT (identidad por `kind`, no por cuenta individual — selector de tema por cuenta pendiente, ver `docs/ARCHITECTURE.md` §9):
+Vista de **cartera de inversión** (no cuenta corriente), en **USD** (`investment1.currency`). El acento visual y el monograma se eligen por cuenta individual (tema por defecto: verde para cuentas nuevas de tipo INVESTMENT, editable desde el selector de tema en la cabecera de la cuenta):
 
 - **KPIs:** Saldo (cash + capital invertido, coste — no valor de mercado) · Aportado neto (transferencias OB↔IBKR en el período) · En carteras (capital invertido, snapshot) · P&L cerrado (período)
 - **Evolución del saldo** — traza "Capital aportado · histórico", sin media móvil (viene de `movements.balance`, no del modelo de holdings)
@@ -290,6 +290,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | GET    | `/api/patrimonio`                                  | Saldo actual de todas las cuentas (`{id: saldo}`)     |
 | GET    | `/api/accounts`                                    | Lista de cuentas con `id`/`name`/`kind`/`currency`/`saldo` |
 | POST   | `/api/accounts`                                    | Da de alta una cuenta nueva (+ `Saldo Inicial`)       |
+| PUT    | `/api/accounts/{cuenta}`                           | Cambia el `theme` de una cuenta existente             |
 | GET    | `/api/data/{cuenta}`                               | Movimientos JSON (incluye `_idx` por fila)            |
 | GET    | `/api/accounts/{cuenta}/kpis`                      | KPIs de cuenta CASH (saldo, ingresos, gastos, balance + deltas) |
 | GET    | `/api/accounts/{cuenta}/ibkr-kpis`                  | KPIs de cuenta INVESTMENT (saldo, aportado, en carteras, PnL) |
@@ -315,7 +316,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 - **Filtros por panel, no por página.** Rangos `Mes` / `3 meses` / `6 meses` = meses de calendario. Cada panel y el buscador tienen estado independiente.
 - **KPIs de apuestas/carteras son lifetime.** El filtro de período solo controla el historial cerrado (por fecha de cierre `fr`).
 - **`portfolio_holdings` sin seguimiento de valor de mercado en vivo** (decisión explícita, ver `docs/ARCHITECTURE.md` §0 y §4): ninguna tabla de cotizaciones, ningún cálculo de valor de mercado en ningún punto del stack.
-- **Identidad por `kind`, no por cuenta (hoy).** Acento y fondo cambian según `kind` (verde para INVESTMENT); el monograma comparte color entre todas las cuentas del mismo `kind`. Selector de tema por cuenta individual: pendiente, ver `docs/ARCHITECTURE.md` §9.
+- **Identidad por cuenta.** Cada cuenta tiene su propio `theme` (`accounts.theme`, una de seis paletas: clay/forest/slate/plum/amber/teal) que fija acento, fondo y el color del monograma y de los gráficos de línea/barra que llevan color de marca (`frontend/src/styles/themes.ts`). El default al crear una cuenta es por `kind` (clay para CASH, forest para INVESTMENT), editable después desde el selector de tema en la cabecera de cada cuenta.
 - **`run.sh` abre el navegador por defecto** (`open` en macOS, `xdg-open` en Linux) y reconstruye `frontend/dist/` antes de arrancar.
 - **Saldo chart:** sin media móvil en INVESTMENT; media 30d en CASH.
 - **Fechas** en `%Y-%m-%d %H:%M:%S.%f` para ordenamiento estable con `mergesort`.

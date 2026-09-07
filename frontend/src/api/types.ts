@@ -1,3 +1,5 @@
+import type { ThemeName } from '../styles/themes';
+
 export type AccountId = string;
 export type AccountKind = 'CASH' | 'INVESTMENT';
 export type Currency = 'EUR' | 'USD';
@@ -17,6 +19,7 @@ export interface AccountSummary {
   kind: AccountKind;
   currency: Currency;
   saldo: number;
+  theme?: ThemeName | null;
 }
 
 export interface CreateAccountRequest {
@@ -24,6 +27,7 @@ export interface CreateAccountRequest {
   kind: AccountKind;
   currency: Currency;
   initialBalance?: number;
+  theme?: ThemeName;
 }
 
 export interface CreateAccountResult {
@@ -32,6 +36,14 @@ export interface CreateAccountResult {
   name: string;
   kind: AccountKind;
   currency: Currency;
+  theme?: ThemeName | null;
+  error?: string;
+}
+
+export interface UpdateAccountThemeResult {
+  ok: boolean;
+  id: string;
+  theme?: ThemeName | null;
   error?: string;
 }
 
