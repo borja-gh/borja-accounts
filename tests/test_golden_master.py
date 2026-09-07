@@ -1,17 +1,15 @@
 """
-Golden master: compara el comportamiento actual de app.py e index.html
-contra los snapshots congelados (snapshot_backend.json / snapshot_frontend.json).
+Golden master: compara el comportamiento actual del backend (app/main.py)
+contra snapshot_backend.json, congelado originalmente contra app.py (Flask)
+sobre CSV -- ver docs/ARCHITECTURE.md §7.
 
-Ningún bloque del refactor (docs/ARCHITECTURE.md) se da por válido si estos
-tests no pasan. Si un cambio de comportamiento es intencional (p.ej. se
-decide corregir el bug de zona horaria documentado en run_frontend_harness.mjs),
-se revisa el diff a mano, se regenera con generate_snapshot.py / el propio
-harness Node, y se documenta por qué en el commit — nunca se regenera solo
-para que un test en rojo se calle.
+Ningún cambio de comportamiento intencional se da por válido si este test
+no pasa contra el snapshot ya revisado. Si el cambio es deliberado, se
+regenera con generate_snapshot.py y se documenta por qué en el commit —
+nunca se regenera solo para que un test en rojo se calle.
 """
 import json
 import os
-import subprocess
 import sys
 
 import pytest
@@ -31,17 +29,6 @@ def _load(name):
 def test_backend_matches_snapshot():
     expected = _load("snapshot_backend.json")
     actual = run_scenario(REPO_ROOT)
-    assert actual == expected
-
-
-def test_frontend_matches_snapshot():
-    expected = _load("snapshot_frontend.json")
-    proc = subprocess.run(
-        ["node", os.path.join(HERE, "run_frontend_harness.mjs")],
-        capture_output=True, text=True, cwd=HERE,
-    )
-    assert proc.returncode == 0, proc.stderr
-    actual = json.loads(proc.stdout)
     assert actual == expected
 
 

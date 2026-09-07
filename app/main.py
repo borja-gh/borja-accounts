@@ -68,11 +68,9 @@ def _known_account_ids() -> set[str]:
     return {a.id for a in repository.list_accounts()}
 
 
-# Bloque 5: el frontend pasa de index.html (vanilla) a un build de Vite en
-# frontend/dist/, generado con `npm run build` (gitignored, ver CI). No se
-# borra index.html en este commit -- run_frontend_harness.mjs sigue
-# leyéndolo para poder re-derivar snapshot_frontend.json/
-# snapshot_frontend_values.json si el vanilla cambiara.
+# Bloque 5: el frontend pasa de index.html (vanilla, retirado del repo tras
+# consolidarse el rewrite -- ver docs/ARCHITECTURE.md §7) a un build de Vite
+# en frontend/dist/, generado con `npm run build` (gitignored, ver CI).
 FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
 _FRONTEND_ASSETS = os.path.join(FRONTEND_DIST, "assets")
 if os.path.isdir(_FRONTEND_ASSETS):
