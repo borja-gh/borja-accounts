@@ -47,6 +47,6 @@ class MovementRepository(Protocol):
         ...
 
     def update_account(self, account: Account) -> None:
-        """Actualiza currency/cash_override de una cuenta existente (id/
-        kind son inmutables tras el alta)."""
+        """Actualiza currency/cash_override/theme de una cuenta existente
+        (id/kind son inmutables tras el alta)."""
         ...

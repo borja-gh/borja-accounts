@@ -1,9 +1,16 @@
 import type { Data, Layout } from 'plotly.js-dist-min';
-import type { CarterasRankingReport } from '../../api/types';
+import type { AccountKind, CarterasRankingReport } from '../../api/types';
 import { PlotlyChart } from '../../components/PlotlyChart';
+import { resolveTheme, type ThemeName } from '../../styles/themes';
 import { baseLayout } from './baseLayout';
 
-export function CarterasChart({ report }: { report: CarterasRankingReport }) {
+interface Props {
+  report: CarterasRankingReport;
+  kind: AccountKind;
+  theme?: ThemeName | null;
+}
+
+export function CarterasChart({ report, kind, theme }: Props) {
   const entries = [...report.entries].reverse();
   if (!entries.length) {
     return <PlotlyChart traces={null} layout={{}} />;
@@ -27,7 +34,7 @@ export function CarterasChart({ report }: { report: CarterasRankingReport }) {
       textfont: { color: '#24292f', size: 11 },
       constraintext: 'none',
       customdata: conceptos,
-      marker: { color: '#2F5D50' },
+      marker: { color: resolveTheme(theme, kind).accent },
       hovertemplate: `%{customdata}: <b>%{x:,.2f}${report.hoverSuffix}</b><extra></extra>`,
     } as Data,
   ];

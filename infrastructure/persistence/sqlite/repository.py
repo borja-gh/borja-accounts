@@ -77,21 +77,21 @@ class SQLiteMovementRepository:
     def list_accounts(self) -> list[Account]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT id, name, kind, currency, cash_override FROM accounts ORDER BY rowid"
+                "SELECT id, name, kind, currency, cash_override, theme FROM accounts ORDER BY rowid"
             ).fetchall()
         return [
-            Account(id=r[0], name=r[1], kind=AccountKind(r[2]), currency=r[3], cash_override=r[4])
+            Account(id=r[0], name=r[1], kind=AccountKind(r[2]), currency=r[3], cash_override=r[4], theme=r[5])
             for r in rows
         ]
 
     def get_account(self, account_id: str) -> Account:
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT id, name, kind, currency, cash_override FROM accounts WHERE id = ?", (account_id,)
+                "SELECT id, name, kind, currency, cash_override, theme FROM accounts WHERE id = ?", (account_id,)
             ).fetchone()
         if row is None:
             raise AccountNotFoundError(f"Cuenta '{account_id}' no encontrada")
-        return Account(id=row[0], name=row[1], kind=AccountKind(row[2]), currency=row[3], cash_override=row[4])
+        return Account(id=row[0], name=row[1], kind=AccountKind(row[2]), currency=row[3], cash_override=row[4], theme=row[5])
 
     def list_portfolio_holdings(self, account_id: str) -> list[PortfolioHolding]:
         with self._connect() as conn:
@@ -156,8 +156,8 @@ class SQLiteMovementRepository:
     def update_account(self, account: Account) -> None:
         with self._connect() as conn:
             conn.execute(
-                "UPDATE accounts SET currency = ?, cash_override = ? WHERE id = ?",
-                (account.currency, account.cash_override, account.id),
+                "UPDATE accounts SET currency = ?, cash_override = ?, theme = ? WHERE id = ?",
+                (account.currency, account.cash_override, account.theme, account.id),
             )
 
     def create_account(self, account: Account, initial_movement: Movement | None = None) -> None:
@@ -168,8 +168,8 @@ class SQLiteMovementRepository:
             conn.execute("BEGIN IMMEDIATE")
             try:
                 conn.execute(
-                    "INSERT INTO accounts (id, name, kind, currency) VALUES (?, ?, ?, ?)",
-                    (account.id, account.name, account.kind.value, account.currency),
+                    "INSERT INTO accounts (id, name, kind, currency, theme) VALUES (?, ?, ?, ?, ?)",
+                    (account.id, account.name, account.kind.value, account.currency, account.theme),
                 )
                 if initial_movement is not None:
                     m = initial_movement

@@ -21,10 +21,12 @@ import type {
   SaldoEvolucionReport,
   TransferRequest,
   TransferResult,
+  UpdateAccountThemeResult,
   UpdatePortfolioHoldingRequest,
   UpdatePortfolioHoldingResult,
 } from './types';
 import type { RangeFilter } from '../features/filters/RangeFilter';
+import type { ThemeName } from '../styles/themes';
 
 async function fetchRangeReport<T>(path: string, filter: RangeFilter, extraParams?: Record<string, string>): Promise<T> {
   const params = new URLSearchParams({ range: filter.type, ...extraParams });
@@ -47,6 +49,16 @@ export async function createAccount(body: CreateAccountRequest): Promise<CreateA
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function updateAccountTheme(cuenta: string, theme: ThemeName): Promise<UpdateAccountThemeResult> {
+  const res = await fetch(`/api/accounts/${cuenta}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ theme }),
   });
   const json = await res.json();
   return { ok: res.ok, ...json };

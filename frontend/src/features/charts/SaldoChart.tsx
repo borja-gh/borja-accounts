@@ -2,11 +2,13 @@ import type { Data, Layout } from 'plotly.js-dist-min';
 import type { AccountKind, SaldoEvolucionReport } from '../../api/types';
 import { PlotlyChart } from '../../components/PlotlyChart';
 import { eur } from '../../lib/format';
+import { chartLineColor, type ThemeName } from '../../styles/themes';
 import { baseLayout } from './baseLayout';
 
 interface Props {
   kind: AccountKind;
   report: SaldoEvolucionReport;
+  theme?: ThemeName | null;
 }
 
 // La traza "Media 30d" (report.mediaMovil, solo cuentas CASH) se omite a
@@ -19,9 +21,9 @@ interface Props {
 // cuenta CASH de origen). NO es el saldo actual de mercado que muestra el KPI "Saldo"
 // (ese viene de holdings/ticker_quotes, en USD) -- por eso se etiqueta
 // explícitamente distinto, para que no se lean como la misma magnitud.
-export function SaldoChart({ kind, report }: Props) {
+export function SaldoChart({ kind, report, theme }: Props) {
   const L = baseLayout();
-  const lineColor = kind === 'INVESTMENT' ? '#2F5D50' : '#0969da';
+  const lineColor = chartLineColor(theme, kind);
   const label = kind === 'INVESTMENT' ? 'Capital aportado' : 'Saldo';
 
   const traces: Data[] = [

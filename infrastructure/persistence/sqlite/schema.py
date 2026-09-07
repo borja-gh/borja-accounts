@@ -54,6 +54,8 @@ def ensure_schema(conn):
     columns = {row[1] for row in conn.execute("PRAGMA table_info(accounts)")}
     if "cash_override" not in columns:
         conn.execute("ALTER TABLE accounts ADD COLUMN cash_override REAL")
+    if "theme" not in columns:
+        conn.execute("ALTER TABLE accounts ADD COLUMN theme TEXT")
     holding_columns = {row[1] for row in conn.execute("PRAGMA table_info(portfolio_holdings)")}
     if "close_price_usd" not in holding_columns:
         conn.execute("ALTER TABLE portfolio_holdings ADD COLUMN close_price_usd REAL")

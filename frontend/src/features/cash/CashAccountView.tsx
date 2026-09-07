@@ -1,7 +1,9 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { AccountMark } from '../../components/AccountMark';
 import { SectionHeading } from '../../components/SectionHeading';
-import { fetchSaldoEvolucion, fetchMensualEvolucion, fetchGastosRanking } from '../../api/client';
+import { fetchSaldoEvolucion, fetchMensualEvolucion, fetchGastosRanking, updateAccountTheme } from '../../api/client';
+import { ThemePicker } from '../accounts/ThemePicker';
+import { DEFAULT_THEME_BY_KIND, type ThemeName } from '../../styles/themes';
 import { KpiCards } from '../kpis/KpiCards';
 import { PeriodSelector } from '../kpis/PeriodSelector';
 import { useAccountKpis } from '../kpis/useAccountKpis';
@@ -60,14 +62,20 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
 
   useImperativeHandle(ref, () => ({ refreshAll }));
 
+  async function handleThemeChange(theme: ThemeName) {
+    await updateAccountTheme(account.id, theme);
+    onDataChanged();
+  }
+
   return (
     <>
       <div className="account-hero">
-        <AccountMark name={account.name} kind={account.kind} />
+        <AccountMark name={account.name} kind={account.kind} theme={account.theme} />
         <div>
           <h2>{account.name}</h2>
           <p>Día a día · gastos, nómina y apuestas</p>
         </div>
+        <ThemePicker value={account.theme ?? DEFAULT_THEME_BY_KIND[account.kind]} onChange={handleThemeChange} />
         <div className="spacer" />
         <PeriodSelector period={period} onChange={setPeriod} allowCustom />
       </div>
@@ -86,7 +94,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-label">Evolución del saldo</div>
-          <div style={{ height: 280 }}>{saldoReport && <SaldoChart kind={account.kind} report={saldoReport} />}</div>
+          <div style={{ height: 280 }}>{saldoReport && <SaldoChart kind={account.kind} report={saldoReport} theme={account.theme} />}</div>
         </div>
         <div className="chart-card">
           <div className="chart-label">Evolución mensual</div>

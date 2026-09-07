@@ -23,6 +23,7 @@ class Account:
     kind: AccountKind
     currency: str = "EUR"
     cash_override: float | None = None
+    theme: str | None = None
 
 
 @dataclass
