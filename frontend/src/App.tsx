@@ -8,6 +8,7 @@ import { CashAccountView } from './features/cash/CashAccountView';
 import { InvestmentAccountView } from './features/investment/InvestmentAccountView';
 import { TransferModal } from './features/transferencias/TransferModal';
 import { CreateAccountModal } from './features/accounts/CreateAccountModal';
+import { OnboardingEmptyState } from './components/OnboardingEmptyState';
 import type { AccountViewHandle } from './features/shared/viewHandle';
 import './styles/app.css';
 
@@ -49,6 +50,9 @@ function App() {
         />
       )}
       <main className="content">
+        {accounts && accounts.length === 0 && (
+          <OnboardingEmptyState onCreateAccount={() => setCreateAccountModalOpen(true)} />
+        )}
         {selected &&
           (selected.kind === 'CASH' ? (
             <CashAccountView key={selected.id} account={selected} ref={viewRef} onDataChanged={refreshAccounts} />
