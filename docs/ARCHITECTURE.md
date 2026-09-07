@@ -8,7 +8,8 @@ Documento de referencia para el refactor a FastAPI + arquitectura hexagonal, con
 |---|---|---|
 | Store principal | **SQLite** vía puerto de repositorio. Import one-off de los CSV reales (con backup previo íntegro). Los CSV pasan a rol de import/export, no se reescriben en cada movimiento. | Mantener CSV como store principal; Postgres desde el inicio |
 | Filtros temporales del dashboard | **Un único control global** por vista (Openbank/IBKR), resuelto como parámetro de rango en los endpoints de agregación (no 8 estados de filtro independientes) | Mantener los dos sistemas actuales (selector KPI + filtro por panel × 7 paneles) |
-| Limpieza UI | Eliminar: columnas **Bal. Hist. / Crec. Hist.** (apuestas y carteras), **media móvil 30d** (gráfico saldo Openbank), **chips "Top del mes" + quick-picks de importe**. Mantener el donut de gastos. | — |
+| Limpieza UI | Eliminar: columnas **Bal. Hist. / Crec. Hist.** (apuestas y carteras), **media móvil 30d** (gráfico saldo Openbank), **chips "Top del mes" + quick-picks de importe**, **donut de gastos** (eliminado después, ver fila siguiente). | — |
+| Donut de gastos por concepto | **Eliminado.** Dividir por los mismos `n_meses` en modo media no cambiaba las proporciones relativas entre sectores respecto al modo total — no era un bug de implementación, era una limitación conceptual del propio gráfico. El ranking de barras ya cubre la misma información. | Arreglar el donut para que "reaccione" a media/total |
 | Frontend | **React + TypeScript + Vite**, monorepo `backend/` + `frontend/`. Reemplaza el SPA vanilla JS actual. Se construye **después** de que la lógica financiera esté en el backend (Bloque 5, tras Bloque 4) para no reimplementar los cálculos dos veces. | Mantener vanilla JS; frameworks más pesados (Next.js) sin caso de uso para una app local de un usuario |
 | Integración IBKR | **Dentro de alcance, real, lectura + escritura.** Adapter contra el Client Portal Gateway (CPGW) oficial de IBKR, incluye poder operar (colocar/cancelar órdenes). Cada operación de escritura exige confirmación explícita del usuario en el momento — sin automatización ni trading algorítmico. Es una app personal de un único usuario: él decide y confirma cada acción. | Dejarlo como stub/"proyecto aparte"; solo-lectura por defecto |
 | Puerto de la app | **8000** (uvicorn), liberando el **5000** para el gateway CPGW, que lo tiene fijado en su propio `conf.yaml` | Mantener 5000 para la app (choca con el gateway) |
@@ -216,3 +217,13 @@ Este mismo snapshot es el **test de aceptación del rewrite a React** (Bloque 5)
 | 7 | Empaquetado OSS | README nuevo (incluye instrucciones del CPGW), CONTRIBUTING, LICENSE, `run.sh` portable, CI con build de frontend + pytest + lint | Periférico |
 
 Cada bloque es un commit (o serie corta) independiente y revertible. No se empieza el Bloque 1 sin el Bloque 0 en verde.
+
+**Estado real (2026-09-06):** Bloques 0-5 completados. Del Bloque 6, solo la pregunta 1 (§4, migrar el histórico de `Concepto` libre a `portfolio_holdings` con composición real por ticker) está resuelta, y sin conexión real al CPGW — el dato viene de los CSV de `../carteras/` reconciliados a mano contra un snapshot pegado del panel web de IBKR. La pregunta 2 (reconciliación continua contra el gateway real, adapters CPGW/manual, `BrokerGateway`) sigue completamente abierta. Bloque 7 no iniciado.
+
+## 9. Próximos pasos (fuera de este plan de bloques)
+
+Recogidos de las notas de seguimiento del usuario, no comprometidos con una fecha:
+
+- **Endpoint para vender y definir precio de venta** — cubierto de facto por `PUT /api/accounts/{cuenta}/portfolio-holdings/{id}` (edición inline de `closePrice`/`note` en "Análisis de carteras", ver README). No hay un flujo dedicado de "vender" (confirmación, fecha de venta) más allá de rellenar el precio de cierre.
+- **Viabilidad de abrir el proyecto como open source** — implica: generalizar la UI y eliminar referencias hardcodeadas a Borja/Openbank/IBKR (nombres de cuenta, acentos de color por cuenta); gestión de currencies en `investments` más allá del caso actual de una sola cuenta en USD; un banner de configuración/personalización inicial para un despliegue nuevo. Nada de esto está empezado — es un cambio de alcance grande (multi-tenant de facto, aunque siga siendo local/un usuario) que no encaja en el Bloque 7 (empaquetado OSS) tal como está descrito arriba, que asume que el dominio ya es genérico.
+- **Capa de IA con un modelo Gemini especializado en SQL** — sin explorar; no hay decisión de diseño tomada (¿lee directo de `accounts.db`?, ¿por un puerto de solo lectura?, ¿expuesto en la API o como herramienta aparte?).
