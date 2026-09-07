@@ -190,6 +190,7 @@ export interface TransferRequest {
   destino: AccountId;
   total: number;
   fecha: string;
+  exchangeRate?: number;
 }
 
 export interface TransferResult {

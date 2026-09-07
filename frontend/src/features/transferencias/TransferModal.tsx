@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { submitTransfer } from '../../api/client';
 import type { AccountId, AccountSummary } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
-import { eur, localISODate } from '../../lib/format';
+import { money, localISODate } from '../../lib/format';
 
 interface Props {
   open: boolean;
@@ -15,6 +15,7 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
   const [origen, setOrigen] = useState<AccountId>('');
   const [destino, setDestino] = useState<AccountId>('');
   const [total, setTotal] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('');
   const [fecha, setFecha] = useState(localISODate());
   const showToast = useToast();
 
@@ -23,6 +24,7 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
       setOrigen(accounts[0]?.id ?? '');
       setDestino(accounts[1]?.id ?? accounts[0]?.id ?? '');
       setTotal('');
+      setExchangeRate('');
       setFecha(localISODate());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -38,6 +40,10 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const cuentaOrigen = accounts.find((a) => a.id === origen);
+  const cuentaDestino = accounts.find((a) => a.id === destino);
+  const needsRate = !!cuentaOrigen && !!cuentaDestino && cuentaOrigen.currency !== cuentaDestino.currency;
 
   function handleOrigenChange(v: AccountId) {
     setOrigen(v);
@@ -61,19 +67,34 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
       showToast('Origen y destino deben ser distintos', 'err');
       return;
     }
+    let rateNum: number | undefined;
+    if (needsRate) {
+      rateNum = parseFloat(exchangeRate);
+      if (!rateNum || rateNum <= 0) {
+        showToast(`Introduce el tipo de cambio ${cuentaOrigen!.currency}→${cuentaDestino!.currency}`, 'err');
+        return;
+      }
+    }
     try {
-      const body = await submitTransfer({ origen, destino, total: totalNum, fecha });
+      const body = await submitTransfer({ origen, destino, total: totalNum, fecha, exchangeRate: rateNum });
       if (!body.ok) {
         showToast(body.error || 'Error', 'err');
         return;
       }
       onClose();
-      showToast(`Transferencia registrada · ${eur(body.saldo_origen)} → ${eur(body.saldo_destino)}`, 'ok');
+      showToast(
+        `Transferencia registrada · ${money(body.saldo_origen, cuentaOrigen!.currency)} → ${money(body.saldo_destino, cuentaDestino!.currency)}`,
+        'ok',
+      );
       onSaved();
     } catch {
       showToast('Error de conexión', 'err');
     }
   }
+
+  const totalNum = parseFloat(total);
+  const rateNum = parseFloat(exchangeRate);
+  const showPreview = needsRate && totalNum > 0 && rateNum > 0;
 
   return (
     <div className="overlay on">
@@ -100,9 +121,27 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
           </select>
         </div>
         <div className="fg">
-          <label>Importe (€)</label>
+          <label>Importe ({cuentaOrigen?.currency ?? ''})</label>
           <input type="number" placeholder="0.00" step="0.01" min="0.01" value={total} onChange={(e) => setTotal(e.target.value)} />
         </div>
+        {needsRate && (
+          <div className="fg">
+            <label>{`Tipo de cambio (1 ${cuentaOrigen!.currency} = ? ${cuentaDestino!.currency})`}</label>
+            <input
+              type="number"
+              placeholder="1.0000"
+              step="0.0001"
+              min="0.0001"
+              value={exchangeRate}
+              onChange={(e) => setExchangeRate(e.target.value)}
+            />
+            {showPreview && (
+              <span className="hint-total">
+                {money(totalNum, cuentaOrigen!.currency)} → {money(totalNum * rateNum, cuentaDestino!.currency)}
+              </span>
+            )}
+          </div>
+        )}
         <div className="fg">
           <label>Fecha</label>
           <input type="date" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />

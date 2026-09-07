@@ -29,7 +29,7 @@ describe('MovimientosTable', () => {
     const data: Movement[] = backendFixture.initial_data_cash1;
     const rows = searchedMovs(data, EMPTY_SEARCH);
     const { container } = render(
-      <MovimientosTable rows={rows} onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
+      <MovimientosTable rows={rows} currency="EUR" onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
     );
     const expected = swapAdjacentRows(expectedValues.cash1_movimientos_default, 'Supermercado', 7);
     expect(extractVisibleText(container)).toEqual(expected);
@@ -39,8 +39,13 @@ describe('MovimientosTable', () => {
     const data: Movement[] = backendFixture.initial_data_investment1;
     const rows = searchedMovs(data, EMPTY_SEARCH);
     const { container } = render(
-      <MovimientosTable rows={rows} onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
+      <MovimientosTable rows={rows} currency="USD" onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
     );
-    expect(extractVisibleText(container)).toEqual(expectedValues.investment1_movimientos_default);
+    // El vanilla nunca distinguió divisa por cuenta (siempre € fijo); ahora
+    // que MovimientosTable usa money(v, currency) (ver MovimientosTable.tsx),
+    // los importes de una cuenta USD se muestran en $ -- se transforma el
+    // símbolo en el expected, los montos numéricos no cambian.
+    const expected = expectedValues.investment1_movimientos_default.map((s: string) => s.replace(/€/g, '$'));
+    expect(extractVisibleText(container)).toEqual(expected);
   });
 });

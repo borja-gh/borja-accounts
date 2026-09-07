@@ -35,7 +35,7 @@ class SQLiteMovementRepository:
     def load(self, account_id: str) -> list[Movement]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT id, account_id, occurred_at, type, concept, amount, balance, rowid "
+                "SELECT id, account_id, occurred_at, type, concept, amount, balance, exchange_rate, rowid "
                 "FROM movements WHERE account_id = ? ORDER BY occurred_at, rowid",
                 (account_id,),
             ).fetchall()
@@ -48,6 +48,7 @@ class SQLiteMovementRepository:
                 concept=r[4],
                 amount=r[5],
                 balance=r[6],
+                exchange_rate=r[7],
             )
             for r in rows
         ]
@@ -58,12 +59,12 @@ class SQLiteMovementRepository:
             try:
                 conn.execute("DELETE FROM movements WHERE account_id = ?", (account_id,))
                 conn.executemany(
-                    "INSERT INTO movements (id, account_id, occurred_at, type, concept, amount, balance) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO movements (id, account_id, occurred_at, type, concept, amount, balance, exchange_rate) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     [
                         (
                             str(m.id), m.account_id, m.occurred_at.strftime(_DATE_FORMAT),
-                            m.type, m.concept, m.amount, m.balance,
+                            m.type, m.concept, m.amount, m.balance, m.exchange_rate,
                         )
                         for m in movements
                     ],

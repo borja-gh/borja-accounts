@@ -1,9 +1,10 @@
 import type { Movement } from '../../api/types';
 import { badgeClass, displayTipo, TIPOS_NEGATIVOS } from '../../domain/tipos';
-import { fd } from '../../lib/format';
+import { CURRENCY_SUFFIX, fd } from '../../lib/format';
 
 interface Props {
   rows: Movement[];
+  currency: string;
   onFilterByConcept: (concepto: string) => void;
   onDuplicate: (idx: number) => void;
   onEdit: (idx: number) => void;
@@ -15,13 +16,14 @@ const ACTION_BTN_STYLE = { fontSize: 11, padding: '3px 8px', whiteSpace: 'nowrap
 // (que reordenaba también aquí), no se repite el sort porque el resultado
 // observable es idéntico.
 //
-// € hardcodeado a propósito, incluso para investment1 (cuenta USD): esta
-// tabla lista los `movements` crudos (Ingreso/Transferencia/Saldo
-// Inicial/Cartera 1 legado), que son transferencias reales en EUR desde
-// Openbank -- no pasan por el modelo de holdings/USD. Ver
-// docs/ARCHITECTURE.md §0 sobre por qué conviven ambas divisas.
-export function MovimientosTable({ rows, onFilterByConcept, onDuplicate, onEdit }: Props) {
+// Muestra el importe en la divisa nativa de la cuenta (money()). Una
+// transferencia entrante entre cuentas de distinta divisa ya llega con el
+// amount convertido al tipo de cambio introducido al registrarla (ver
+// TransferBetweenAccountsUseCase) -- ya no hace falta forzar € en una
+// cuenta USD como antes de que existiera esa conversión.
+export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicate, onEdit }: Props) {
   if (!rows.length) return <div className="empty">Sin movimientos.</div>;
+  const symbol = CURRENCY_SUFFIX[currency] ?? currency;
   return (
     <table>
       <thead>
@@ -51,8 +53,8 @@ export function MovimientosTable({ rows, onFilterByConcept, onDuplicate, onEdit 
                   {r.Concepto}
                 </span>
               </td>
-              <td className={`r nowrap ${isNeg ? 'num-neg' : 'num-pos'}`}>{`${isNeg ? '-' : '+'}${r.Total.toFixed(2)}€`}</td>
-              <td className="r nowrap" style={{ fontWeight: 600 }}>{`${r.Saldo.toFixed(2)}€`}</td>
+              <td className={`r nowrap ${isNeg ? 'num-neg' : 'num-pos'}`}>{`${isNeg ? '-' : '+'}${r.Total.toFixed(2)}${symbol}`}</td>
+              <td className="r nowrap" style={{ fontWeight: 600 }}>{`${r.Saldo.toFixed(2)}${symbol}`}</td>
               <td className="r">
                 {canAct && (
                   <div className="row-actions">

@@ -115,7 +115,9 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
       <ApuestasSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
 
       <SectionHeading title="Movimientos" />
-      {data && <MovimientosSection account={account.id} kind={account.kind} data={data} onDataChanged={refreshAll} />}
+      {data && (
+        <MovimientosSection account={account.id} kind={account.kind} currency={account.currency} data={data} onDataChanged={refreshAll} />
+      )}
     </>
   );
 });

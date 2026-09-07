@@ -74,7 +74,7 @@ Cada CSV (uno por cuenta) tiene las mismas cinco columnas. Es el formato que ent
 | Total    | float    | Importe en la divisa de la cuenta (siempre positivo) |
 | Saldo    | float    | Saldo acumulado calculado automáticamente |
 
-> La divisa no es una columna del CSV: vive en `accounts.currency` (p.ej. `investment1` es USD, el resto EUR). El importe del CSV está en la divisa nativa de esa cuenta salvo una excepción documentada: los `movements` crudos de una cuenta INVESTMENT pueden incluir transferencias reales recibidas en la divisa de origen (p.ej. EUR entrando en una cuenta USD) cuando esa cuenta recibe capital transferido desde una cuenta en otra divisa. Esas filas no se convierten en la tabla de movimientos (ver comentario en `frontend/src/features/movimientos/MovimientosTable.tsx`); solo el modelo de holdings y los KPIs operan estrictamente en la divisa nativa de la cuenta.
+> La divisa no es una columna del CSV: vive en `accounts.currency` (p.ej. `investment1` es USD, el resto EUR). El importe del CSV está siempre en la divisa nativa de esa cuenta -- incluidas las transferencias entrantes desde una cuenta en otra divisa, que se convierten al tipo de cambio introducido al registrar la transferencia (ver "Transferencia entre cuentas" más abajo). Antes de que existiera esa conversión, esas filas se guardaban con el importe crudo de origen sin convertir; el histórico real (`cash1`↔`investment1`) se corrigió retroactivamente con las tasas BCE de cada fecha -- ver `scripts/backfill_exchange_rates.py`.
 
 ---
 
@@ -271,9 +271,11 @@ El botón **Cerrar** (solo en **Análisis de Apuestas**) abre un modal con conce
 ---
 
 ### Transferencia entre cuentas
-El botón "⇄ Transferencia" en el header abre un modal con origen, destino, importe y fecha. Al confirmar, registra automáticamente:
-- `Transferencia` (resta) en la cuenta origen con concepto "A IBKR" / "A OPENBANK"
-- `Ingreso` (suma) en la cuenta destino con concepto "Desde OPENBANK" / "Desde IBKR"
+El botón "⇄ Transferencia" en el header (visible solo con 2 o más cuentas) abre un modal con origen, destino, importe y fecha. Al confirmar, registra automáticamente:
+- `Transferencia` (resta) en la cuenta origen, con el importe en su propia divisa
+- `Ingreso` (suma) en la cuenta destino, con el importe convertido a la divisa de esa cuenta
+
+**Si origen y destino tienen divisas distintas**, el modal pide además el **tipo de cambio** (obligatorio, lo introduce el usuario -- no hay conversión automática contra una cotización externa). El importe que entra en destino es `total origen × tipo de cambio`, redondeado a 2 decimales. El tipo de cambio se persiste en `movements.exchange_rate` en ambas patas de la transferencia, para trazabilidad: se puede ver después a qué cambio se hizo cada transferencia histórica. Si las divisas coinciden, no se pide y `exchange_rate` queda `NULL`.
 
 ---
 
@@ -303,7 +305,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | POST   | `/api/movimiento/{cuenta}`                         | Añade un movimiento y recalcula el saldo                |
 | PUT    | `/api/movimiento/{cuenta}`                         | Edita tipo/concepto/total (fecha intacta)               |
 | DELETE | `/api/movimiento/{cuenta}`                         | Borra el último movimiento y recalcula el saldo         |
-| POST   | `/api/transferencia`                               | Registra una transferencia en ambas cuentas             |
+| POST   | `/api/transferencia`                               | Registra una transferencia en ambas cuentas (con `exchangeRate` si las divisas difieren) |
 
 ---
 
