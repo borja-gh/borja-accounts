@@ -10,7 +10,7 @@ export function RankingModeToggle({
   btnClass: string;
 }) {
   return (
-    <div style={{ display: 'flex', gap: 6 }}>
+    <div className="filter-bar">
       <button className={`fbtn ${btnClass} ${mode === 'media' ? 'active' : ''}`} onClick={() => onChange('media')}>
         Media/mes
       </button>

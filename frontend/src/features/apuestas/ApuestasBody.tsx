@@ -26,7 +26,7 @@ function sectionKpis(report: BettingReport): SectionKpiItem[] {
     {
       label: 'En juego ahora',
       value: report.openCount ? `${report.openCount} pos.` : '—',
-      valueStyle: report.openCount ? { color: 'var(--blue)' } : undefined,
+      valueClass: report.openCount ? 'num-info' : '',
       sub: report.openCount ? eur(report.openTotal) : undefined,
     },
   ];
@@ -42,8 +42,7 @@ const openColumns = (onClose: (req: ClosePositionRequest) => void): Column<OpenB
     cellClass: () => 'r',
     render: (p) => (
       <button
-        className="btn btn-ghost"
-        style={{ fontSize: 11, padding: '3px 10px', whiteSpace: 'nowrap' }}
+        className="btn btn-ghost btn-tiny"
         onClick={() => onClose({ tipo: 'Apuestas', concepto: p.concepto, monto: p.banca })}
       >
         Cerrar
@@ -87,20 +86,16 @@ export function ApuestasBody({ report, onClosePosition }: Props) {
       <SectionKpis items={sectionKpis(report)} />
 
       {report.openCount > 0 && (
-        <div style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="pos-block">
           <div className="open-pos-header">{`● Posiciones abiertas · ${report.openCount}`}</div>
-          <div style={{ overflowX: 'auto' }}>
-            <DataTable columns={openColumns(onClosePosition)} rows={report.openPositions} rowKey={(p) => p.concepto} />
-          </div>
+          <DataTable columns={openColumns(onClosePosition)} rows={report.openPositions} rowKey={(p) => p.concepto} />
         </div>
       )}
 
       {report.closedPositions.length > 0 && (
         <div>
           <div className="closed-pos-header">{`Historial cerrado · ${report.closedPositions.length}`}</div>
-          <div style={{ overflowX: 'auto' }}>
-            <DataTable columns={closedColumns} rows={report.closedPositions} rowKey={(r, i) => `${r.Concepto}-${i}`} />
-          </div>
+          <DataTable columns={closedColumns} rows={report.closedPositions} rowKey={(r, i) => `${r.Concepto}-${i}`} />
         </div>
       )}
     </>

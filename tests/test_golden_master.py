@@ -1,7 +1,7 @@
 """
 Golden master: compara el comportamiento actual del backend (app/main.py)
 contra snapshot_backend.json, congelado originalmente contra app.py (Flask)
-sobre CSV -- ver docs/ARCHITECTURE.md §7.
+sobre CSV -- ver tests/README.md.
 
 Ningún cambio de comportamiento intencional se da por válido si este test
 no pasa contra el snapshot ya revisado. Si el cambio es deliberado, se

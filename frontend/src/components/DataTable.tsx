@@ -20,27 +20,29 @@ export function DataTable<T>({
   rowKey: (row: T, index: number) => string | number;
 }) {
   return (
-    <table>
-      <thead>
-        <tr>
-          {columns.map((c, i) => (
-            <th key={i} className={c.headerClass}>
-              {c.header}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, i) => (
-          <tr key={rowKey(row, i)}>
-            {columns.map((c, j) => (
-              <td key={j} className={c.cellClass?.(row)}>
-                {c.render(row)}
-              </td>
+    <div className="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            {columns.map((c, i) => (
+              <th key={i} className={c.headerClass}>
+                {c.header}
+              </th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={rowKey(row, i)}>
+              {columns.map((c, j) => (
+                <td key={j} className={c.cellClass?.(row)}>
+                  {c.render(row)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

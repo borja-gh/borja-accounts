@@ -30,22 +30,21 @@ export function Header({ accounts, onOpenTransfer }: { accounts: AccountSummary[
       <div className="patrimonio-pill">
         {accounts ? (
           <>
-            {totals.map(([currency, total], i) => (
-              <span key={currency}>
-                {i > 0 && '  ·  '}
-                Total {currency} <b>{money(total, currency)}</b>
-              </span>
-            ))}
+            <span className="patrimonio-totals">
+              {totals.map(([currency, total]) => (
+                <span key={currency} className="patrimonio-total">
+                  Total {currency} <b>{money(total, currency)}</b>
+                </span>
+              ))}
+            </span>
             {accounts.length > 0 && (
-              <>
-                {' — '}
-                {accounts.map((a, i) => (
-                  <span key={a.id}>
-                    {i > 0 && ' · '}
+              <span className="patrimonio-accounts">
+                {accounts.map((a) => (
+                  <span key={a.id} className="patrimonio-account">
                     {a.name} {money(a.saldo, a.currency)}
                   </span>
                 ))}
-              </>
+              </span>
             )}
           </>
         ) : (

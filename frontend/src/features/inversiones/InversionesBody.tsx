@@ -90,6 +90,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
       return;
     }
     setClosing(false);
+    showToast('Venta registrada', 'ok');
     onSaved();
   }
 
@@ -111,7 +112,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
           onChange={(e) => setCurrentPrice(e.target.value)}
           onBlur={saveCurrentPrice}
           disabled={isClosed}
-          style={{ width: 90, textAlign: 'right' }}
+          className="input-compact"
         />
       </td>
       <td className={`r ${pnlClass(holding.pnl)}`}>
@@ -119,9 +120,9 @@ function HoldingRow({ account, holding, currency, onSaved }: {
       </td>
       <td className="r">
         {isClosed ? (
-          <span className="badge">Cerrado</span>
+          <span className="badge b-transferencia">Cerrado</span>
         ) : closing ? (
-          <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+          <div className="close-row">
             <input
               type="number"
               step="0.01"
@@ -129,16 +130,19 @@ function HoldingRow({ account, holding, currency, onSaved }: {
               autoFocus
               value={closePriceInput}
               onChange={(e) => setClosePriceInput(e.target.value)}
-              style={{ width: 80, textAlign: 'right' }}
+              className="input-compact w-80"
             />
-            <button className="btn btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }} onClick={confirmClose}>
+            <button className="btn btn-ghost btn-tiny" onClick={confirmClose}>
               OK
             </button>
           </div>
         ) : (
-          <button className="btn btn-ghost" style={{ fontSize: 11, padding: '2px 8px' }} onClick={startClose}>
-            Cerrar
-          </button>
+          <div className="close-row">
+            <span className="badge b-ingreso">Abierta</span>
+            <button className="btn btn-ghost btn-tiny" onClick={startClose}>
+              Cerrar
+            </button>
+          </div>
         )}
       </td>
       <td className="r">{holding.closePrice === null ? '—' : money(holding.closePrice, currency)}</td>
@@ -149,7 +153,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           onBlur={saveNote}
-          style={{ width: '100%' }}
+          className="input-full"
         />
       </td>
     </tr>
@@ -171,12 +175,12 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
         <span className={`r ${pnlClass(p.pnl)}`}>
           {p.pnl === null ? '—' : `${money(p.pnl, currency)} (${p.pnlPct?.toFixed(2)}%)`}
         </span>
-        <span className="r" style={{ color: 'var(--muted)' }}>
+        <span className="r portfolio-holding-meta">
           {p.holdings.length} ticker{p.holdings.length !== 1 ? 's' : ''}
         </span>
       </summary>
       {p.holdings.length > 0 && (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-scroll">
           <table>
             <thead>
               <tr>
@@ -247,7 +251,7 @@ export function InversionesBody({ account, report, currency, onSaved }: Props) {
       <SectionKpis items={sectionKpis(report, currency)} />
 
       {report.openCount > 0 && (
-        <div style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="pos-block table-scroll">
           <div className="open-pos-header">{`● Carteras abiertas · ${report.openCount}`}</div>
           <div className="portfolio-holding-header">
             <span>Cartera</span>
@@ -265,9 +269,7 @@ export function InversionesBody({ account, report, currency, onSaved }: Props) {
       {report.closedPositions.length > 0 && (
         <div>
           <div className="closed-pos-header">{`Historial de carteras · ${report.closedPositions.length}`}</div>
-          <div style={{ overflowX: 'auto' }}>
-            <DataTable columns={buildClosedColumns(currency)} rows={report.closedPositions} rowKey={(r, i) => `${r.Concepto}-${i}`} />
-          </div>
+          <DataTable columns={buildClosedColumns(currency)} rows={report.closedPositions} rowKey={(r, i) => `${r.Concepto}-${i}`} />
         </div>
       )}
     </>

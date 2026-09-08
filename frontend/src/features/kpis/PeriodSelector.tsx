@@ -17,7 +17,7 @@ interface Props {
 
 export function PeriodSelector({ period, onChange, allowCustom }: Props) {
   return (
-    <div style={{ display: 'flex', gap: 4 }}>
+    <div className="filter-bar">
       {OPTIONS.map((opt) => (
         <button
           key={opt.value}

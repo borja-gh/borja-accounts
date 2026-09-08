@@ -58,9 +58,10 @@ export function candidatesForTipo(data: Movement[], tipo: string, excludeIdx: nu
     return conceptStats(data.filter((r) => r.Tipo === 'Apuestas' && abiertas.has(r.Concepto)));
   }
   if (tipo === 'Inversión_r') {
-    const cerradas = new Set(data.filter((r) => r.Tipo === 'Inversión_r' && r._idx !== excludeIdx).map((r) => r.Concepto));
-    const abiertas = new Set(data.filter((r) => r.Tipo === 'Inversión' && !cerradas.has(r.Concepto)).map((r) => r.Concepto));
-    return conceptStats(data.filter((r) => r.Tipo === 'Inversión' && abiertas.has(r.Concepto)));
+    const persisted = data.filter((r) => r._idx != null);
+    const cerradas = new Set(persisted.filter((r) => r.Tipo === 'Inversión_r' && r._idx !== excludeIdx).map((r) => r.Concepto));
+    const abiertas = new Set(persisted.filter((r) => r.Tipo === 'Inversión' && !cerradas.has(r.Concepto)).map((r) => r.Concepto));
+    return conceptStats(persisted.filter((r) => r.Tipo === 'Inversión' && abiertas.has(r.Concepto)));
   }
   if (tipo === 'Devolución') {
     return conceptStats(data.filter((r) => r.Tipo === 'Gasto'));

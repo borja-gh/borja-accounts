@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Importa CSVs a SQLite (docs/ARCHITECTURE.md, Bloque 3). Uno por cuenta,
+Importa CSVs a SQLite (one-off; el store activo ya es SQLite). Uno por cuenta,
 nombrado <account_id>.csv -- generalizado para N cuentas CASH + M cuentas
 INVESTMENT (ya no asume exactamente openbank.csv/ibkr.csv). Las cuentas
 deben existir de antemano en la DB destino (dadas de alta vía POST

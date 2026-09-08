@@ -1,14 +1,10 @@
 """
-Bloque 3 del refactor (docs/ARCHITECTURE.md): SQLite reemplaza al CSV como
-store activo. El dominio (Movement, Account, LedgerService) y los casos de
-uso viven en domain/ y application/, sin cambios respecto al Bloque 2 --
-solo cambia qué implementación del puerto MovementRepository se conecta
-aquí. Este fichero sigue siendo solo routing FastAPI: parsea el request,
-invoca el caso de uso correspondiente y traduce excepciones de dominio al
-mismo contrato JSON que exponía el app.py (Flask) original.
+Capa HTTP de la app: FastAPI enruta, traduce DomainError al contrato JSON
+{"error": ...} + status_code, y sirve frontend/dist/.
 
-Los CSV reales (uno por cuenta) no se leen ni escriben más desde aquí --
-pasan a rol de import/export vía scripts/migrate_csv_to_sqlite.py.
+La lógica financiera vive en application/use_cases/ + domain/services/.
+El store activo es SQLite (SQLiteMovementRepository). Los CSV no se leen
+ni escriben desde aquí -- import/export vía scripts/migrate_csv_to_sqlite.py.
 """
 import os
 import sys
@@ -85,9 +81,9 @@ def _combined_ledger(account, movements):
     return movements
 
 
-# Bloque 5: el frontend pasa de index.html (vanilla, retirado del repo tras
-# consolidarse el rewrite -- ver docs/ARCHITECTURE.md §7) a un build de Vite
-# en frontend/dist/, generado con `npm run build` (gitignored, ver CI).
+# SPA React: build de Vite en frontend/dist/, generado con `npm run build`
+# (gitignored; CI y run.sh lo reconstruyen). El index.html vanilla ya no
+# está en el repo.
 FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
 _FRONTEND_ASSETS = os.path.join(FRONTEND_DIST, "assets")
 if os.path.isdir(_FRONTEND_ASSETS):
@@ -252,7 +248,7 @@ def get_investment_kpis(cuenta: str, period: str = "mes"):
 def get_saldo_evolucion(cuenta: str, range: str = "all", year: str | None = None):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
-    report, err = _run(GetSaldoEvolucionUseCase(repository).execute, cuenta, range, year, _reference_now())
+    report, err = _run(GetSaldoEvolucionUseCase(repository, ledger).execute, cuenta, range, year, _reference_now())
     if err:
         return err
     return report
@@ -329,7 +325,7 @@ async def update_portfolio_holding(cuenta: str, holding_id: int, request: Reques
     data, err = await _read_json(request)
     if err:
         return err
-    result, err = _run(UpdatePortfolioHoldingUseCase(repository).execute, cuenta, holding_id, data)
+    result, err = _run(UpdatePortfolioHoldingUseCase(repository, ledger).execute, cuenta, holding_id, data)
     if err:
         return err
     return result

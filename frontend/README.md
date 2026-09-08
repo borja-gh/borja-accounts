@@ -1,32 +1,31 @@
-# React + TypeScript + Vite
+# Frontend — Cuentas
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+SPA de este repo: React 19 + TypeScript + Vite. Consumidor de la API FastAPI (`/api/...`); no habla con brokers ni con SQLite.
 
-Currently, two official plugins are available:
+FastAPI sirve el build de producción desde `frontend/dist/` (`GET /` + `/assets`). `run.sh` ejecuta `npm run build` antes de arrancar uvicorn. `dist/` está en `.gitignore`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Scripts
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # Vite en el puerto por defecto; proxifica /api → http://127.0.0.1:8000
+npm run build    # tsc -b && vite build → dist/
+npm run preview  # sirve el dist/ localmente (sin la API)
+npm run lint     # oxlint
+npm test         # vitest run (jsdom; ver vite.config.ts)
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+`npm test` no forma parte del workflow de CI (`.github/workflows/ci.yml` hace `npm ci` + `npm run build` y pytest). Se corre a mano.
+
+## Layout
+
+```
+src/
+├── api/           cliente HTTP + tipos
+├── components/    Header, Tabs, PlotlyChart, …
+├── features/      cash/, investment/, kpis, charts, movimientos, apuestas, inversiones, …
+├── styles/        app.css + themes.ts (paletas por cuenta)
+└── test/          golden master de texto visible (fixtures congelados en tests/)
+```
+
+Plotly entra por npm (`plotly.js-dist-min`), no por CDN.
