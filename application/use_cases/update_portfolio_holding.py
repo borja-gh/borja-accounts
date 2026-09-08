@@ -34,7 +34,7 @@ class UpdatePortfolioHoldingUseCase:
                 raise InvalidAmountError(error_message)
             if value < 0:
                 raise InvalidAmountError(error_message)
-            return value
+            return round(value, 2)
 
         close_price = holding.close_price_usd
         if "closePrice" in data:

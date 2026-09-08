@@ -559,7 +559,16 @@
       padding: 5px 8px;
     }
     .input-compact.w-80 { width: 80px; }
-    .input-full { width: 100%; }
+    .input-full { width: 100%; min-width: 0; }
+    .input-compact::-webkit-outer-spin-button,
+    .input-compact::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .input-compact[type="number"] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
 
     /* ── MOVEMENT SEARCH ── */
     .mov-search {
@@ -838,8 +847,58 @@
       gap: 4px;
       justify-content: flex-end;
       align-items: center;
+      min-width: 0;
     }
     .portfolio-holding-meta { color: var(--muted); }
+    .holdings-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .holdings-table {
+      table-layout: fixed;
+      width: 100%;
+    }
+    .holdings-table th,
+    .holdings-table td {
+      padding: 6px 8px;
+      vertical-align: middle;
+    }
+    .holdings-table col.col-ticker { width: 4.4rem; }
+    .holdings-table col.col-company { width: 16%; }
+    .holdings-table col.col-num { width: 6.2rem; }
+    .holdings-table col.col-pnl { width: 5.8rem; }
+    .holdings-table col.col-actions { width: 7.6rem; }
+    .holdings-table .holdings-company {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .holdings-table .input-compact {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .holdings-table .close-row .input-compact {
+      width: auto;
+      flex: 1 1 4rem;
+      min-width: 0;
+    }
+    .holdings-table .holdings-actions > .btn {
+      width: 100%;
+    }
+    .pnl-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
+      line-height: 1.2;
+    }
+    .pnl-pct {
+      font-size: 10px;
+      opacity: 0.72;
+      font-weight: 500;
+    }
     .merchants-strip {
       display: flex;
       flex-wrap: wrap;
