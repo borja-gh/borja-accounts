@@ -1,14 +1,12 @@
 """
-Posiciones abiertas de investment1 basadas en `portfolio_holdings` (una
-fila por aportación real, de un CSV de carteras/) en vez de en `movements`
-tipo Inversión -- ver docs/ARCHITECTURE.md sobre por qué se fusionó
-"Cartera 3 - META"/"Cartera 3 - META'" en una sola cartera con dos
-aportaciones al mismo ticker.
+Posiciones abiertas basadas en `portfolio_holdings` (una fila por
+aportación real) en vez de en `movements` tipo Inversión. Aportaciones
+sucesivas al mismo ticker de una cartera conviven como holdings distintas
+de un mismo `portfolio`.
 
-Decisión explícita: sin seguimiento de valor de mercado en vivo. Cada
-holding es un simple check de compra -- el PnL solo se calcula cuando se
-rellena `close_price_usd` (precio real de venta de esa aportación
-concreta), nunca contra una cotización actual.
+El PnL de una holding usa `close_price_usd` si ya se vendió; si no, el
+último `current_price_usd` consultado (yfinance bajo demanda, no un stream
+en vivo). Sin precio, pnl queda None -- a coste. Ver docs/ARCHITECTURE.md §1.
 """
 import copy
 from dataclasses import dataclass, field
@@ -48,10 +46,17 @@ class OpenPortfolioView:
     holdings: list[HoldingView] = field(default_factory=list)
 
 
+def holding_sale_concept(holding: PortfolioHolding) -> str:
+    """Concepto persistido al vender un lote. Único por holding para no
+    mezclar invertido con el sintético de la cartera abierta ni con otro ticker."""
+    return f"{holding.portfolio} · {holding.ticker} #{holding.id}"
+
+
 def holdings_as_synthetic_movements(holdings: list[PortfolioHolding]) -> list[Movement]:
     """Reutiliza rank_by_concept/filter_by_field (que operan sobre
-    Movement) para el ranking de carteras -- una fila por holding, el
-    concept es la cartera, rank_by_concept ya agrega sumando amount."""
+    Movement) para el ranking de carteras -- una fila por holding ABIERTA,
+    el concept es la cartera, rank_by_concept ya agrega sumando amount.
+    Los lotes vendidos ya no cuentan: su capital salió vía Inversión_r."""
     return [
         Movement(
             account_id=h.account_id,
@@ -61,6 +66,7 @@ def holdings_as_synthetic_movements(holdings: list[PortfolioHolding]) -> list[Mo
             amount=h.capital_usd,
         )
         for h in holdings
+        if h.close_price_usd is None
     ]
 
 
@@ -71,6 +77,10 @@ def compute_open_portfolios(holdings: list[PortfolioHolding]) -> list[OpenPortfo
 
     out = []
     for portfolio, rows in by_portfolio.items():
+        open_rows = [h for h in rows if h.close_price_usd is None]
+        if not open_rows:
+            continue
+
         holding_views = []
         for h in rows:
             pnl = None
@@ -90,9 +100,10 @@ def compute_open_portfolios(holdings: list[PortfolioHolding]) -> list[OpenPortfo
                 pnl_usd=pnl, pnl_pct=pnl_pct, note=h.note,
             ))
 
-        portfolio_capital = _r2(sum(hv.capital_usd for hv in holding_views))
-        all_priced = bool(holding_views) and all(hv.pnl_usd is not None for hv in holding_views)
-        portfolio_pnl = _r2(sum(hv.pnl_usd for hv in holding_views)) if all_priced else None
+        portfolio_capital = _r2(sum(h.capital_usd for h in open_rows))
+        open_views = [hv for hv in holding_views if hv.close_price_usd is None]
+        all_priced = bool(open_views) and all(hv.pnl_usd is not None for hv in open_views)
+        portfolio_pnl = _r2(sum(hv.pnl_usd for hv in open_views)) if all_priced else None
         portfolio_pnl_pct = (
             _r2(portfolio_pnl / portfolio_capital * 100) if portfolio_pnl is not None and portfolio_capital > 0 else None
         )

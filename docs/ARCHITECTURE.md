@@ -1,233 +1,150 @@
-# Arquitectura — Estado actual → Objetivo
+# Arquitectura — estado actual
 
-Documento de referencia para el refactor a FastAPI + arquitectura hexagonal, con frontend React y la integración real con IBKR dentro de alcance. Cada bloque de trabajo del plan (§8) se valida contra este documento y contra el golden-master harness (§7). No se implementa nada de esto hasta ejecutar el Bloque 0.
+Panel financiero personal **local**: N cuentas CASH + M cuentas INVESTMENT, un único usuario, **sin autenticación**. FastAPI hexagonal en la **raíz del repo** + frontend React. Puerto **8000**.
 
-## 0. Decisiones ya tomadas
+Este documento describe lo que **hay**. Lo que no está implementado vive en §2; no es arquitectura vigente.
 
-| Decisión | Elegido | Descarta |
+## 0. Decisiones vigentes
+
+| Decisión | Qué hay hoy | Estado |
 |---|---|---|
-| Store principal | **SQLite** vía puerto de repositorio. Import one-off de los CSV reales (con backup previo íntegro). Los CSV pasan a rol de import/export, no se reescriben en cada movimiento. | Mantener CSV como store principal; Postgres desde el inicio |
-| Filtros temporales del dashboard | **Un único control global** por vista (CASH/INVESTMENT), resuelto como parámetro de rango en los endpoints de agregación (no 8 estados de filtro independientes) | Mantener los dos sistemas actuales (selector KPI + filtro por panel × 7 paneles) |
-| Limpieza UI | Eliminar: columnas **Bal. Hist. / Crec. Hist.** (apuestas y carteras), **media móvil 30d** (gráfico saldo Openbank), **chips "Top del mes" + quick-picks de importe**, **donut de gastos** (eliminado después, ver fila siguiente). | — |
-| Donut de gastos por concepto | **Eliminado.** Dividir por los mismos `n_meses` en modo media no cambiaba las proporciones relativas entre sectores respecto al modo total — no era un bug de implementación, era una limitación conceptual del propio gráfico. El ranking de barras ya cubre la misma información. | Arreglar el donut para que "reaccione" a media/total |
-| Frontend | **React + TypeScript + Vite**, monorepo `backend/` + `frontend/`. Reemplaza el SPA vanilla JS actual. Se construye **después** de que la lógica financiera esté en el backend (Bloque 5, tras Bloque 4) para no reimplementar los cálculos dos veces. | Mantener vanilla JS; frameworks más pesados (Next.js) sin caso de uso para una app local de un usuario |
-| Integración IBKR | **Dentro de alcance, real, lectura + escritura.** Adapter contra el Client Portal Gateway (CPGW) oficial de IBKR, incluye poder operar (colocar/cancelar órdenes). Cada operación de escritura exige confirmación explícita del usuario en el momento — sin automatización ni trading algorítmico. Es una app personal de un único usuario: él decide y confirma cada acción. | Dejarlo como stub/"proyecto aparte"; solo-lectura por defecto |
-| Puerto de la app | **8000** (uvicorn), liberando el **5000** para el gateway CPGW, que lo tiene fijado en su propio `conf.yaml` | Mantener 5000 para la app (choca con el gateway) |
-| investment1: composición de carteras y divisa | `portfolio_holdings` (una fila por aportación real, importada de los CSV de `~/Desktop/Borja/Proyectos/carteras/`) es un check de compra/cierre por ticker -- `close_price_usd`/`note`/`current_price_usd` son editables desde la UI (seguimiento de mercado en vivo bajo demanda, ver fila siguiente, 2026-09-07 -- ya no es "sin seguimiento" como decía esta fila originalmente). `investment1.currency` pasa a `USD` (la cuenta real opera en USD). Una cartera legado sin CSV (histórica, ya cerrada) sigue viviendo en `movements` sin tocar. | Conectar el CPGW real ya (Bloque 6 sigue pendiente) |
-| Precio de mercado en vivo bajo demanda, vía yfinance (2026-09-07) | **Revierte la fila anterior ("sin seguimiento en vivo"), a petición explícita del usuario.** Nueva columna `portfolio_holdings.current_price_usd`, refrescada por un botón único en `InversionesSection` que llama a `POST .../portfolio-holdings/refresh-prices` (`RefreshHoldingPricesUseCase` + puerto `MarketDataProvider`, adapter `infrastructure/market_data/yfinance_provider.py`) -- consulta TODOS los tickers de holdings abiertas de la cuenta de una vez, cada uno con su propio try/except (yfinance no es una API oficial, puede fallar o dar rate-limit por ticker sin tumbar el resto). El PnL de una holding usa `close_price_usd` si ya se vendió, si no `current_price_usd` (no realizado); el PnL de cartera aparece cuando todas sus holdings tienen algún precio, no solo cuando están cerradas. Nuevo KPI "Saldo preventa" = Saldo + Σ(valor de mercado − coste) de holdings abiertas con precio (las que no tienen, o falló su fetch, se quedan a coste) -- `en_carteras` sigue siendo siempre a coste. Cerrar una holding sigue siendo el mismo `PUT .../portfolio-holdings/{id}` con `closePrice`, ahora con un paso de confirmar/editar el precio en la UI antes de guardar (no directo desde `current_price_usd`). Riesgo conocido sin mitigar: un ticker no cotizado en bolsa puede coincidir por casualidad con el símbolo real de otro instrumento y devolver un precio plausible pero incorrecto en vez de fallar (caso real: SPCX, ticker de "Cartera 4 - SPACEX", es un ETF que nada tiene que ver con SpaceX). | Seguimiento en vivo automático/programado (en vez de bajo demanda); una API de cotización oficial de pago en vez de yfinance; lista de exclusión de tickers no cotizables |
-| Transferencias entre cuentas de distinta divisa (2026-09-07) | **Tipo de cambio explícito, introducido por el usuario al registrar la transferencia** (`movements.exchange_rate`, mismo patrón de `ALTER TABLE` que `theme`). El importe que entra en destino es `total origen × exchangeRate`. Sin conversión automática contra una cotización externa -- coherente con la decisión de no seguir valor de mercado en vivo. El histórico real (5 transferencias `cash1`↔`investment1`) se corrigió retroactivamente con las tasas de referencia diarias del BCE de cada fecha exacta (`scripts/backfill_exchange_rates.py`, backup previo en `backups/`) -- **las tasas históricas por fecha sí están disponibles** (BCE, vía la API pública `api.frankfurter.dev`), al contrario de lo que asumía la fila anterior. | Conversión automática contra una API de cotización en tiempo real; dejar el importe sin convertir (estado anterior, documentado como excepción en el README hasta este cambio) |
-| Ninguna cuenta mezcla divisas internamente (2026-09-07) | Todo movimiento de una cuenta se anota en la divisa nativa de esa cuenta (`accounts.currency`), sin excepciones -- incluido el legado `Cartera 1` (investment1), que hasta ahora se trataba como "EUR por diseño" a pesar de vivir en una cuenta USD. Los 6 movimientos reales de investment1 que estaban anotados en EUR (apertura de cuenta, dos ingresos de marzo, apertura/cierre de Cartera 1, dividendos) se convirtieron a USD con la tasa BCE de su fecha exacta (segunda tanda de `scripts/backfill_exchange_rates.py`). El PnL de Cartera 1 en USD (6.33) no es la conversión directa del PnL en EUR (9.88): apertura y cierre se convierten cada uno a la tasa de su propia fecha (marzo vs. julio), que es el efecto real del tipo de cambio, no un error. Todo el frontend (KPIs, `SaldoChart`, historial de carteras) usa `money(v, currency)` — ya no hay ningún `eur()` fijo en la vista INVESTMENT. | Mantener el histórico legado en EUR como caso especial permanente |
-| Saldo de investment1: fin de `cash_override` (2026-09-07) | **Eliminado.** El snapshot manual (`accounts.cash_override`, columna ahora retirada con `ALTER TABLE ... DROP COLUMN`) sumaba `cash + capital en holdings abiertas`, pero el ledger (`recalculate_balances`) ya "incluye" ese capital al no restarlo en `Inversión` (Item 7) -- sumarlo aparte lo contaba dos veces. `build_investment_ledger` (`domain/services/portfolio_holdings.py`) fusiona en tiempo de lectura `movements` con una fila `Inversión` agregada por cartera de holdings (nunca persistida -- `portfolio_holdings` sigue siendo la única fuente de verdad de holdings), y el KPI Saldo pasa a ser el balance final de esa fusión: la misma cifra que ya se veía en el histórico ("Capital aportado"). Efecto secundario deseado: las carteras de holdings (antes invisibles en `movements`, solo Cartera 1 aparecía) ahora se ven en el histórico igual que el legado, y su fila ya no lleva signo (`Inversión` no mueve el saldo al abrir, ver `TIPOS_NEGATIVOS` en `frontend/src/domain/tipos.ts`). | Actualizar `cash_override` a mano periódicamente; mover el modelo a que `Inversión` sí reste al abrir (revertiría Item 7) |
+| Store principal | SQLite vía `MovementRepository`. CSV = import/export + fixture de tests. | **Hecho** |
+| Filtros del dashboard | Un PeriodSelector (KPIs) + un RangeFilterBar (gráficos/listas) por vista. No hay filtro independiente por panel. | **Hecho** |
+| Limpieza UI | Sin Bal./Crec./ROI Hist., sin media móvil **en pantalla**, sin chips Top del mes, sin donut, sin quick-picks. | **Hecho** |
+| Frontend | React + TypeScript + Vite en `frontend/`. Hexagonal en la raíz (`app/`, `domain/`, …). | **Hecho** (el layout `backend/` + `frontend/` **no existe**) |
+| Puerto | FastAPI en **8000** (`127.0.0.1`). | **Hecho** |
+| Composición de carteras | `portfolio_holdings` (una fila por aportación). `close_price_usd` / `note` / `current_price_usd` editables. Una cartera legado cerrada puede seguir en `movements` (`Inversión` / `Inversión_r`) sin ticker. | **Hecho** |
+| Precio de mercado | Bajo demanda, yfinance, botón explícito. Nunca un job automático. | **Hecho** |
+| Transferencias cross-currency | Tipo de cambio **explícito** (`movements.exchange_rate`), introducido por el usuario. Destino = origen × rate, 2 decimales. Sin cotización automática en el alta. | **Hecho** |
+| Divisa interna | Una cuenta no mezcla divisas: todo movimiento en `accounts.currency`. Solo EUR y USD (`_SUPPORTED_CURRENCIES`). | **Hecho** |
+| Saldo INVESTMENT | Sin `cash_override`. Saldo = balance final de `build_investment_ledger` (histórico + fila `Inversión` sintética por cartera de holdings, no persistida). | **Hecho** |
+| Tema | `accounts.theme`, 6 paletas, por cuenta (default clay/CASH, forest/INVESTMENT). | **Hecho** |
+| Integración IBKR / CPGW | No hay `BrokerGateway`, ni adapter CPGW, ni órdenes. `clientportal.gw.zip` puede estar en disco y está en `.gitignore`; **no está integrado**. | **No implementado** — §2 |
+| Esquema relacional to-be (`transfers`, `assets`, `positions`, `trades`, `transfer_link_id`) | No existe. | **No implementado** — §2 |
+| Media móvil 30d | El backend **sí** la calcula para CASH (`compute_saldo_evolucion(..., with_media_movil=True)` → `mediaMovil`). `SaldoChart` no la pinta. | Cálculo huérfano (API/backend sí, UI no) |
+| `topMerchants` | `GET /gastos-mes-actual` sigue devolviendo el ranking del mes. La UI no consume esos chips. | Cálculo huérfano (API sí, UI no) |
 
-Estas decisiones ya condicionan el diseño de abajo.
+## 1. Estado actual
 
-## 1. Estado actual (as-is)
+### Layout del repo
 
-Monolito de 2 ficheros:
+No es un monorepo `backend/` + `frontend/`. No existe el directorio `backend/`.
 
-- **`app.py`** (280 líneas) — Flask, puerto 5000. `ARCHIVOS` mapea cuenta → CSV. Cada request de escritura carga el CSV entero con pandas, muta el DataFrame, recalcula `Saldo` desde cero (`recalcular_saldo`) y reescribe el fichero completo de forma atómica (`tempfile` + `os.replace`).
-- **`index.html`** (2517 líneas) — SPA vanilla JS + Plotly (CDN) + CSS inline. Contiene **toda la lógica financiera** (`computeKPIs`, `computeIbkrKPIs`, `computeApuestas`, `computeInversiones`, `openCarterasSnapshot`, `periodSlices`, `rollingMean`, detección de transferencias por substring). El backend solo hace CRUD de filas.
-- **Datos**: `openbank.csv` e `ibkr.csv` (reales, en `.gitignore`) — 316 y 18 filas. `openbank.example.csv`/`ibkr.example.csv` (versionados) solo tienen cabecera + `Saldo Inicial`: no ejercitan nada del dominio.
-- **`clientportal.gw.zip`** (10.5MB, sin seguimiento en git) — el Client Portal Gateway oficial de IBKR, recién añadido al directorio de trabajo. Es un redistribuible propietario que incluye un keystore (`root/vertx.jks`) y una contraseña en claro en `conf.yaml` (`sslPwd: "mywebapi"`). **Ya añadido a `.gitignore`** — no debe entrar al historial de git bajo ninguna circunstancia; se documenta la URL de descarga en el README en vez de versionarlo.
-- **CI**: `python -c "import app"` — smoke check de importación, no una suite de tests.
-- **`run.sh`**: hardcodea `google-chrome` y el puerto 5000 (ya usa `uv run`, ver Bloque 0 — gestor de dependencias migrado de `pip`/`requirements.txt` a `uv`/`pyproject.toml` antes de lo previsto en el plan original).
+```
+borja-accounts/
+├── app/main.py              FastAPI: routing, estáticos de frontend/dist/, traducción DomainError → JSON
+├── domain/                  Entidades, value objects, servicios puros (sin I/O)
+├── application/             Casos de uso + puertos (Protocol)
+│   └── ports/
+│       ├── repository.py    MovementRepository
+│       └── market_data.py   MarketDataProvider (precios on-demand)
+├── infrastructure/
+│   ├── persistence/sqlite/  Store activo (schema + SQLiteMovementRepository)
+│   ├── persistence/csv/     Adapter CSV: import one-off + harness de tests (no es el store de la app)
+│   └── market_data/         YFinanceProvider
+├── frontend/                React + TypeScript + Vite (build → frontend/dist/, servido por FastAPI)
+├── tests/                   Golden master del backend (pytest)
+└── scripts/                 migrate_csv_to_sqlite.py, backfill_exchange_rates.py
+```
 
-Ambas cuentas comparten un esquema genérico de 5 columnas (`Fecha, Tipo, Concepto, Total, Saldo`), diferenciadas solo por `TIPOS_POR_CUENTA` (**duplicado literal** en `app.py:17-20` e `index.html:758-761`). IBKR se modela como cuenta corriente: `Inversión`/`Inversión_r` son flujos de caja con `Concepto` de texto libre, sin activo, cantidad, precio de compra ni precio objetivo, y **sin ninguna conexión a IBKR real** — todo el dato es introducido a mano.
+Regla de dependencia: `domain` no importa `application`/`infrastructure`. `application` depende de `domain` + puertos. `infrastructure` implementa los puertos. `app/main.py` orquesta casos de uso.
 
-### Problemas concretos que fijan el diseño objetivo
+El frontend solo habla con FastAPI (`/api/...`). En `npm run dev`, Vite proxifica `/api` a `127.0.0.1:8000`.
 
-| Código | Problema | Consecuencia |
+### Esquema SQLite real
+
+Tres tablas. **No** existen `transfers`, `portfolios`, `assets`, `positions` ni `trades`.
+
+```
+accounts
+  id TEXT PK
+  name TEXT
+  kind TEXT CHECK (CASH | INVESTMENT)
+  currency TEXT DEFAULT 'EUR'
+  theme TEXT                    -- ALTER TABLE; paletas clay/forest/slate/plum/amber/teal
+
+movements
+  id TEXT PK
+  account_id TEXT FK → accounts
+  occurred_at TEXT
+  type TEXT
+  concept TEXT
+  amount REAL
+  balance REAL                  -- persistido por fila; se recalcula entero en cada escritura
+  exchange_rate REAL            -- ALTER TABLE; NULL si origen y destino comparten divisa
+
+portfolio_holdings
+  id INTEGER PK
+  account_id TEXT FK → accounts
+  portfolio, ticker, company, shares, price_usd, capital_usd, fee_usd,
+  contributed_at, source_file
+  close_price_usd, note         -- ALTER TABLE
+  current_price_usd             -- ALTER TABLE; precio de mercado bajo demanda (yfinance), no un stream en vivo
+```
+
+`cash_override` existió en `accounts` y se elimina al abrir la DB si aún está (`ALTER TABLE ... DROP COLUMN`). El KPI Saldo de INVESTMENT sale del ledger fusionado (`build_investment_ledger`), no de un snapshot manual.
+
+Las transferencias **no** tienen tabla propia: son dos movimientos (origen `Transferencia`, destino `Ingreso` con concepto `Desde <nombre>`) enlazados por heurística de texto (`domain/services/transfers.py`: `is_transfer_in` / `is_transfer_out`). No hay `transfer_link_id`.
+
+### Frontend y filtros
+
+Cada vista de cuenta (`CashAccountView` / `InvestmentAccountView`) tiene **dos** controles, no uno por panel:
+
+1. **PeriodSelector** — solo KPIs. CASH: Mes / Trimestre / Año / Personalizado. INVESTMENT: Mes / Trimestre / Año (el backend de investment-kpis no tiene rama `custom`).
+2. **RangeFilterBar** — un único rango compartido por gráficos + apuestas (CASH) o gráficos + carteras (INVESTMENT). Default: `Todo` (`all`). Opciones de calendario (`Mes` / `3 meses` / `6 meses` / años) + chip Personalizado. La tabla de movimientos no usa este rango: tiene buscador propio.
+
+Al cambiar de pestaña el componente se remonta (`key={account.id}`): los filtros vuelven al default; no hay estado de filtro vivo por pestaña.
+
+Limpieza de UI ya aplicada: sin chips «Top del mes», sin columnas Bal. Hist. / Crec. Hist. (apuestas) ni Bal. Hist. / ROI Hist. (carteras), sin media móvil 30d **pintada**, sin donut de gastos, sin quick-picks de importe.
+
+### Precios de mercado
+
+Puerto `MarketDataProvider` + adapter `infrastructure/market_data/yfinance_provider.py`. El botón «Precios actuales» llama `POST /api/accounts/{cuenta}/portfolio-holdings/refresh-prices`. Cada ticker se consulta con try/except propio. El PnL de una holding usa `close_price_usd` si ya se vendió; si no, `current_price_usd` (no realizado). El PnL de cartera aparece cuando **todas** sus holdings tienen algún precio.
+
+KPI **Saldo preventa** = Saldo + Σ(valor de mercado − coste) de holdings abiertas con precio; las que no tienen precio (o falló el fetch) se quedan a coste. **En carteras** es siempre a coste.
+
+yfinance no es una API oficial: puede fallar o dar rate-limit por ticker. Riesgo conocido: un ticker que no cotiza en bolsa puede coincidir con el símbolo de otro instrumento y devolver un precio plausible pero incorrecto (caso real documentado: SPCX vs SpaceX).
+
+### CSV
+
+Formato de import/export (`scripts/migrate_csv_to_sqlite.py`), no el store activo. `infrastructure/persistence/csv/` sigue en el árbol porque el harness (`tests/scenario.py`) y el script de migración lo usan.
+
+### Puertos de red
+
+FastAPI en **8000**. El Client Portal Gateway de IBKR, **si** se llegara a usar, tiene **5000** fijado en su `conf.yaml`; por eso la app no ocupa ese puerto. Hoy el gateway no forma parte del runtime.
+
+## 2. No implementado / fuera de alcance
+
+No son «arquitectura objetivo» de este repo. Si se retoman, será trabajo nuevo, no continuidad de un plan de bloques activo.
+
+- **`BrokerGateway`**, adapters CPGW / manual, sync de posiciones, `place_order` / `cancel_order`, frescura `Quote { LIVE, STALE, MANUAL }`.
+- **Client Portal Gateway de IBKR** como parte de la app (lectura o escritura). El zip gitignored no cuenta como integración.
+- **Monorepo `backend/` + `frontend/`** y el árbol to-be con `interfaces/api/routers`, SQLAlchemy, entidades `Asset`/`Position`/`Portfolio`/`Trade`.
+- **Esquema relacional to-be** (`transfers`, `portfolios`, `assets`, `positions`, `trades`; saldo no persistido; `transfer_link_id`).
+- **Trading** (manual confirmado o algorítmico).
+- **Multiusuario / autenticación** de la app.
+- **Postgres**, colas, cache, DI container, CQRS, event sourcing.
+- **Más divisas** que EUR/USD.
+- **Bloque 6** del plan histórico (IBKR real) y **bloque 7** (empaquetado OSS: LICENSE, CONTRIBUTING, README portable de CPGW): **no hechos**. Los bloques 0–5 (golden master, FastAPI hexagonal, SQLite, lógica en backend, React) **sí**.
+
+El plan de bloques 0–7, el golden-master harness contra `index.html` vanilla / `app.py` Flask, y las secciones antiguas §7/§8 **ya no rigen**. La suite de regresión del backend está en `tests/` (ver `tests/README.md`).
+
+## 3. Inconsistencias conocidas
+
+Las tres que exigían decisión (gráfico vs KPI, cierre de holding, cobro a 0) están **hechas**. Quedan:
+
+| Hecho | Dónde | Qué implica |
 |---|---|---|
-| `app.py:44-51` (`guardar`) | Reescribe el CSV real completo en cada escritura | Mayor riesgo activo sobre datos que no pueden perderse |
-| `app.py:95-97`, `169` | `_idx` es la posición en el array tras ordenar por fecha | Insertar con fecha retroactiva desplaza índices; `DELETE` no recibe id, borra "el último" |
-| `app.py:36-41` | `Saldo` es estado derivado pero se persiste y se recalcula por barrido completo | Debe ser estado calculado, no columna mutable |
-| `app.py:101-119` | Invariantes de dominio devuelven tuplas `jsonify` | Dominio acoplado a HTTP/Flask |
-| `app.py:17-20` vs `index.html:758-761` | `TIPOS_POR_CUENTA` duplicado | Fuente de verdad partida en dos lenguajes |
-| `app.py:279`, `run.sh`, README | Puerto **5000** hardcodeado | Choca con el puerto por defecto del CPGW de IBKR (`conf.yaml: listenPort: 5000`) |
-| `index.html:1371-1381` | Transferencias detectadas por `Concepto.includes('desde openbank')` | Heurística de texto en vez de relación explícita |
-| `index.html`: `chartGastos`/`chartCarteras`, `computeApuestas`/`computeInversiones` | Pares casi idénticos sobre distinto `Tipo` | Lógica financiera redundante |
-| `ibkr.csv` | Sin activo, cantidad, precio de compra, precio objetivo ni conexión a IBKR | Bloquea la tarea de mejorar la gestión de inversión |
-| `.github/workflows/ci.yml` | `import app` deja de tener sentido en cuanto `app.py` se descompone y aparece un frontend Node | CI debe testear dominio/aplicación y build de frontend |
+| Heurística de transferencia | `is_transfer_in` / `is_transfer_out` por prefijo de `Concepto` (`Desde ` / `A `). Sin `transfer_link_id`. | Un Ingreso «Desde el trabajo» no cuenta como ingreso. Borrar una pata no toca la otra. |
+| `En carteras` vs Saldo | Holdings sintéticos no restan del saldo al abrir; su capital puede no haberse aportado al libro. | No sumar las dos tarjetas. Cerrar un lote sí mueve el saldo por el P&L (Inversión_r). |
 
-## 2. Arquitectura objetivo (to-be)
+Cerrar un holding (`PUT .../portfolio-holdings/{id}` con `closePrice`) persiste `Inversión` + `Inversión_r` (`{cartera} · {ticker} #{id}`), saca el lote de «En carteras» y el P&L entra en el KPI. `GET /saldo-evolucion` recálcula igual que el KPI. `Apuestas_r` admite total 0.
 
-Monorepo: `backend/` (FastAPI + hexagonal) y `frontend/` (React + TypeScript + Vite). Dos puertos reales en el dominio:
+## 4. Notas pendientes (sin fecha)
 
-1. **Puerto de repositorio** (persistencia): CSV (transitorio, golden master) → SQLite (definitivo).
-2. **Puerto de broker** (`BrokerGateway`, **lectura + escritura**): dos implementaciones reales desde el día uno — adapter CPGW (IBKR real, incluye colocar/cancelar órdenes) y adapter manual (el usuario introduce precio/posición a mano; sin operativa real). No hay un tercer puerto ni un stub: ambas implementaciones son necesarias porque la sesión de IBKR es interactiva y puede no estar disponible (ver §4). Toda operación de escritura pasa por una confirmación humana explícita en la capa de aplicación — el puerto expone la capacidad, el caso de uso la condiciona.
+No comprometidas. No son arquitectura vigente.
 
-```
-backend/
-  app/
-    domain/
-      entities.py        # Account, Movement, Transfer, Asset, Position, Portfolio, Trade
-      value_objects.py   # Money, MovementType, AccountKind, Quote(price, as_of, source)
-      services/
-        ledger.py          # invariantes tipo/concepto, recálculo de saldo
-        betting.py          # agregados de apuestas
-        portfolio.py         # agregados de carteras, P&L realizado y no realizado
-    application/
-      ports/
-        repository.py       # AccountRepository, MovementRepository, PortfolioRepository (Protocol)
-        broker.py             # BrokerGateway (Protocol) — get_quote, get_positions, get_session_status, place_order, cancel_order
-      use_cases/
-        add_movement.py, edit_movement.py, delete_movement.py,
-        transfer_between_accounts.py, close_position.py,
-        get_account_summary.py, get_betting_report.py, get_portfolio_report.py,
-        sync_broker_positions.py   # job/acción explícita, nunca bloqueante en el request path
-    infrastructure/
-      persistence/
-        csv/                 # adapter CSV (Bloque 2) — transitorio
-        sqlite/               # adapter SQLAlchemy + SQLite (Bloque 3) — definitivo
-      broker/
-        ibkr_cpgw.py          # adapter real contra el Client Portal Gateway: lectura + órdenes (Bloque 6)
-        manual.py              # adapter de entrada manual (precio/posición a mano, sin operativa real) (Bloque 6)
-    interfaces/
-      api/
-        routers/              # accounts.py, movements.py, portfolios.py, transfers.py, broker.py
-        schemas/               # pydantic request/response
-  tests/                      # fixtures + snapshots de outputs del app.py/index.html actuales
-                               # (referencia temporal de la transición, ver §0 -- se retira al
-                               #  cerrar el refactor, no es infraestructura de test permanente)
-    domain/
-    application/
-frontend/
-  src/
-    api/                      # cliente HTTP tipado hacia backend (nunca habla con el CPGW directamente)
-    features/
-      accounts/, movements/, betting/, portfolios/, transfers/
-    components/
-  vite.config.ts               # dev proxy → backend:8000
-docs/
-  ARCHITECTURE.md
-```
-
-**Regla de dependencia**: `domain` no importa nada de `application`/`infrastructure`/`interfaces`. `application` depende solo de `domain` + puertos. `infrastructure` implementa los puertos. `interfaces` orquesta casos de uso vía FastAPI. El **frontend solo habla con el backend** — nunca directamente con el CPGW (evita CORS/certificado autofirmado/cookies de sesión en el navegador; el `conf.yaml` del gateway ya tiene `allowCredentials: false`, lo que rompería una llamada browser→gateway).
-
-### 2.1 Esquema relacional (SQLite, Bloque 3)
-
-Cuentas y carteras son **filas**, no tablas ni ficheros. Añadir una cuenta nueva es un `INSERT` en `accounts`, nunca tocar código (elimina el proceso manual de 5 pasos que el README actual documenta para "añadir una cuenta nueva").
-
-```
-accounts        id PK, name, kind (CASH | INVESTMENT), currency
-movements       id PK, account_id FK→accounts, occurred_at, type, concept, amount, transfer_link_id FK→transfers (nullable)
-transfers       id PK, from_account_id FK→accounts, to_account_id FK→accounts, amount, occurred_at, movement_out_id FK→movements, movement_in_id FK→movements
-
-portfolios      id PK, account_id FK→accounts, cash_balance
-assets          id PK, ticker (unique), name, currency
-positions       id PK, portfolio_id FK→portfolios, asset_id FK→assets, quantity, avg_buy_price, target_price
-trades          id PK, position_id FK→positions, type (BUY|SELL), quantity, price, executed_at
-```
-
-- `Saldo` no es una columna persistida por fila (hoy se reescribe entera en cada movimiento) — se calcula bajo demanda o se cachea aparte, nunca se muta fila a fila.
-- `transfer_link_id` reemplaza la heurística actual de `isTransferIn`/`isTransferOut` (detectar transferencias por texto libre en `Concepto`).
-- Una cuenta `INVESTMENT` tiene un `portfolio` (1:1 por defecto); `positions` cuelga del `portfolio`, no de la cuenta — una cartera admite N activos sin tocar el esquema.
-- `openbank.csv`/`ibkr.csv` como nombres de fichero desaparecen del todo: pasan a ser dos filas en `accounts`, indistinguibles en esquema de cualquier cuenta añadida después.
-
-## 3. Comparación 1:1
-
-| Pieza actual | Estado objetivo | Responsabilidad | Acción |
-|---|---|---|---|
-| `app.py` (monolito Flask, puerto 5000) | `backend/app/interfaces/api/` (FastAPI, puerto 8000) + `application/use_cases/` | Orquestación HTTP vs. casos de uso | **Descomponer** |
-| `ARCHIVOS = {...}` | Tabla `accounts` en SQLite + `AccountRepository` | Registro de cuentas config-driven | **Mover** a datos |
-| `TIPOS_POR_CUENTA` (duplicado) | `value_objects.py`, expuesto por `/api/accounts/{id}/config` | Única fuente de verdad | **Eliminar duplicación** |
-| `cargar()` / `guardar()` | `CSVRepository` (Bloque 2) → `SQLiteRepository` (Bloque 3) | I/O de persistencia | **Mover** tras puerto |
-| `recalcular_saldo()` | `LedgerService.balance_as_of(...)` | Saldo calculado, no columna mutable | **Modificar** |
-| `_validar_tipo_concepto()` | `LedgerService`, excepciones de dominio | Reglas de negocio puras | **Mover y desacoplar** |
-| `_idx` posicional | `Movement.id: UUID` | Identidad estable | **Corregir** (bug de correctitud) |
-| `index.html` (SPA vanilla, 2517 líneas) | `frontend/` (React + TS + Vite), consumidor puro de los endpoints de agregación | Presentación | **Reescribir** (Bloque 5, tras Bloque 4) |
-| `computeKPIs`/`computeIbkrKPIs`/`computeApuestas`/`computeInversiones` (navegador) | `application/use_cases/get_*_report.py` → endpoints `/api/accounts/{id}/summary`, `/api/bets`, `/api/portfolios` | Cálculo financiero en backend | **Mover** (Bloque 4), React lo consume directo (Bloque 5) |
-| `chartGastos`/`chartCarteras` (casi idénticas) | Un agregado `ranking_by_concept` servido por backend | Cálculo único | **Fusionar** |
-| `isTransferIn`/`isTransferOut` (string-match) | Entidad `Transfer` con `movement_out_id`/`movement_in_id` | Relación explícita | **Reemplazar** heurística |
-| Selector KPI + `panelFilters` (8 estados) | Un parámetro de rango (`since`/`until`) en los endpoints de agregación, un único control en React | Estado de UI simplificado | **Colapsar** (Bloque 4, se refleja en UI en Bloque 5) |
-| Columnas históricas acumulativas, media móvil, chips/quick-picks | — | Bajo valor, ruido visual | **Eliminar** (no se portan a React) |
-| `openbank.example.csv`/`ibkr.example.csv` (2 líneas) | Fixture sintético realista (gastos, nómina, apuestas y carteras abiertas/cerradas, transferencias) | Dataset que ejercita el dominio | **Ampliar** (Bloque 0) |
-| — (no existe hoy) | `ibkr_cpgw.py`: adapter que habla con el Client Portal Gateway local (`https://localhost:5000` server-side), expone estado de sesión, posiciones, quotes y ejecución de órdenes (confirmadas por el usuario) | Integración real IBKR, lectura + escritura | **Crear** (Bloque 6) |
-| `clientportal.gw.zip` en el directorio de trabajo | Ignorado por git; documentado en README (URL de descarga + `bin/run.sh root/conf.yaml`) | Dependencia de runtime externa, no del repo | **No versionar** (ya en `.gitignore`) |
-| `pyproject.toml` (flask, pandas, gestionado con `uv` desde el Bloque 0) | Añadir fastapi, uvicorn, sqlalchemy, pydantic, httpx (cliente hacia CPGW) al mismo mecanismo `uv`/`pyproject.toml`; si el monorepo separa `backend/`, el fichero se mueve ahí | Dependencias del stack objetivo | **Ampliar** (el gestor de paquetes ya no cambia, solo las dependencias) |
-| `run.sh` (venv/chrome/puerto 5000 hardcodeados) | Script portable: levanta backend (8000) y frontend (Vite dev o build servido), sin asumir navegador/venv concretos | Arranque reproducible | **Reescribir** |
-| `.github/workflows/ci.yml` (`import app`) | pytest (`domain`/`application`) + build de `frontend/` + lint | CI real | **Reescribir** |
-| `openbank.csv`/`ibkr.csv` (reales) | Import one-off a SQLite (Bloque 3), con backup e invariantes | Dato real preservado | **Migrar con verificación** |
-
-## 4. Modelo de dominio de inversión (Tarea 3) e integración IBKR
-
-### Modelo de posiciones
-
-```
-Asset       { id, ticker, name, currency }
-Position    { id, portfolio_id, asset_id, quantity, avg_buy_price, target_price }
-Portfolio   { id, account_id, cash_balance }
-Trade       { id, position_id, type(BUY|SELL), quantity, price, executed_at }
-```
-
-### Por qué el broker port necesita dos implementaciones reales, no una + stub
-
-La autenticación del Client Portal Gateway es **interactiva**: el usuario levanta el gateway (proceso Java local, `bin/run.sh root/conf.yaml`, puerto 5000, TLS autofirmado), abre `https://localhost:5000` en un navegador y hace login con sus credenciales IBKR (SSO, posible 2FA). No hay API key headless. Consecuencias de diseño:
-
-- **La disponibilidad de datos IBKR es intermitente por naturaleza** (gateway no levantado, sesión caducada, usuario no ha hecho login todavía). Esto no es un detalle de infraestructura, es parte del dominio: cada valor derivado de IBKR (precio, posiciones) lleva un estado de frescura — `Quote { price, as_of, source }` con `source ∈ {LIVE, STALE, MANUAL}` — que se expone en la API y se renderiza en la UI ("gateway offline" es preferible a mostrar una cotización de hace tres días como si fuera actual).
-- **Ningún endpoint de la app bloquea en la disponibilidad del gateway.** La sincronización (`sync_broker_positions`) es una acción explícita o un job de fondo, nunca parte del camino crítico de una request. La app debe ser completamente usable con el gateway apagado — la entrada manual sigue siendo la vía primaria, porque esto es un sistema de gestión personal, no un terminal de trading.
-- **El adapter vive en el servidor** (`backend/app/infrastructure/broker/ibkr_cpgw.py`), nunca en el navegador: el frontend React solo habla con FastAPI.
-- **Lectura + escritura, con confirmación humana obligatoria.** El adapter CPGW expone también `place_order`/`cancel_order` del Client Portal Web API — es una app personal de un único usuario y quiere poder operar desde su propio dashboard. La restricción no está en el puerto (que sí expone la capacidad), sino en el caso de uso de aplicación: ninguna orden se ejecuta sin una acción explícita del usuario en el momento (confirmación en UI, sin colas ni reglas automáticas que disparen órdenes por sí solas). El detalle del flujo de confirmación (qué se muestra, qué se re-verifica antes de enviar) se define al implementar el Bloque 6, no aquí.
-
-Las rutas concretas del Web API (estado de sesión, keep-alive, posiciones, quotes) se verifican contra el swagger real del gateway en ejecución (o `interactivebrokers.github.io/cpwebapi`) al implementar el Bloque 6 — no se fijan aquí de memoria.
-
-### El fork de `ibkr.csv` (ahora con una capa más)
-
-Los 18 movimientos reales son flujos de caja (`Inversión`/`Inversión_r`) por `Concepto` libre, sin ticker ni cantidad. Con IBKR real en alcance, la migración del Bloque 6 debe resolver dos preguntas, no una:
-
-1. Cómo traducir el histórico (`Concepto` → `Position` "legacy" sin ticker real, o preservarlo aparte como historial de flujos).
-2. **Cómo reconcilian** los datos que reporte el gateway (posiciones/cantidades reales) contra el histórico introducido a mano: ¿el dato del broker se vuelve autoritativo desde el momento de la primera sincronización, solo anota/enriquece el registro manual, o conviven como dos fuentes visibles por separado?
-
-Se resuelve con dry-run, dataset de prueba y verificación de invariantes (capital total sin cambios) antes de tocar el dato real — igual que cualquier migración de datos reales en este proyecto.
-
-Respuesta parcial ya implementada (§0, fila "investment1: composición de carteras y divisa"): las 4 carteras abiertas reales se migraron de `Concepto` libre a `portfolio_holdings` (ticker, cantidad, precio de compra, fecha real de aportación), reconciliado contra el panel de IBKR ticker a ticker antes de escribir. Es la pregunta 1 resuelta para el histórico existente. La pregunta 2 (reconciliación continua contra el gateway real) sigue completamente abierta — se descartó explícitamente el seguimiento de valor de mercado en vivo; el único "dato del broker" es el precio de cierre real que el usuario rellena a mano al vender.
-
-## 5. Fuera de alcance (explícitamente)
-
-- **Trading automatizado o algorítmico** — cualquier orden hacia IBKR exige una acción explícita del usuario en el momento; no hay bots, reglas ni ejecución programática sin confirmación humana (ver §4).
-- Multiusuario / autenticación de la app — es una app local de un usuario.
-- Postgres, colas, cache — sin caso de uso hoy.
-- DI container, CQRS, event sourcing — sobre-ingeniería para 2 cuentas y ~350 filas.
-- Automatizar el login SSO/2FA del gateway — no es técnicamente posible sin credenciales interactivas; el usuario levanta y autentica el gateway él mismo.
-
-## 6. Restricción de puertos de red
-
-FastAPI en **8000**. El Client Portal Gateway tiene **5000** fijado en su propio `conf.yaml` (reeditarlo obliga a repetir el cambio en cada descarga nueva del gateway). `run.sh`, el README y el golden-master harness usan 8000 desde el Bloque 1.
-
-## 7. Garantía sobre datos reales — golden-master harness
-
-Antes de mover una sola línea de `app.py`/`index.html`:
-
-1. Backup íntegro de `openbank.csv`/`ibkr.csv` fuera del repo.
-2. Fixture sintético ampliado en los `.example.csv`: gastos, nómina, devoluciones, apuestas abiertas/cerradas, inversiones abiertas/cerradas, transferencias.
-3. Script que golpea los 7 endpoints actuales y serializa la respuesta; snapshot adicional de los valores que hoy calcula el frontend (`computeKPIs`, `computeApuestas`, `computeInversiones`, etc.) contra ese fixture.
-4. Tests que comparan cualquier cambio futuro contra ese snapshot.
-
-Este mismo snapshot es el **test de aceptación del rewrite a React** (Bloque 5): mismo fixture de entrada, mismos números renderizados, solo cambia la tecnología de presentación. Ningún bloque se da por válido si no pasa este harness.
-
-**Retirada de la mitad vanilla (2026-09-07).** La comparación contra `index.html` (vanilla) y `app.py` (Flask) -- `run_frontend_harness.mjs`, `test_frontend_matches_snapshot`, el propio `index.html` congelado -- se retiró: ya no aportaba nada que los `*.test.tsx` de React no cubrieran, y comparaba contra una tecnología que dejó de servirse en el Bloque 5. `snapshot_backend.json` y `test_backend_matches_snapshot` (`tests/scenario.py`, `tests/test_golden_master.py`) se quedan como la suite de regresión normal y permanente del backend -- no es infraestructura temporal, es lo que valida cualquier cambio futuro a la lógica financiera. `snapshot_frontend.json`/`snapshot_frontend_values.json` se conservan como fixtures congelados y definitivos que siguen consumiendo los tests de componentes React (ver `tests/README.md`).
-
-## 8. Plan de bloques (commits independientes)
-
-| # | Bloque | Contenido | Toca |
-|---|---|---|---|
-| 0 | Golden master | Backup real, fixture sintético, harness de snapshot | Ninguno de los dos |
-| 1 | Esqueleto FastAPI + hexagonal | Estructura de carpetas, puerto 8000, FastAPI sirviendo `index.html` sin cambios, CI actualizado (harness en verde) | Backend (mínimo) |
-| 2 | Extraer dominio sobre CSV | `Movement`/`Account`/`LedgerService`, `CSVRepository` tras el puerto, `Movement.id` UUID | Backend |
-| 3 | Migración a SQLite | Import one-off con backup + invariantes, `SQLiteRepository`, CSV a import/export | Backend |
-| 4 | Mover lógica financiera al backend | Endpoints de agregación con parámetro de rango único; `index.html` vanilla se adapta a consumirlos (paridad total, sin limpieza todavía) | Backend + frontend vanilla |
-| 5 | Rewrite frontend a React | Monorepo `frontend/` (TS + Vite), consumidor puro de los endpoints del Bloque 4, con la limpieza de UI ya aplicada (filtro único, sin columnas históricas/media móvil/chips). Acceptance test = snapshot del Bloque 0 | Frontend (reemplaza `index.html`) |
-| 6 | Modelo de inversión + IBKR real | `Asset`/`Position`/`Portfolio`/`Trade`, `BrokerGateway` con adapters CPGW + manual, freshness, migración/reconciliación de `ibkr.csv` | Backend + frontend |
-| 7 | Empaquetado OSS | README nuevo (incluye instrucciones del CPGW), CONTRIBUTING, LICENSE, `run.sh` portable, CI con build de frontend + pytest + lint | Periférico |
-
-Cada bloque es un commit (o serie corta) independiente y revertible. No se empieza el Bloque 1 sin el Bloque 0 en verde.
-
-**Estado real (2026-09-06):** Bloques 0-5 completados. Del Bloque 6, solo la pregunta 1 (§4, migrar el histórico de `Concepto` libre a `portfolio_holdings` con composición real por ticker) está resuelta, y sin conexión real al CPGW — el dato viene de los CSV de `../carteras/` reconciliados a mano contra un snapshot pegado del panel web de IBKR. La pregunta 2 (reconciliación continua contra el gateway real, adapters CPGW/manual, `BrokerGateway`) sigue completamente abierta. Bloque 7 no iniciado.
-
-## 9. Próximos pasos (fuera de este plan de bloques)
-
-Recogidos de las notas de seguimiento del usuario, no comprometidos con una fecha:
-
-- **Endpoint para vender y definir precio de venta** — cubierto de facto por `PUT /api/accounts/{cuenta}/portfolio-holdings/{id}` (edición inline de `closePrice`/`note` en "Análisis de carteras", ver README). No hay un flujo dedicado de "vender" (confirmación, fecha de venta) más allá de rellenar el precio de cierre.
-- **Viabilidad de abrir el proyecto como open source** — en marcha (rama `feature/oss-generalizacion`, 2026-09-07). Hecho: README/docs con ejemplos genéricos en vez de Openbank/IBKR reales (Bloque A); onboarding cuando la BD está vacía (Bloque B); tema por cuenta individual, no por `kind` (Bloque C, `accounts.theme`, 6 paletas); rename `ibkr-kpis`→`investment-kpis` (Bloque D); modernización visual de la UI (Bloque E, en curso); transferencias con tipo de cambio explícito entre divisas (ver fila de §0). Sigue pendiente: soporte de más de EUR/USD (`_SUPPORTED_CURRENCIES` sigue fijo a dos divisas -- alcance decidido, no ampliar por ahora); banner de configuración/personalización inicial más allá del onboarding de alta de cuenta; LICENSE/CONTRIBUTING (Bloque 7, sin empezar).
-- **Capa de IA con un modelo Gemini especializado en SQL** — sin explorar; no hay decisión de diseño tomada (¿lee directo de `accounts.db`?, ¿por un puerto de solo lectura?, ¿expuesto en la API o como herramienta aparte?).
+- Flujo de venta de holding: `PUT .../portfolio-holdings/{id}` con `closePrice` (caja + inventario). No hay fecha de venta en la UI (el backend usa ahora, o `fecha` si se envía).
+- Alta de `portfolio_holdings` desde la UI: no existe (`POST` tampoco). Las filas llegan por seed/tests o por procesos fuera de la app.
+- Empaquetado OSS (LICENSE, CONTRIBUTING): no hecho.
+- Capa de IA sobre SQL: sin explorar; no hay decisión.

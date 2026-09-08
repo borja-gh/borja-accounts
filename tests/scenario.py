@@ -85,10 +85,8 @@ def _seed_sqlite_from_fixture(repo_root, csv_dir, db_path):
     # se quedan como legado vía movements -- dan cobertura al path histórico
     # (compute_closed_positions) que sigue existiendo para Cartera 1 en
     # producción. "Cartera Prueba" es sintética y da cobertura al modelo de
-    # holdings (ver docs/ARCHITECTURE.md): AAPL sigue abierta (sin
-    # close_price_usd, pnl None) y MSFT ya se vendió (close_price_usd
-    # relleno, pnl calculado, con nota) -- así se ejercita también que el
-    # PnL de la cartera se queda en None mientras no estén todas cerradas.
+    # holdings: AAPL sigue abierta; MSFT se vende por el caso de uso de
+    # cierre (caja), no como inventario mudo.
     sqlite_repo.replace_portfolio_holdings("investment1", [
         PortfolioHolding(
             id=0, account_id="investment1", portfolio="Cartera Prueba",
@@ -99,9 +97,17 @@ def _seed_sqlite_from_fixture(repo_root, csv_dir, db_path):
             id=0, account_id="investment1", portfolio="Cartera Prueba",
             ticker="MSFT", company="Microsoft Corp.", shares=5.0, price_usd=200.0,
             capital_usd=1000.0, contributed_at="2026-05-01", source_file="test-fixture",
-            close_price_usd=180.0, note="Vendida con pérdida",
         ),
     ])
+    # Cerrar MSFT por el mismo camino que la UI: hecho de caja (Inversión +
+    # Inversión_r) con fecha fija para que el golden master sea reproducible.
+    from application.use_cases.update_portfolio_holding import UpdatePortfolioHoldingUseCase
+    from domain.services.ledger import LedgerService
+    msft = next(h for h in sqlite_repo.list_portfolio_holdings("investment1") if h.ticker == "MSFT")
+    UpdatePortfolioHoldingUseCase(sqlite_repo, LedgerService()).execute(
+        "investment1", msft.id,
+        {"closePrice": 180.0, "note": "Vendida con pérdida", "fecha": "2026-06-01 12:00:00"},
+    )
     investment1 = sqlite_repo.get_account("investment1")
     investment1.currency = "USD"
     sqlite_repo.update_account(investment1)
@@ -252,7 +258,7 @@ def run_scenario(repo_root):
 
             # exchangeRate obligatorio desde que TransferBetweenAccountsUseCase
             # exige conversión explícita entre cuentas de distinta divisa
-            # (investment1 es USD, cash1 es EUR) -- ver docs/ARCHITECTURE.md §9.
+            # (investment1 es USD, cash1 es EUR) -- ver docs/ARCHITECTURE.md §0.
             call("transferencia_investment1_a_cash1", "post", "/api/transferencia", {
                 "origen": "investment1", "destino": "cash1", "total": 100.00, "fecha": "2026-07-18",
                 "exchangeRate": 0.90,

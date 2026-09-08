@@ -36,9 +36,9 @@ class PortfolioHolding:
     """Una fila de un CSV de carteras/ -- una aportación real a un ticker
     dentro de una cartera, en la fecha en que se hizo (no la fecha del
     nombre de fichero, que puede ser la de la última aportación).
-    close_price_usd/note son editables desde la UI: sin seguimiento de
-    valor de mercado en vivo (decisión explícita), el PnL solo se calcula
-    cuando se rellena close_price_usd al vender esa aportación."""
+    close_price_usd, note y current_price_usd son editables desde la UI.
+    El PnL usa close_price_usd si ya se vendió; si no, current_price_usd
+    (yfinance bajo demanda, no un stream en vivo)."""
     id: int
     account_id: str
     portfolio: str

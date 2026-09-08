@@ -14,13 +14,14 @@ export function GastosChart({ ranking }: { ranking: GastosRankingSection }) {
   const maxV = Math.max(...valores);
   const L = baseLayout();
 
+  const symbol = ranking.hoverSuffix.charAt(0) || '€';
   const traces: Data[] = [
     {
       x: valores,
       y: conceptos.map((c) => `<b>${c}</b>`),
       type: 'bar',
       orientation: 'h',
-      text: valores.map((t) => t.toFixed(2) + '€'),
+      text: valores.map((t) => t.toFixed(2) + symbol),
       textposition: 'outside',
       cliponaxis: false,
       textfont: { color: '#24292f', size: 12 },
@@ -35,7 +36,7 @@ export function GastosChart({ ranking }: { ranking: GastosRankingSection }) {
     ...L,
     hovermode: 'closest',
     margin: { l: 140, r: 120, t: 10, b: 36 },
-    xaxis: { ...L.xaxis, type: 'linear', ticksuffix: '€', range: [0, maxV * 1.45] },
+    xaxis: { ...L.xaxis, type: 'linear', ticksuffix: symbol, range: [0, maxV * 1.45] },
     yaxis: {
       ...L.yaxis,
       automargin: true,

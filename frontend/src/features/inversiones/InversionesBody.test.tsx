@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '../../components/ToastContext';
 import { backendFixture } from '../../test/goldenMaster';
+import { money } from '../../lib/format';
 import { InversionesBody } from './InversionesBody';
 
 function renderBody(props: Parameters<typeof InversionesBody>[0]) {
@@ -25,7 +26,7 @@ describe('InversionesBody', () => {
     renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
 
     expect(screen.getByText('Cartera Prueba')).toBeInTheDocument();
-    expect(screen.getByText('2000,00$')).toBeInTheDocument(); // capital invertido
+    expect(screen.getByText(money(report.openTotal, 'USD'))).toBeInTheDocument(); // AAPL 1000 + legado Global 250
 
     // Legado sin holdings (Cartera Global): sigue apareciendo.
     expect(screen.getByText('Cartera Global')).toBeInTheDocument();
@@ -121,5 +122,6 @@ describe('InversionesBody', () => {
       expect.objectContaining({ method: 'PUT', body: JSON.stringify({ closePrice: 150 }) }),
     );
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText('Venta registrada')).toBeInTheDocument();
   });
 });

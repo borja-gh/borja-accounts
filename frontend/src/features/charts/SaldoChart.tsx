@@ -17,13 +17,10 @@ interface Props {
 // backend la sigue calculando (with_media_movil=True para CASH) pero
 // ya no se representa.
 //
-// Para INVESTMENT esta serie sigue viniendo de movements.balance -- capital
-// aportado neto histórico, en la divisa nativa de la cuenta (las
-// transferencias entre cuentas y el histórico legado se convierten al
-// registrarse, ver TransferBetweenAccountsUseCase). NO es el saldo actual
-// de mercado que muestra el KPI "Saldo" (ese viene de holdings/ticker_quotes)
-// -- por eso se etiqueta explícitamente distinto, para que no se lean como
-// la misma magnitud.
+// Para INVESTMENT esta serie se recalcula con la misma regla que el KPI
+// Saldo (GetSaldoEvolucionUseCase → ledger + holdings sintéticos). NO es
+// mark-to-market (eso es "Saldo preventa"). Se etiqueta "Capital aportado"
+// para no confundirlo con NAV.
 export function SaldoChart({ kind, report, currency, theme }: Props) {
   const L = baseLayout();
   const lineColor = chartLineColor(theme, kind);

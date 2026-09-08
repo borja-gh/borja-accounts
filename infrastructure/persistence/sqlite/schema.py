@@ -23,13 +23,11 @@ CREATE INDEX IF NOT EXISTS idx_movements_account ON movements(account_id);
 
 -- Una fila por aportación real (una fila de un CSV de carteras/), no por
 -- cartera -- una cartera puede recibir varias aportaciones sucesivas al
--- mismo ticker sin cerrarse (ver docs/ARCHITECTURE.md sobre por qué
--- "Cartera 3 - META"/"Cartera 3 - META'" se fusionaron en una sola fila
--- de `portfolio` con dos holdings). No hay seguimiento de valor de mercado
--- en vivo (decisión explícita, ver docs/ARCHITECTURE.md §0): close_price_usd
--- se rellena a mano cuando se vende esa aportación concreta, y solo
--- entonces se calcula el PnL -- hasta entonces es un simple check de
--- compra, no un tracker.
+-- mismo ticker sin cerrarse. close_price_usd se rellena a mano al vender.
+-- current_price_usd (ALTER más abajo) es precio de mercado bajo demanda
+-- (POST .../refresh-prices, yfinance), no un stream en vivo; ver
+-- docs/ARCHITECTURE.md §1. El CREATE TABLE histórico no declara esa
+-- columna: ensure_schema() la añade si falta.
 CREATE TABLE IF NOT EXISTS portfolio_holdings (
     id INTEGER PRIMARY KEY,
     account_id TEXT NOT NULL REFERENCES accounts(id),

@@ -95,15 +95,19 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       <div className="account-hero">
         <ThemePicker value={account.theme ?? DEFAULT_THEME_BY_KIND[account.kind]} onChange={handleThemeChange} />
         <AccountMark name={account.name} kind={account.kind} theme={account.theme} />
-        <div>
-          <h2>{account.name}</h2>
+        <div className="account-hero-copy">
+          <div className="account-hero-title">
+            <h2>{account.name}</h2>
+            <span className="badge b-inversion">Inversión</span>
+          </div>
           <p>Capital y carteras</p>
         </div>
-        <div className="spacer" />
-        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setDeleteModalOpen(true)}>
-          Eliminar cuenta
-        </button>
-        <PeriodSelector period={{ type: period }} onChange={(p) => setPeriod(p.type as KpiPeriod)} />
+        <div className="account-hero-actions">
+          <button className="btn btn-ghost btn-compact" onClick={() => setDeleteModalOpen(true)}>
+            Eliminar cuenta
+          </button>
+          <PeriodSelector period={{ type: period }} onChange={(p) => setPeriod(p.type as KpiPeriod)} />
+        </div>
       </div>
       <DeleteAccountModal
         account={account}
@@ -112,12 +116,12 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
         onDeleted={onDataChanged}
       />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 0 4px' }}>
-        <button className="btn btn-ghost" style={{ fontSize: 12 }} disabled={refreshingPrices} onClick={handleRefreshPrices}>
+      <div className="price-toolbar">
+        <button className="btn btn-ghost btn-compact" disabled={refreshingPrices} onClick={handleRefreshPrices}>
           {refreshingPrices ? 'Consultando…' : 'Precios actuales'}
         </button>
         {priceBanner && (
-          <span className={`soft-alert ${priceBanner.failedTickers.length ? 'warn' : 'ok'}`} style={{ margin: 0 }}>
+          <span className={`soft-alert compact ${priceBanner.failedTickers.length ? 'warn' : 'ok'}`}>
             {`${priceBanner.updated}/${priceBanner.total} posiciones actualizadas`}
             {priceBanner.failedTickers.length > 0 && ` · fallo en ${priceBanner.failedTickers.join(', ')}`}
           </span>
@@ -125,10 +129,10 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       </div>
 
       <SectionHeading title="Resumen general" />
-      <div className="kpis">{kpi && <KpiCardsInvestment kpi={kpi} period={period} currency={account.currency} />}</div>
+      <div className="kpis kpis-5">{kpi && <KpiCardsInvestment kpi={kpi} period={period} currency={account.currency} />}</div>
 
       {data && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}>
+        <div className="filter-row">
           <RangeFilterBar data={data} filter={rangeFilter} onChange={setRangeFilter} />
         </div>
       )}
@@ -136,19 +140,17 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       <SectionHeading title="Desglose" />
       <div className="charts-grid">
         <div className="chart-card">
-          <div className="chart-label">Capital aportado · histórico (EUR)</div>
-          <div style={{ height: 280 }}>
+          <div className="chart-label">{`Capital aportado · histórico (${account.currency})`}</div>
+          <div className="chart-plot">
             {saldoReport && <SaldoChart kind={account.kind} report={saldoReport} currency={account.currency} theme={account.theme} />}
           </div>
         </div>
         <div className="chart-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div className="chart-label" style={{ marginBottom: 0 }}>
-              Capital por cartera
-            </div>
+          <div className="chart-head">
+            <div className="chart-label">Capital por cartera</div>
             <RankingModeToggle mode={carterasMode} onChange={setCarterasMode} btnClass="carteras-mode-btn" />
           </div>
-          <div style={{ height: 280 }}>
+          <div className="chart-plot">
             {carterasReport && <CarterasChart report={carterasReport} kind={account.kind} theme={account.theme} />}
           </div>
         </div>

@@ -1,9 +1,8 @@
 """
 Traducción fusionada de computeApuestas/computeInversiones y de las
 posiciones abiertas que calculaba inline apuestasBody/inversionesBody
-(index.html) -- son el mismo algoritmo sobre distinto par de Tipo
-(Apuestas/Apuestas_r, Inversión/Inversión_r), tal como ya apuntaba la
-comparación 1:1 en docs/ARCHITECTURE.md.
+(index.html) -- el mismo algoritmo sobre distinto par de Tipo
+(Apuestas/Apuestas_r, Inversión/Inversión_r).
 """
 from dataclasses import dataclass
 

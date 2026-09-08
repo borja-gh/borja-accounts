@@ -12,7 +12,7 @@ export function InversionesSection({ account, currency, report, onSaved }: Props
   if (!report) return null;
 
   return (
-    <div className="section" style={{ marginBottom: 14, paddingTop: 6 }}>
+    <div className="section section-flush">
       <InversionesBody account={account} report={report} currency={currency} onSaved={onSaved} />
     </div>
   );

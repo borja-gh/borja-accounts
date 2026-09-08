@@ -4,6 +4,9 @@ from domain.services.gastos import compute_gasto_alert, compute_top_merchants
 
 
 class GetGastosMesActualUseCase:
+    """Alerta de gasto del mes (sí la usa GastoAlert) + topMerchants
+    (el JSON se conserva; la UI ya no pinta los chips)."""
+
     def __init__(self, repository):
         self.repository = repository
 

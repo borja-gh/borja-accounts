@@ -20,7 +20,7 @@ export function RangeFilterBar({ data, filter, onChange }: Props) {
   const options = rangeOptions(data);
 
   return (
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+    <div className="filter-bar">
       {options.map((opt) => {
         const active = filter.type === opt.type && (opt.year === undefined || opt.year === filter.year);
         return (

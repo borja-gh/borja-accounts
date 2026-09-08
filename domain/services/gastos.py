@@ -1,8 +1,9 @@
 """
-Traducción de la parte de cálculo de gastoAlertHtml/topMerchantsHtml/
-chartGastos (index.html) -- la construcción de `Plotly.newPlot` y el
-HTML de la alerta se quedan en el frontend, solo se mueve la agregación
-(ranking por concepto, media/mes, top-N).
+Agregación de gastos: alerta del mes, ranking por concepto, top-N del mes.
+
+`compute_top_merchants` sigue alimentando GET /gastos-mes-actual
+(`topMerchants`); la UI ya no pinta esos chips. La alerta sí se muestra
+(GastoAlert). El ranking alimenta GastosChart.
 """
 from dataclasses import dataclass
 from datetime import datetime

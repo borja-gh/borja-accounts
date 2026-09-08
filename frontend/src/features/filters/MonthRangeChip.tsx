@@ -117,12 +117,11 @@ export function MonthRangeChip({ active, fromYm, toYm, onApply }: Props) {
             <MonthInput value={draftTo} onChange={setDraftTo} />
           </div>
           <div className="range-popover-actions">
-            <button className="btn btn-ghost" style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => setOpen(false)}>
+            <button className="btn btn-ghost btn-compact" onClick={() => setOpen(false)}>
               Cancelar
             </button>
             <button
-              className="btn btn-primary"
-              style={{ fontSize: 12, padding: '5px 12px' }}
+              className="btn btn-primary btn-compact"
               disabled={!canApply}
               onClick={apply}
             >
