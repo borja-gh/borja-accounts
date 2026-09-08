@@ -89,14 +89,18 @@ def compute_open_portfolios(holdings: list[PortfolioHolding]) -> list[OpenPortfo
             # PnL con el precio de cierre real si ya se vendió; si sigue
             # abierta, con el último precio de mercado consultado (ver
             # RefreshHoldingPricesUseCase) -- no realizado hasta cerrar.
-            price = h.close_price_usd if h.close_price_usd is not None else h.current_price_usd
+            # El precio de mercado se redondea a céntimos: yfinance trae
+            # floats IEEE que reventaban el input de la tabla.
+            close_price = _r2(h.close_price_usd) if h.close_price_usd is not None else None
+            current_price = _r2(h.current_price_usd) if h.current_price_usd is not None else None
+            price = close_price if close_price is not None else current_price
             if price is not None:
                 pnl = _r2(h.shares * price - h.capital_usd)
                 pnl_pct = _r2(pnl / capital * 100) if capital > 0 else None
             holding_views.append(HoldingView(
                 id=h.id, ticker=h.ticker, company=h.company,
                 avg_price_usd=_r2(h.price_usd), capital_usd=capital,
-                close_price_usd=h.close_price_usd, current_price_usd=h.current_price_usd,
+                close_price_usd=close_price, current_price_usd=current_price,
                 pnl_usd=pnl, pnl_pct=pnl_pct, note=h.note,
             ))
 
@@ -138,7 +142,7 @@ def compute_presale_delta(holdings: list[PortfolioHolding]) -> float:
     consultado) contribuyen 0, es decir, se quedan a coste. Alimenta el KPI
     "Saldo preventa" (en_carteras sigue siendo siempre a coste)."""
     return round(sum(
-        h.shares * h.current_price_usd - h.capital_usd
+        h.shares * _r2(h.current_price_usd) - h.capital_usd
         for h in holdings
         if h.close_price_usd is None and h.current_price_usd is not None
     ), 2)

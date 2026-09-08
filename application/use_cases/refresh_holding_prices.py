@@ -14,7 +14,7 @@ class RefreshHoldingPricesUseCase:
 
         prices = self.market_data.get_prices(tickers)
 
-        updates = {h.id: prices[h.ticker] for h in open_holdings if h.ticker in prices}
+        updates = {h.id: round(prices[h.ticker], 2) for h in open_holdings if h.ticker in prices}
         if updates:
             self.repository.update_holdings_current_prices(updates)
 

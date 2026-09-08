@@ -35,3 +35,9 @@ export function localISODate(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+/** Precio editable: 2 decimales, sin la basura IEEE que trae yfinance. */
+export function priceInputValue(v: number | null | undefined): string {
+  if (v == null || !Number.isFinite(v)) return '';
+  return (Math.round(v * 100) / 100).toFixed(2);
+}
