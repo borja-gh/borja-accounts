@@ -1,7 +1,7 @@
 """
 Adapter SQLite del puerto MovementRepository (mismo puerto que
-infrastructure/persistence/csv/repository.py). Reemplaza el CSV como store
-activo -- ver docs/ARCHITECTURE.md Bloque 3.
+infrastructure/persistence/csv/repository.py). Es el store activo de la
+app; el adapter CSV queda para import one-off y el harness de tests.
 
 `db_path` es un argumento obligatorio, sin default: un valor por defecto
 aquí facilitaría que un harness o script mal configurado abriera sin

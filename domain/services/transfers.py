@@ -1,16 +1,13 @@
 """
 Traducción de isTransferIn/isTransferOut/ibkrTransfers (index.html):
-detección de transferencias por heurística de texto sobre `Concepto` -- no
-hay una relación explícita todavía (un `transfer_link_id` real es decisión
-de un bloque posterior, ver docs/ARCHITECTURE.md). Originalmente hardcodeada
-a "Openbank"/"OB" (una única contraparte posible); generalizada aquí para
-N/M cuentas: cualquier "Ingreso" con concepto "Desde <cuenta>" es una
-entrada, cualquier "Transferencia" (o concepto "A <cuenta>") es una salida.
-El nombre de la contraparte se extrae del propio concepto -- riesgo
-conocido y aceptado: un movimiento manual con concepto "Desde algo" que no
-sea una transferencia real se clasificaría igual como si lo fuera. Un
-`transfer_link_id` explícito eliminaría la ambigüedad, pero es over-kill
-para una app de un solo usuario.
+detección de transferencias por heurística de texto sobre `Concepto`.
+No hay tabla `transfers` ni `transfer_link_id` (fuera de alcance, ver
+docs/ARCHITECTURE.md §2). Originalmente hardcodeada a "Openbank"/"OB";
+generalizada para N/M cuentas: cualquier "Ingreso" con concepto
+"Desde <cuenta>" es una entrada, cualquier "Transferencia" (o concepto
+"A <cuenta>") es una salida. El nombre de la contraparte se extrae del
+propio concepto -- riesgo conocido: un movimiento manual con concepto
+"Desde algo" que no sea transferencia se clasificaría igual.
 """
 from dataclasses import dataclass
 

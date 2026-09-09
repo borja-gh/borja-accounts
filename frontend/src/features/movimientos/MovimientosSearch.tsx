@@ -27,7 +27,6 @@ export function MovimientosSearch({ kind, data, search, onChange }: Props) {
         onChange={(v) => onChange({ ...search, concepto: v })}
         suggestions={(q) => rankConcepts(conceptCandidatesForSearch(data, search.tipo), q)}
         placeholder="Concepto…"
-        style={{ flex: '1 1 130px', minWidth: 110 }}
       />
       <input
         type="date"

@@ -49,11 +49,13 @@ describe('MovimientosTable', () => {
     // esto desplaza todos los saldos posteriores respecto al vanilla.
     const expected = [
       'Fecha', 'Tipo', 'Concepto', 'Importe', 'Saldo',
-      '02/07/2026', 'Ingreso', 'Dividendo', '+15.00$', '1455.00$', 'Duplicar', 'Editar',
-      '25/06/2026', 'Ingreso', 'Desde OPENBANK', '+400.00$', '1440.00$', 'Duplicar', 'Editar',
-      '08/06/2026', 'Retorno inv.', 'Cartera Bonos', '+150.00$', '1040.00$', 'Duplicar', 'Editar',
+      '02/07/2026', 'Ingreso', 'Dividendo', '+15.00$', '1355.00$', 'Duplicar', 'Editar',
+      '25/06/2026', 'Ingreso', 'Desde OPENBANK', '+400.00$', '1340.00$', 'Duplicar', 'Editar',
+      '08/06/2026', 'Retorno inv.', 'Cartera Bonos', '+150.00$', '940.00$', 'Duplicar', 'Editar',
+      '01/06/2026', 'Retorno inv.', 'Cartera Prueba · MSFT #2', '+900.00$', '990.00$', 'Duplicar', 'Editar',
       '10/05/2026', 'Retorno inv.', 'Cartera Tech', '+400.00$', '1090.00$', 'Duplicar', 'Editar',
-      '01/05/2026', 'Inversión', 'Cartera Prueba', '2000.00$', '990.00$',
+      '01/05/2026', 'Inversión', 'Cartera Prueba · MSFT #2', '1000.00$', '990.00$', 'Duplicar', 'Editar',
+      '01/05/2026', 'Inversión', 'Cartera Prueba', '1000.00$', '990.00$',
       '12/04/2026', 'Inversión', 'Cartera Global', '250.00$', '990.00$', 'Duplicar', 'Editar',
       '01/03/2026', 'Gasto', 'Comisión custodia', '-10.00$', '990.00$', 'Duplicar', 'Editar',
       '05/02/2026', 'Inversión', 'Cartera Bonos', '200.00$', '1000.00$', 'Duplicar', 'Editar',

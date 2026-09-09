@@ -9,8 +9,6 @@ import { MovimientosSearch } from './MovimientosSearch';
 import { MovimientosTable } from './MovimientosTable';
 import { EMPTY_SEARCH, isSearchActive, searchedMovs, type MovSearch } from './search';
 
-const ACTION_BTN_STYLE = { fontSize: 12, padding: '5px 12px' };
-
 interface Props {
   account: AccountId;
   kind: AccountKind;
@@ -78,27 +76,26 @@ export function MovimientosSection({ account, kind, currency, data, onDataChange
 
   return (
     <div className="bottom-grid">
-      <div className="section" style={{ overflow: 'visible' }}>
+      <div className="section section-raised">
         <div className="section-head">
           <span className="section-title">
             Movimientos · <span className="mov-count">{countLabel}</span>
           </span>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div className="section-head-actions">
             <button
-              className="btn btn-ghost"
-              style={ACTION_BTN_STYLE}
+              className="btn btn-ghost btn-compact"
               onClick={handleRepeatLast}
               title="Rellena el formulario con el último movimiento"
             >
               Repetir último
             </button>
-            <button className="btn btn-danger" style={ACTION_BTN_STYLE} onClick={handleDeleteLast}>
+            <button className="btn btn-danger btn-compact" onClick={handleDeleteLast}>
               Borrar último
             </button>
           </div>
         </div>
         <MovimientosSearch kind={kind} data={data} search={search} onChange={setSearch} />
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-scroll table-scroll-y">
           <MovimientosTable
             rows={movs}
             currency={currency}
@@ -109,7 +106,7 @@ export function MovimientosSection({ account, kind, currency, data, onDataChange
         </div>
       </div>
 
-      <div className="section" style={{ overflow: 'visible' }} ref={formSectionRef}>
+      <div className="section section-raised" ref={formSectionRef}>
         <div className="section-head">
           <span className="section-title">Añadir movimiento</span>
         </div>

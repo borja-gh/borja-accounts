@@ -4,7 +4,7 @@ import type { AccountId, ClosedInvestPosition, OpenInvestPosition, PortfolioHold
 import { DataTable, type Column } from '../../components/DataTable';
 import { SectionKpis, type SectionKpiItem } from '../../components/SectionKpis';
 import { useToast } from '../../components/ToastContext';
-import { fd, money } from '../../lib/format';
+import { fd, money, priceInputValue } from '../../lib/format';
 
 function pnlClass(v: number | null): string {
   if (v === null) return '';
@@ -32,7 +32,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
   currency: string;
   onSaved: () => void;
 }) {
-  const [currentPrice, setCurrentPrice] = useState(holding.currentPrice?.toString() ?? '');
+  const [currentPrice, setCurrentPrice] = useState(priceInputValue(holding.currentPrice));
   const [note, setNote] = useState(holding.note ?? '');
   const [closing, setClosing] = useState(false);
   const [closePriceInput, setClosePriceInput] = useState('');
@@ -40,7 +40,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
   const isClosed = holding.closePrice !== null;
 
   useEffect(() => {
-    setCurrentPrice(holding.currentPrice?.toString() ?? '');
+    setCurrentPrice(priceInputValue(holding.currentPrice));
   }, [holding.currentPrice]);
 
   async function saveCurrentPrice() {
@@ -48,10 +48,11 @@ function HoldingRow({ account, holding, currency, onSaved }: {
     const value = trimmed === '' ? null : Number(trimmed);
     if (value !== null && (Number.isNaN(value) || value < 0)) {
       showToast('Precio actual inválido', 'err');
-      setCurrentPrice(holding.currentPrice?.toString() ?? '');
+      setCurrentPrice(priceInputValue(holding.currentPrice));
       return;
     }
-    if (value === holding.currentPrice) return;
+    const held = holding.currentPrice == null ? null : Number(priceInputValue(holding.currentPrice));
+    if (value === held) return;
     const result = await updatePortfolioHolding(account, holding.id, { currentPrice: value });
     if (!result.ok) {
       showToast(result.error || 'Error al guardar', 'err');
@@ -73,7 +74,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
   }
 
   function startClose() {
-    setClosePriceInput(holding.currentPrice?.toString() ?? '');
+    setClosePriceInput(priceInputValue(holding.currentPrice));
     setClosing(true);
   }
 
@@ -90,6 +91,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
       return;
     }
     setClosing(false);
+    showToast('Venta registrada', 'ok');
     onSaved();
   }
 
@@ -98,7 +100,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
       <td>
         <b>{holding.ticker}</b>
       </td>
-      <td className="nowrap">{holding.company}</td>
+      <td className="holdings-company" title={holding.company}>{holding.company}</td>
       <td className="r">{money(holding.avgPrice, currency)}</td>
       <td className="r">{money(holding.capital, currency)}</td>
       <td className="r">
@@ -111,17 +113,27 @@ function HoldingRow({ account, holding, currency, onSaved }: {
           onChange={(e) => setCurrentPrice(e.target.value)}
           onBlur={saveCurrentPrice}
           disabled={isClosed}
-          style={{ width: 90, textAlign: 'right' }}
+          className="input-compact"
         />
       </td>
       <td className={`r ${pnlClass(holding.pnl)}`}>
-        {holding.pnl === null ? '—' : `${money(holding.pnl, currency)} (${holding.pnlPct?.toFixed(2)}%)`}
+        {holding.pnl === null ? (
+          '—'
+        ) : (
+          <span className="pnl-stack">
+            <span>{money(holding.pnl, currency)}</span>
+            {holding.pnlPct != null && <span className="pnl-pct">{holding.pnlPct.toFixed(2)}%</span>}
+          </span>
+        )}
       </td>
-      <td className="r">
+      <td className="r holdings-actions">
         {isClosed ? (
-          <span className="badge">Cerrado</span>
+          <span className="pnl-stack">
+            <span className="badge b-transferencia">Cerrado</span>
+            <span>{holding.closePrice == null ? '—' : money(holding.closePrice, currency)}</span>
+          </span>
         ) : closing ? (
-          <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+          <div className="close-row">
             <input
               type="number"
               step="0.01"
@@ -129,27 +141,27 @@ function HoldingRow({ account, holding, currency, onSaved }: {
               autoFocus
               value={closePriceInput}
               onChange={(e) => setClosePriceInput(e.target.value)}
-              style={{ width: 80, textAlign: 'right' }}
+              className="input-compact"
+              aria-label="Precio de cierre"
             />
-            <button className="btn btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }} onClick={confirmClose}>
+            <button className="btn btn-ghost btn-tiny" onClick={confirmClose}>
               OK
             </button>
           </div>
         ) : (
-          <button className="btn btn-ghost" style={{ fontSize: 11, padding: '2px 8px' }} onClick={startClose}>
+          <button className="btn btn-ghost btn-tiny" onClick={startClose}>
             Cerrar
           </button>
         )}
       </td>
-      <td className="r">{holding.closePrice === null ? '—' : money(holding.closePrice, currency)}</td>
       <td>
         <input
           type="text"
-          placeholder="Anotación"
+          placeholder="Nota"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           onBlur={saveNote}
-          style={{ width: '100%' }}
+          className="input-full"
         />
       </td>
     </tr>
@@ -171,24 +183,33 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
         <span className={`r ${pnlClass(p.pnl)}`}>
           {p.pnl === null ? '—' : `${money(p.pnl, currency)} (${p.pnlPct?.toFixed(2)}%)`}
         </span>
-        <span className="r" style={{ color: 'var(--muted)' }}>
+        <span className="r portfolio-holding-meta">
           {p.holdings.length} ticker{p.holdings.length !== 1 ? 's' : ''}
         </span>
       </summary>
       {p.holdings.length > 0 && (
-        <div style={{ overflowX: 'auto' }}>
-          <table>
+        <div className="holdings-scroll">
+          <table className="holdings-table">
+            <colgroup>
+              <col className="col-ticker" />
+              <col className="col-company" />
+              <col className="col-num" />
+              <col className="col-num" />
+              <col className="col-num" />
+              <col className="col-pnl" />
+              <col className="col-actions" />
+              <col className="col-note" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Ticker</th>
                 <th>Empresa</th>
-                <th className="r">Precio medio</th>
+                <th className="r">Medio</th>
                 <th className="r">Capital</th>
-                <th className="r">Precio actual</th>
+                <th className="r">Actual</th>
                 <th className="r">PnL</th>
-                <th className="r">Estado</th>
-                <th className="r">Precio cierre</th>
-                <th>Anotaciones</th>
+                <th className="r"></th>
+                <th>Nota</th>
               </tr>
             </thead>
             <tbody>
@@ -247,7 +268,7 @@ export function InversionesBody({ account, report, currency, onSaved }: Props) {
       <SectionKpis items={sectionKpis(report, currency)} />
 
       {report.openCount > 0 && (
-        <div style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="pos-block">
           <div className="open-pos-header">{`● Carteras abiertas · ${report.openCount}`}</div>
           <div className="portfolio-holding-header">
             <span>Cartera</span>
@@ -265,9 +286,7 @@ export function InversionesBody({ account, report, currency, onSaved }: Props) {
       {report.closedPositions.length > 0 && (
         <div>
           <div className="closed-pos-header">{`Historial de carteras · ${report.closedPositions.length}`}</div>
-          <div style={{ overflowX: 'auto' }}>
-            <DataTable columns={buildClosedColumns(currency)} rows={report.closedPositions} rowKey={(r, i) => `${r.Concepto}-${i}`} />
-          </div>
+          <DataTable columns={buildClosedColumns(currency)} rows={report.closedPositions} rowKey={(r, i) => `${r.Concepto}-${i}`} />
         </div>
       )}
     </>

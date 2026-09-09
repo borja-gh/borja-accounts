@@ -36,7 +36,6 @@ TIPOS_POSITIVOS = {"Ingreso", "Saldo Inicial", "Nómina", "Devolución", "Apuest
 TIPOS_NEGATIVOS = {"Gasto", "Apuestas", "Transferencia"}
 
 # Símbolo de presentación por divisa de cuenta -- igual a CURRENCY_SUFFIX en
-# frontend/src/lib/format.ts, duplicado deliberado (backend/frontend son
-# lenguajes distintos, no hay forma de compartir esta constante sin un
-# tercer artefacto).
+# frontend/src/lib/format.ts, duplicado deliberado (Python y TypeScript son
+# lenguajes distintos; no hay un artefacto compartido).
 CURRENCY_SYMBOLS = {"EUR": "€", "USD": "$"}
