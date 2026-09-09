@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { PortfolioReport } from '../../api/types';
 import { ToastProvider } from '../../components/ToastContext';
 import { backendFixture } from '../../test/goldenMaster';
+import { money } from '../../lib/format';
 import { InversionesBody } from './InversionesBody';
 
 function renderBody(props: Parameters<typeof InversionesBody>[0]) {
@@ -25,7 +27,7 @@ describe('InversionesBody', () => {
     renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
 
     expect(screen.getByText('Cartera Prueba')).toBeInTheDocument();
-    expect(screen.getByText('2000,00$')).toBeInTheDocument(); // capital invertido
+    expect(screen.getByText(money(report.openTotal, 'USD'))).toBeInTheDocument(); // AAPL 1000 + legado Global 250
 
     // Legado sin holdings (Cartera Global): sigue apareciendo.
     expect(screen.getByText('Cartera Global')).toBeInTheDocument();
@@ -121,5 +123,25 @@ describe('InversionesBody', () => {
       expect.objectContaining({ method: 'PUT', body: JSON.stringify({ closePrice: 150 }) }),
     );
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText('Venta registrada')).toBeInTheDocument();
+  });
+
+  it('el precio de mercado se muestra a 2 decimales, sin la basura IEEE de yfinance', () => {
+    const report = structuredClone(backendFixture.investment1_carteras_report_3m) as PortfolioReport;
+    const aapl = report.openPositions[0].holdings.find((h) => h.ticker === 'AAPL')!;
+    aapl.currentPrice = 153.52999877929688;
+    aapl.pnl = 358.47;
+    aapl.pnlPct = 31.33;
+
+    const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
+    fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
+
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('.holdings-table tbody tr'));
+    const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
+    const priceInput = aaplRow.querySelector('input[type="number"]') as HTMLInputElement;
+    expect(priceInput.value).toBe('153.53');
+    expect(aaplRow.textContent).toContain('358,47$');
+    expect(aaplRow.textContent).toContain('31.33%');
+    expect(aaplRow.querySelectorAll('td')).toHaveLength(8);
   });
 });

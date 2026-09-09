@@ -4,8 +4,9 @@ Congela el comportamiento financiero del backend (`app/main.py`) contra un
 fixture sintético, para que ningún cambio futuro rompa el cálculo de KPIs,
 saldo, apuestas o carteras sin que alguien lo note y lo revise a propósito.
 Nació para proteger el refactor Flask+vanilla → FastAPI+React
-(`docs/ARCHITECTURE.md` Bloques 0-5, ya cerrados); hoy es la suite de
-regresión normal del backend, no infraestructura temporal.
+(bloques 0-5, ya cerrados; ver `docs/ARCHITECTURE.md` §2: los bloques 6-7
+no se implementaron). Hoy es la suite de regresión normal del backend, no
+infraestructura temporal.
 
 La mitad que comparaba contra el vanilla (`index.html`, `run_frontend_harness.mjs`,
 `test_frontend_matches_snapshot`) se retiró: ya no aportaba nada que los
@@ -19,7 +20,7 @@ definitivos** -- ya no tienen generador vivo, pero siguen siendo el
 ## Piezas
 
 - **`build_fixture.py`** — genera `cash1.example.csv`/`investment1.example.csv` (versionados) a partir de un dataset sintético declarado en el propio script. Cubre: gastos recurrentes en 4+ conceptos a través de 7 meses, nómina, ingreso puntual, devolución sobre un gasto existente, una apuesta abierta y dos cerradas (una ganadora, una perdedora con pérdida total), una inversión abierta y dos cerradas (una ganadora, una perdedora), una transferencia entre cuentas con su ingreso emparejado, y dos movimientos con timestamp idéntico (valida la estabilidad del `mergesort`). Roto desde que `app.py` (Flask original) se eliminó en el Bloque 1 -- ver la nota al principio del propio script.
-- **`scenario.py`** — `run_scenario()`: ejecuta una secuencia determinista contra `app/main.py` (FastAPI) real (vía `TestClient`, nunca un servidor HTTP real) sobre una **copia** del fixture en un directorio temporal. Nunca toca `cash1.csv`/`investment1.csv` reales. También siembra `portfolio_holdings` ("Cartera Prueba": AAPL sin cerrar, MSFT con `close_price_usd`/`note` ya rellenos) para ejercitar el modelo de carteras por ticker (sin `current_price_usd` en el fixture -- el refresco vía yfinance queda fuera del harness a propósito, ver `docs/ARCHITECTURE.md` §0). Los nombres `Openbank`/`IBKR` de `_FIXTURE_ACCOUNTS` (líneas 46-58 del propio script) se mantienen a propósito, no es deuda de branding pendiente: `domain/services/transfers.py` deriva el label de transferencia del `Concepto` literal del CSV del fixture (`build_fixture.py`, roto desde el Bloque 1 y no regenerable hoy), no de `name` — cambiar uno sin el otro rompería esa coincidencia por accidente.
+- **`scenario.py`** — `run_scenario()`: ejecuta una secuencia determinista contra `app/main.py` (FastAPI) real (vía `TestClient`, nunca un servidor HTTP real) sobre una **copia** del fixture en un directorio temporal. Nunca toca `cash1.csv`/`investment1.csv` reales. También siembra `portfolio_holdings` ("Cartera Prueba": AAPL abierta; MSFT se vende por `UpdatePortfolioHoldingUseCase`, hecho de caja) para ejercitar el modelo de carteras por ticker (sin `current_price_usd` en el fixture -- el refresco vía yfinance queda fuera del harness a propósito, ver `docs/ARCHITECTURE.md` §0). Los nombres `Openbank`/`IBKR` de `_FIXTURE_ACCOUNTS` (líneas 46-58 del propio script) se mantienen a propósito, no es deuda de branding pendiente: `domain/services/transfers.py` deriva el label de transferencia del `Concepto` literal del CSV del fixture (`build_fixture.py`, roto desde el Bloque 1 y no regenerable hoy), no de `name` — cambiar uno sin el otro rompería esa coincidencia por accidente.
 - **`generate_snapshot.py`** — congela `snapshot_backend.json` a partir de `run_scenario()`. Solo se ejecuta a mano cuando un cambio de comportamiento es intencional.
 - **`extract_frontend_values.py`** — histórico: así se obtuvo `snapshot_frontend_values.json` a partir del ya retirado `snapshot_frontend.json`. Ya no es re-ejecutable de fondo a fondo (no hay generador vivo de `snapshot_frontend.json`); se conserva como documentación de origen.
 - **`test_golden_master.py`** — pytest que regenera `snapshot_backend.json` en memoria (vía `run_scenario()`) y lo compara contra el fichero congelado.

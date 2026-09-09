@@ -10,8 +10,6 @@ interface Props {
   onEdit: (idx: number) => void;
 }
 
-const ACTION_BTN_STYLE = { fontSize: 11, padding: '3px 8px', whiteSpace: 'nowrap' as const };
-
 // `rows` llega ya ordenado por searchedMovs() -- a diferencia del vanilla
 // (que reordenaba también aquí), no se repite el sort porque el resultado
 // observable es idéntico.
@@ -45,7 +43,7 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
           const isNeg = !isNeutral && TIPOS_NEGATIVOS.has(r.Tipo);
           return (
             <tr key={r._idx ?? `${r.Fecha}-${r.Concepto}`}>
-              <td className="nowrap" style={{ color: 'var(--muted)' }}>
+              <td className="nowrap date-cell">
                 {fd(r.Fecha)}
               </td>
               <td>
@@ -57,14 +55,14 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
                 </span>
               </td>
               <td className={`r nowrap ${isNeutral ? '' : isNeg ? 'num-neg' : 'num-pos'}`}>{`${isNeutral ? '' : isNeg ? '-' : '+'}${r.Total.toFixed(2)}${symbol}`}</td>
-              <td className="r nowrap" style={{ fontWeight: 600 }}>{`${r.Saldo.toFixed(2)}${symbol}`}</td>
+              <td className="r nowrap saldo-cell">{`${r.Saldo.toFixed(2)}${symbol}`}</td>
               <td className="r">
                 {canAct && (
                   <div className="row-actions">
-                    <button className="btn btn-ghost" style={ACTION_BTN_STYLE} onClick={() => onDuplicate(r._idx!)}>
+                    <button className="btn btn-ghost btn-tiny" onClick={() => onDuplicate(r._idx!)}>
                       Duplicar
                     </button>
-                    <button className="btn btn-ghost" style={ACTION_BTN_STYLE} onClick={() => onEdit(r._idx!)}>
+                    <button className="btn btn-ghost btn-tiny" onClick={() => onEdit(r._idx!)}>
                       Editar
                     </button>
                   </div>

@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { addMovement } from '../../api/client';
 import type { AccountId, AccountKind, Movement } from '../../api/types';
 import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
+import { isValidMovementAmount } from '../../lib/math';
 import { localISODate, money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
 import { candidatesForTipo, rankConcepts, suggestNextApuesta } from './autocomplete';
@@ -71,8 +72,8 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
       return;
     }
     const totalNum = parseFloat(total);
-    if (!totalNum || totalNum <= 0) {
-      showToast('Introduce un importe válido', 'err');
+    if (!isValidMovementAmount(totalNum, tipo)) {
+      showToast('Introduce un importe válido (0 = pérdida total en cobro de apuesta)', 'err');
       return;
     }
     try {
@@ -130,7 +131,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
       </div>
       <div className="fg full">
         <label>Total ({currency})</label>
-        <input type="number" placeholder="0.00" step="0.01" min="0.01" value={total} onChange={(e) => setTotal(e.target.value)} />
+        <input type="number" placeholder="0.00" step="0.01" min={tipo === 'Apuestas_r' ? '0' : '0.01'} value={total} onChange={(e) => setTotal(e.target.value)} />
       </div>
       <div className="fg full">
         <button type="button" className="btn btn-primary" style={{ width: '100%' }} onClick={handleSubmit}>

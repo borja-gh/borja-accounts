@@ -2,15 +2,14 @@
 Adapter CSV del puerto MovementRepository. Traducción literal de
 cargar()/guardar() (app.py original): mismo formato de fecha
 (%Y-%m-%d %H:%M:%S.%f), misma escritura atómica (tempfile + os.replace),
-mismo mergesort estable. Transitorio — lo reemplaza SQLiteMovementRepository
-en el Bloque 3; ambos implementan el mismo puerto.
+mismo mergesort estable.
+
+No es el store de la app (eso es SQLiteMovementRepository). Sigue en el
+árbol porque scripts/migrate_csv_to_sqlite.py y tests/scenario.py lo usan
+para leer los CSV de fixture/import.
 
 Movement.id se genera en memoria al cargar (uuid4), nunca se escribe al
-CSV: en este bloque la identidad solo necesita ser estable dentro de una
-misma request (cargar → mutar → recalcular → guardar), no sobrevivir a un
-ciclo de guardado. Ver docs/ARCHITECTURE.md — persistir el id real es
-decisión del Bloque 3, cuando el esquema relacional ya tiene `movements.id`
-como PK.
+CSV: la identidad estable entre procesos vive en movements.id de SQLite.
 """
 import os
 import tempfile

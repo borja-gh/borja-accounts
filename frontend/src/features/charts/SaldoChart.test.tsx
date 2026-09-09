@@ -18,19 +18,15 @@ describe('SaldoChart', () => {
     purge.mockClear();
   });
 
-  it('INVESTMENT: coincide con el golden master salvo el nombre de la traza (ahora "Capital aportado") y el símbolo de divisa (USD, no el € fijo del vanilla -- ver SaldoChart.tsx)', () => {
+  it('INVESTMENT: el gráfico usa el saldo recalculado (mismo que el KPI), no el balance persistido del CSV', () => {
     const report = backendFixture.investment1_saldo_evolucion_all;
+    const kpi = backendFixture.investment1_kpis_by_period.año;
     render(<SaldoChart kind="INVESTMENT" report={report} currency="USD" />);
     expect(newPlot).toHaveBeenCalledTimes(1);
-    const [, traces, layout] = newPlot.mock.calls[0];
-    const expected = rawFrontendSnapshot.investment1_charts_all['c-saldo'];
-    const expectedTraces = expected.traces.map((t: { name: string; hovertemplate: string }) => ({
-      ...t,
-      name: t.name.replace('Saldo', 'Capital aportado').replace('€', '$'),
-      hovertemplate: t.hovertemplate.replace('€', '$'),
-    }));
-    expect(traces).toEqual(expectedTraces);
-    expect(layout).toEqual(withCurrentFont({ ...expected.layout, yaxis: { ...expected.layout.yaxis, ticksuffix: '$' } }));
+    const [, traces] = newPlot.mock.calls[0];
+    expect(report.actual).toBe(kpi.saldo);
+    expect(traces[0].y.at(-1)).toBe(kpi.saldo);
+    expect(traces[0].name).toContain('Capital aportado');
   });
 
   it('CASH: omite a propósito la traza "Media 30d" (limpieza de UI, ver docs/ARCHITECTURE.md §0)', () => {

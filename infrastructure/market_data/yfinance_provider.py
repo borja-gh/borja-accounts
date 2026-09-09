@@ -26,5 +26,5 @@ class YFinanceProvider:
             except Exception:
                 continue
             if price is not None:
-                prices[ticker] = float(price)
+                prices[ticker] = round(float(price), 2)
         return prices

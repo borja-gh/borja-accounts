@@ -16,6 +16,9 @@ export function Tabs({ accounts, account, onChange, onOpenNewAccount }: Props) {
           <span className="tab-inner">
             <AccountMark name={a.name} kind={a.kind} theme={a.theme} small />
             {a.name}
+            <span className={`badge ${a.kind === 'CASH' ? 'b-nomina' : 'b-inversion'}`}>
+              {a.kind === 'CASH' ? 'Cash' : 'Inv.'}
+            </span>
           </span>
         </button>
       ))}

@@ -74,15 +74,19 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
       <div className="account-hero">
         <ThemePicker value={account.theme ?? DEFAULT_THEME_BY_KIND[account.kind]} onChange={handleThemeChange} />
         <AccountMark name={account.name} kind={account.kind} theme={account.theme} />
-        <div>
-          <h2>{account.name}</h2>
+        <div className="account-hero-copy">
+          <div className="account-hero-title">
+            <h2>{account.name}</h2>
+            <span className="badge b-nomina">Cash</span>
+          </div>
           <p>Día a día · gastos, nómina y apuestas</p>
         </div>
-        <div className="spacer" />
-        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setDeleteModalOpen(true)}>
-          Eliminar cuenta
-        </button>
-        <PeriodSelector period={period} onChange={setPeriod} allowCustom />
+        <div className="account-hero-actions">
+          <button className="btn btn-ghost btn-compact" onClick={() => setDeleteModalOpen(true)}>
+            Eliminar cuenta
+          </button>
+          <PeriodSelector period={period} onChange={setPeriod} allowCustom />
+        </div>
       </div>
       <DeleteAccountModal
         account={account}
@@ -92,11 +96,11 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
       />
       <SectionHeading title="Resumen general" />
       <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} currency={account.currency} />}</div>
-      {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} />}
+      {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} currency={account.currency} />}
 
       {data && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
-          <span style={{ fontSize: 11, color: 'var(--muted)' }}>Rango de Desglose y Apuestas</span>
+        <div className="filter-row">
+          <span className="filter-row-label">Rango de Desglose y Apuestas</span>
           <RangeFilterBar data={data} filter={rangeFilter} onChange={setRangeFilter} />
         </div>
       )}
@@ -105,19 +109,17 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
       <div className="charts-grid">
         <div className="chart-card">
           <div className="chart-label">Evolución del saldo</div>
-          <div style={{ height: 280 }}>
+          <div className="chart-plot">
             {saldoReport && <SaldoChart kind={account.kind} report={saldoReport} currency={account.currency} theme={account.theme} />}
           </div>
         </div>
         <div className="chart-card">
           <div className="chart-label">Evolución mensual</div>
-          <div style={{ height: 280 }}>{mensualReport && <MensualChart report={mensualReport} />}</div>
+          <div className="chart-plot">{mensualReport && <MensualChart report={mensualReport} />}</div>
         </div>
         <div className="chart-card full">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div className="chart-label" style={{ marginBottom: 0 }}>
-              Gastos por concepto
-            </div>
+          <div className="chart-head">
+            <div className="chart-label">Gastos por concepto</div>
             <RankingModeToggle mode={gastosMode} onChange={setGastosMode} btnClass="gastos-mode-btn" />
           </div>
           {gastosRanking && <GastosChart ranking={gastosRanking.ranking} />}
