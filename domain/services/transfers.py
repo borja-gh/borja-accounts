@@ -1,32 +1,25 @@
 """
-Traducción de isTransferIn/isTransferOut/ibkrTransfers (index.html):
-detección de transferencias por heurística de texto sobre `Concepto`.
-No hay tabla `transfers` ni `transfer_link_id` (fuera de alcance, ver
-docs/ARCHITECTURE.md §2). Originalmente hardcodeada a "Openbank"/"OB";
-generalizada para N/M cuentas: cualquier "Ingreso" con concepto
-"Desde <cuenta>" es una entrada, cualquier "Transferencia" (o concepto
-"A <cuenta>") es una salida. El nombre de la contraparte se extrae del
-propio concepto -- riesgo conocido: un movimiento manual con concepto
-"Desde algo" que no sea transferencia se clasificaría igual.
+Detección de transferencias entre cuentas.
+
+Las dos patas nacen con el mismo `transfer_link_id`
+(TransferBetweenAccountsUseCase). Un Ingreso solo es transferencia
+entrante si lleva ese id: «Desde el trabajo» cuenta como ingreso.
+Una Transferencia (tipo) es siempre una salida.
+
+El CSV de import no trae el id: se reconstruye al abrir/guardar SQLite
+(ver infrastructure/persistence/sqlite/transfer_links.py).
 """
 from dataclasses import dataclass
 
 from domain.entities import Movement
 
-_IN_PREFIX = "desde "
-_OUT_PREFIX = "a "
-
 
 def is_transfer_in(m: Movement) -> bool:
-    if m.type != "Ingreso":
-        return False
-    return (m.concept or "").lower().startswith(_IN_PREFIX)
+    return m.type == "Ingreso" and m.transfer_link_id is not None
 
 
 def is_transfer_out(m: Movement) -> bool:
-    if m.type == "Transferencia":
-        return True
-    return (m.concept or "").lower().startswith(_OUT_PREFIX)
+    return m.type == "Transferencia"
 
 
 def _counterpart_label(concept: str, prefix: str) -> str:
@@ -51,13 +44,13 @@ def list_transfers(movements: list[Movement]) -> list[TransferItem]:
         if is_transfer_in(m):
             items.append(TransferItem(
                 fecha=m.occurred_at.strftime("%Y-%m-%d %H:%M:%S"), dir="in",
-                label=f"← {_counterpart_label(m.concept, _IN_PREFIX)}",
+                label=f"← {_counterpart_label(m.concept, 'desde ')}",
                 concepto=m.concept, total=m.amount,
             ))
         elif is_transfer_out(m):
             items.append(TransferItem(
                 fecha=m.occurred_at.strftime("%Y-%m-%d %H:%M:%S"), dir="out",
-                label=f"→ {_counterpart_label(m.concept, _OUT_PREFIX)}",
+                label=f"→ {_counterpart_label(m.concept, 'a ')}",
                 concepto=m.concept, total=m.amount,
             ))
     items.sort(key=lambda t: t.fecha, reverse=True)

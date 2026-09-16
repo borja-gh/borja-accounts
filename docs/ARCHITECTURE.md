@@ -10,19 +10,21 @@ Este documento describe lo que **hay**. Lo que no está implementado vive en §2
 |---|---|---|
 | Store principal | SQLite vía `MovementRepository`. CSV = import/export + fixture de tests. | **Hecho** |
 | Filtros del dashboard | Un PeriodSelector (KPIs) + un RangeFilterBar (gráficos/listas) por vista. No hay filtro independiente por panel. | **Hecho** |
-| Limpieza UI | Sin Bal./Crec./ROI Hist., sin media móvil **en pantalla**, sin chips Top del mes, sin donut, sin quick-picks. | **Hecho** |
+| Limpieza UI | Sin Bal./Crec./ROI Hist., sin media móvil, sin chips Top del mes, sin donut, sin quick-picks. | **Hecho** |
 | Frontend | React + TypeScript + Vite en `frontend/`. Hexagonal en la raíz (`app/`, `domain/`, …). | **Hecho** (el layout `backend/` + `frontend/` **no existe**) |
 | Puerto | FastAPI en **8000** (`127.0.0.1`). | **Hecho** |
 | Composición de carteras | `portfolio_holdings` (una fila por aportación). `close_price_usd` / `note` / `current_price_usd` editables. Una cartera legado cerrada puede seguir en `movements` (`Inversión` / `Inversión_r`) sin ticker. | **Hecho** |
 | Precio de mercado | Bajo demanda, yfinance, botón explícito. Nunca un job automático. | **Hecho** |
-| Transferencias cross-currency | Tipo de cambio **explícito** (`movements.exchange_rate`), introducido por el usuario. Destino = origen × rate, 2 decimales. Sin cotización automática en el alta. | **Hecho** |
+| Transferencias cross-currency | Tipo de cambio **explícito** (`movements.exchange_rate`), con botón «Consultar ahora» (yfinance). Destino = origen × rate, 2 decimales. Sin aplicar la cotización a ciegas. | **Hecho** |
+| Enlace de transferencias | `movements.transfer_link_id`. Un Ingreso es transferencia solo con enlace. Borrar una pata borra la otra. CSV legado se re-enlaza al cargar/guardar. | **Hecho** |
+| Alta de holdings | `POST .../portfolio-holdings` desde la UI. Exige caja ≥ capital. Persiste `Inversión` a coste (no mueve saldo). | **Hecho** |
+| Fecha de venta | El cierre pide `fecha`; el backend ya la aceptaba. | **Hecho** |
 | Divisa interna | Una cuenta no mezcla divisas: todo movimiento en `accounts.currency`. Solo EUR y USD (`_SUPPORTED_CURRENCIES`). | **Hecho** |
-| Saldo INVESTMENT | Sin `cash_override`. Saldo = balance final de `build_investment_ledger` (histórico + fila `Inversión` sintética por cartera de holdings, no persistida). | **Hecho** |
+| Saldo INVESTMENT | Sin `cash_override`. Saldo = balance final de `build_investment_ledger`. Caja = Saldo − En carteras. En carteras es desglose, no se suma al Saldo. | **Hecho** |
 | Tema | `accounts.theme`, 6 paletas, por cuenta (default clay/CASH, forest/INVESTMENT). | **Hecho** |
 | Integración IBKR / CPGW | No hay `BrokerGateway`, ni adapter CPGW, ni órdenes. `clientportal.gw.zip` puede estar en disco y está en `.gitignore`; **no está integrado**. | **No implementado** — §2 |
-| Esquema relacional to-be (`transfers`, `assets`, `positions`, `trades`, `transfer_link_id`) | No existe. | **No implementado** — §2 |
-| Media móvil 30d | El backend **sí** la calcula para CASH (`compute_saldo_evolucion(..., with_media_movil=True)` → `mediaMovil`). `SaldoChart` no la pinta. | Cálculo huérfano (API/backend sí, UI no) |
-| `topMerchants` | `GET /gastos-mes-actual` sigue devolviendo el ranking del mes. La UI no consume esos chips. | Cálculo huérfano (API sí, UI no) |
+| Esquema relacional to-be (`transfers`, `assets`, `positions`, `trades`) | No existe. `transfer_link_id` sí, en `movements`. | **Parcial** — §2 |
+| Media móvil 30d / `topMerchants` | Eliminados del backend y de la API. | **Hecho** |
 
 ## 1. Estado actual
 
@@ -72,6 +74,7 @@ movements
   amount REAL
   balance REAL                  -- persistido por fila; se recalcula entero en cada escritura
   exchange_rate REAL            -- ALTER TABLE; NULL si origen y destino comparten divisa
+  transfer_link_id TEXT         -- ALTER TABLE; UUID compartido por las dos patas; NULL si no es transferencia
 
 portfolio_holdings
   id INTEGER PK
@@ -84,7 +87,7 @@ portfolio_holdings
 
 `cash_override` existió en `accounts` y se elimina al abrir la DB si aún está (`ALTER TABLE ... DROP COLUMN`). El KPI Saldo de INVESTMENT sale del ledger fusionado (`build_investment_ledger`), no de un snapshot manual.
 
-Las transferencias **no** tienen tabla propia: son dos movimientos (origen `Transferencia`, destino `Ingreso` con concepto `Desde <nombre>`) enlazados por heurística de texto (`domain/services/transfers.py`: `is_transfer_in` / `is_transfer_out`). No hay `transfer_link_id`.
+Las transferencias **no** tienen tabla propia: son dos movimientos (origen `Transferencia`, destino `Ingreso` con concepto `Desde <id>`) enlazados por `transfer_link_id`. Un Ingreso sin enlace (p.ej. «Desde el trabajo») es ingreso real. Borrar una pata borra la otra. El CSV de import se re-enlaza por concepto+día al cargar/guardar (`transfer_links.backfill_transfer_links`).
 
 ### Frontend y filtros
 
@@ -120,7 +123,7 @@ No son «arquitectura objetivo» de este repo. Si se retoman, será trabajo nuev
 - **`BrokerGateway`**, adapters CPGW / manual, sync de posiciones, `place_order` / `cancel_order`, frescura `Quote { LIVE, STALE, MANUAL }`.
 - **Client Portal Gateway de IBKR** como parte de la app (lectura o escritura). El zip gitignored no cuenta como integración.
 - **Monorepo `backend/` + `frontend/`** y el árbol to-be con `interfaces/api/routers`, SQLAlchemy, entidades `Asset`/`Position`/`Portfolio`/`Trade`.
-- **Esquema relacional to-be** (`transfers`, `portfolios`, `assets`, `positions`, `trades`; saldo no persistido; `transfer_link_id`).
+- **Esquema relacional to-be** (`transfers`, `portfolios`, `assets`, `positions`, `trades`; saldo no persistido). `transfer_link_id` en `movements` **sí** está.
 - **Trading** (manual confirmado o algorítmico).
 - **Multiusuario / autenticación** de la app.
 - **Postgres**, colas, cache, DI container, CQRS, event sourcing.
@@ -131,20 +134,15 @@ El plan de bloques 0–7, el golden-master harness contra `index.html` vanilla /
 
 ## 3. Inconsistencias conocidas
 
-Las tres que exigían decisión (gráfico vs KPI, cierre de holding, cobro a 0) están **hechas**. Quedan:
+Las que exigían decisión (gráfico vs KPI, cierre de holding, cobro a 0, heurística de transferencia, En carteras vs Saldo) están **hechas**.
 
-| Hecho | Dónde | Qué implica |
-|---|---|---|
-| Heurística de transferencia | `is_transfer_in` / `is_transfer_out` por prefijo de `Concepto` (`Desde ` / `A `). Sin `transfer_link_id`. | Un Ingreso «Desde el trabajo» no cuenta como ingreso. Borrar una pata no toca la otra. |
-| `En carteras` vs Saldo | Holdings sintéticos no restan del saldo al abrir; su capital puede no haberse aportado al libro. | No sumar las dos tarjetas. Cerrar un lote sí mueve el saldo por el P&L (Inversión_r). |
+Cerrar un holding (`PUT .../portfolio-holdings/{id}` con `closePrice` y `fecha`) persiste `Inversión` + `Inversión_r` (`{cartera} · {ticker} #{id}`), saca el lote de «En carteras» y el P&L entra en el KPI. `GET /saldo-evolucion` recálcula igual que el KPI. `Apuestas_r` admite total 0. Alta de lote: `POST .../portfolio-holdings` (caja ≥ capital).
 
-Cerrar un holding (`PUT .../portfolio-holdings/{id}` con `closePrice`) persiste `Inversión` + `Inversión_r` (`{cartera} · {ticker} #{id}`), saca el lote de «En carteras» y el P&L entra en el KPI. `GET /saldo-evolucion` recálcula igual que el KPI. `Apuestas_r` admite total 0.
+**Saldo** = capital a coste del libro (aportaciones ± PnL realizado). Abrir un lote no lo mueve. **En carteras** = capital a coste desplegado (desglose). **Caja** = Saldo − En carteras. No sumar Saldo + En carteras.
 
 ## 4. Notas pendientes (sin fecha)
 
 No comprometidas. No son arquitectura vigente.
 
-- Flujo de venta de holding: `PUT .../portfolio-holdings/{id}` con `closePrice` (caja + inventario). No hay fecha de venta en la UI (el backend usa ahora, o `fecha` si se envía).
-- Alta de `portfolio_holdings` desde la UI: no existe (`POST` tampoco). Las filas llegan por seed/tests o por procesos fuera de la app.
 - Empaquetado OSS (LICENSE, CONTRIBUTING): no hecho.
 - Capa de IA sobre SQL: sin explorar; no hay decisión.

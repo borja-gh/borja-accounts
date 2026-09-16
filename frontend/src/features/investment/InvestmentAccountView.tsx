@@ -11,6 +11,7 @@ import { PeriodSelector } from '../kpis/PeriodSelector';
 import { useInvestmentKpis } from '../kpis/useInvestmentKpis';
 import { MovimientosSection } from '../movimientos/MovimientosSection';
 import { useAccountData } from '../movimientos/useAccountData';
+import { CreateHoldingModal } from '../inversiones/CreateHoldingModal';
 import { InversionesSection } from '../inversiones/InversionesSection';
 import { DEFAULT_RANGE_FILTER, type RangeFilter } from '../filters/RangeFilter';
 import { RangeFilterBar } from '../filters/RangeFilterBar';
@@ -34,6 +35,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [carterasMode, setCarterasMode] = useState<RankingMode>('total');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [createHoldingOpen, setCreateHoldingOpen] = useState(false);
   const [refreshingPrices, setRefreshingPrices] = useState(false);
   const [priceBanner, setPriceBanner] = useState<{ updated: number; total: number; failedTickers: string[] } | null>(null);
   const showToast = useToast();
@@ -117,6 +119,9 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       />
 
       <div className="price-toolbar">
+        <button className="btn btn-ghost btn-compact" onClick={() => setCreateHoldingOpen(true)}>
+          + Holding
+        </button>
         <button className="btn btn-ghost btn-compact" disabled={refreshingPrices} onClick={handleRefreshPrices}>
           {refreshingPrices ? 'Consultando…' : 'Precios actuales'}
         </button>
@@ -127,6 +132,15 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
           </span>
         )}
       </div>
+      <CreateHoldingModal
+        open={createHoldingOpen}
+        account={account.id}
+        currency={account.currency}
+        caja={kpi?.caja ?? 0}
+        portfolios={carterasDetail?.openPositions.map((p) => p.concepto) ?? []}
+        onClose={() => setCreateHoldingOpen(false)}
+        onCreated={refreshAll}
+      />
 
       <SectionHeading title="Resumen general" />
       <div className="kpis kpis-5">{kpi && <KpiCardsInvestment kpi={kpi} period={period} currency={account.currency} />}</div>
@@ -161,7 +175,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
         account={account.id}
         currency={account.currency}
         report={carterasDetail}
-        onSaved={reloadCarterasDetail}
+        onSaved={refreshAll}
       />
 
       <SectionHeading title="Movimientos" />

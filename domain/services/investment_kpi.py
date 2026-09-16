@@ -29,6 +29,7 @@ class Delta:
 class InvestmentKPIResult:
     saldo: float
     saldo_preventa: float
+    caja: float
     aportado: float
     aportado_delta: Delta
     en_carteras: float
@@ -50,6 +51,7 @@ def compute_investment_kpis(movements: list[Movement], holdings: list[PortfolioH
     en_carteras_count = summary.count
     en_carteras = summary.capital_usd
     saldo = _r2(saldo)
+    caja = _r2(saldo - en_carteras)
     saldo_preventa = _r2(saldo + summary.presale_delta_usd)
 
     def aportado(rs):
@@ -69,7 +71,7 @@ def compute_investment_kpis(movements: list[Movement], holdings: list[PortfolioH
     prv_p = pnl([c for c in closed if slices.in_prv(c.fr)])
 
     return InvestmentKPIResult(
-        saldo=saldo, saldo_preventa=saldo_preventa,
+        saldo=saldo, saldo_preventa=saldo_preventa, caja=caja,
         aportado=curr_a, aportado_delta=_delta(curr_a, prv_a),
         en_carteras=en_carteras, en_carteras_count=en_carteras_count,
         pnl=curr_p, pnl_delta=_delta(curr_p, prv_p),

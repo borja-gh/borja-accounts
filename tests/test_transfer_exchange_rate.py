@@ -71,6 +71,8 @@ def test_distinta_divisa_aplica_conversion_y_persiste_el_rate(repository, accoun
     assert mov_origen.exchange_rate == 1.1
     assert mov_destino.amount == 110.0
     assert mov_destino.exchange_rate == 1.1
+    assert mov_origen.transfer_link_id is not None
+    assert mov_origen.transfer_link_id == mov_destino.transfer_link_id
 
 
 def test_tipo_de_cambio_invalido_lanza_error(repository, accounts):

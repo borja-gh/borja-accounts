@@ -112,6 +112,8 @@ describe('InversionesBody', () => {
     const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
 
     fireEvent.click(within(aaplRow).getByText('Cerrar'));
+    const dateInput = aaplRow.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2026-06-15' } });
     const numberInputs = aaplRow.querySelectorAll('input[type="number"]');
     const closeInput = numberInputs[numberInputs.length - 1] as HTMLInputElement;
     fireEvent.change(closeInput, { target: { value: '150' } });
@@ -120,7 +122,7 @@ describe('InversionesBody', () => {
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/accounts/investment1/portfolio-holdings/1',
-      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ closePrice: 150 }) }),
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ closePrice: 150, fecha: '2026-06-15' }) }),
     );
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect(await screen.findByText('Venta registrada')).toBeInTheDocument();

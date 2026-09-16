@@ -12,10 +12,9 @@ interface Props {
   theme?: ThemeName | null;
 }
 
-// La traza "Media 30d" (report.mediaMovil, solo cuentas CASH) se omite a
-// propósito -- limpieza de UI acordada en docs/ARCHITECTURE.md §0. El
-// backend la sigue calculando (with_media_movil=True para CASH) pero
-// ya no se representa.
+// La traza "Media 30d" se omitió en la limpieza de UI y el backend ya
+// no la calcula. El snapshot vanilla (rawFrontendSnapshot) sí tenía
+// Saldo + Media 30d -- este test documenta esa divergencia a propósito.
 //
 // Para INVESTMENT esta serie se recalcula con la misma regla que el KPI
 // Saldo (GetSaldoEvolucionUseCase → ledger + holdings sintéticos). NO es
