@@ -23,6 +23,8 @@ from fastapi.staticfiles import StaticFiles
 
 from application.use_cases.add_movement import AddMovementUseCase
 from application.use_cases.create_account import CreateAccountUseCase
+from application.use_cases.create_portfolio_holding import CreatePortfolioHoldingUseCase
+from application.use_cases.get_fx_rate import GetFxRateUseCase
 from application.use_cases.delete_account import DeleteAccountUseCase
 from application.use_cases.delete_movement import DeleteMovementUseCase
 from application.use_cases.edit_movement import EditMovementUseCase
@@ -237,7 +239,7 @@ def get_investment_kpis(cuenta: str, period: str = "mes"):
     if err:
         return err
     return {
-        "saldo": kpi.saldo, "saldoPreventa": kpi.saldo_preventa,
+        "saldo": kpi.saldo, "saldoPreventa": kpi.saldo_preventa, "caja": kpi.caja,
         "aportado": kpi.aportado, "aportadoDelta": {"diff": kpi.aportado_delta.diff},
         "enCarteras": kpi.en_carteras, "enCarterasCount": kpi.en_carteras_count,
         "pnl": kpi.pnl, "pnlDelta": {"diff": kpi.pnl_delta.diff},
@@ -318,6 +320,19 @@ def get_carteras(cuenta: str, range: str = "all", year: str | None = None):
     return report
 
 
+@app.post("/api/accounts/{cuenta}/portfolio-holdings")
+async def create_portfolio_holding(cuenta: str, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    result, err = _run(CreatePortfolioHoldingUseCase(repository, ledger).execute, cuenta, data)
+    if err:
+        return err
+    return result
+
+
 @app.put("/api/accounts/{cuenta}/portfolio-holdings/{holding_id}")
 async def update_portfolio_holding(cuenta: str, holding_id: int, request: Request):
     if cuenta not in _known_account_ids():
@@ -386,6 +401,14 @@ def delete_movimiento(cuenta: str):
         return err
     eliminado, saldo = result
     return {"ok": True, "eliminado": eliminado, "saldo": saldo}
+
+
+@app.get("/api/fx")
+def get_fx_rate(base: str, quote: str):
+    result, err = _run(GetFxRateUseCase(market_data).execute, base, quote)
+    if err:
+        return err
+    return result
 
 
 @app.post("/api/transferencia")

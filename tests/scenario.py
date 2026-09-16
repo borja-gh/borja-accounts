@@ -44,15 +44,10 @@ FIXED_REFERENCE_NOW = "2026-07-15T12:00:00+00:00"
 # /api/accounts.
 #
 # `name` se deja como "Openbank"/"IBKR" a propósito (coincide con las
-# cuentas reales tras el rename de id: mismo nombre, id nuevo). Esto no es
-# solo cosmético -- domain/services/transfers.py deriva el `label` del
-# propio Concepto ("Desde OPENBANK" -> "← Openbank"), y ese Concepto es
-# texto libre del CSV del fixture (build_fixture.py), no algo calculado a
-# partir de `name`. Que "← Openbank" siga apareciendo en
-# investment1_transferencias_report_3m es correcto solo porque el dataset
-# sintético dice literalmente "OPENBANK" -- si el `name` de aquí cambiara
-# sin tocar el Concepto del fixture (o viceversa), dejarían de coincidir
-# por accidente, no por diseño.
+# cuentas reales tras el rename de id: mismo nombre, id nuevo). El CSV
+# del fixture dice «Desde OPENBANK» / «A IBKR»; al importar a SQLite se
+# rellena `transfer_link_id` emparejando esas patas (id o name, mismo día).
+# Los labels del report de transferencias siguen saliendo del Concepto.
 _FIXTURE_ACCOUNTS = [
     ("cash1", "Openbank", "CASH"),
     ("investment1", "IBKR", "INVESTMENT"),

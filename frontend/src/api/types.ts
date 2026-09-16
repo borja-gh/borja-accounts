@@ -69,6 +69,7 @@ export interface AccountKpis {
 export interface InvestmentKpis {
   saldo: number;
   saldoPreventa: number;
+  caja: number;
   aportado: number;
   aportadoDelta: Delta;
   enCarteras: number;
@@ -211,6 +212,36 @@ export interface UpdatePortfolioHoldingRequest {
   closePrice?: number | null;
   currentPrice?: number | null;
   note?: string | null;
+  fecha?: string;
+}
+
+export interface CreateHoldingRequest {
+  portfolio: string;
+  ticker: string;
+  company?: string;
+  shares: number;
+  price: number;
+  capital?: number;
+  fee?: number;
+  fecha?: string;
+}
+
+export interface CreateHoldingResult {
+  ok: boolean;
+  id?: number;
+  portfolio?: string;
+  ticker?: string;
+  capital?: number;
+  caja?: number;
+  error?: string;
+}
+
+export interface FxRateResult {
+  ok: boolean;
+  base?: string;
+  quote?: string;
+  rate?: number;
+  error?: string;
 }
 
 export interface UpdatePortfolioHoldingResult {
@@ -233,7 +264,6 @@ export interface SaldoEvolucionReport {
   dates: string[];
   saldos: number[];
   actual: number;
-  mediaMovil?: number[] | null;
 }
 
 export interface MensualEvolucionReport {
@@ -273,7 +303,6 @@ export interface GastoAlert {
 
 export interface GastosMesActualReport {
   alert: GastoAlert | null;
-  topMerchants: { concepto: string; total: number }[];
 }
 
 export type RankingMode = 'media' | 'total';

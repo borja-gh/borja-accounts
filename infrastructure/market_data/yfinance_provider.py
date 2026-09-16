@@ -28,3 +28,24 @@ class YFinanceProvider:
             if price is not None:
                 prices[ticker] = round(float(price), 2)
         return prices
+
+    def get_fx_rate(self, base: str, quote: str) -> float | None:
+        base = base.upper()
+        quote = quote.upper()
+        if base == quote:
+            return 1.0
+        pairs = ((f"{base}{quote}=X", False), (f"{quote}{base}=X", True))
+        for ticker, invert in pairs:
+            try:
+                price = yf.Ticker(ticker).fast_info["lastPrice"]
+            except Exception:
+                continue
+            if price is None:
+                continue
+            rate = float(price)
+            if invert:
+                if rate == 0:
+                    continue
+                rate = 1.0 / rate
+            return round(rate, 6)
+        return None

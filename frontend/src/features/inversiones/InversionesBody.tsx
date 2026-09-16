@@ -4,7 +4,7 @@ import type { AccountId, ClosedInvestPosition, OpenInvestPosition, PortfolioHold
 import { DataTable, type Column } from '../../components/DataTable';
 import { SectionKpis, type SectionKpiItem } from '../../components/SectionKpis';
 import { useToast } from '../../components/ToastContext';
-import { fd, money, priceInputValue } from '../../lib/format';
+import { fd, money, priceInputValue, localISODate } from '../../lib/format';
 
 function pnlClass(v: number | null): string {
   if (v === null) return '';
@@ -36,6 +36,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
   const [note, setNote] = useState(holding.note ?? '');
   const [closing, setClosing] = useState(false);
   const [closePriceInput, setClosePriceInput] = useState('');
+  const [closeDate, setCloseDate] = useState(localISODate());
   const showToast = useToast();
   const isClosed = holding.closePrice !== null;
 
@@ -75,6 +76,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
 
   function startClose() {
     setClosePriceInput(priceInputValue(holding.currentPrice));
+    setCloseDate(localISODate());
     setClosing(true);
   }
 
@@ -85,7 +87,11 @@ function HoldingRow({ account, holding, currency, onSaved }: {
       showToast('Precio de cierre inválido', 'err');
       return;
     }
-    const result = await updatePortfolioHolding(account, holding.id, { closePrice: value });
+    if (!closeDate) {
+      showToast('Introduce la fecha de venta', 'err');
+      return;
+    }
+    const result = await updatePortfolioHolding(account, holding.id, { closePrice: value, fecha: closeDate });
     if (!result.ok) {
       showToast(result.error || 'Error al guardar', 'err');
       return;
@@ -133,7 +139,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
             <span>{holding.closePrice == null ? '—' : money(holding.closePrice, currency)}</span>
           </span>
         ) : closing ? (
-          <div className="close-row">
+          <div className="close-row close-row-stack">
             <input
               type="number"
               step="0.01"
@@ -144,9 +150,21 @@ function HoldingRow({ account, holding, currency, onSaved }: {
               className="input-compact"
               aria-label="Precio de cierre"
             />
-            <button className="btn btn-ghost btn-tiny" onClick={confirmClose}>
-              OK
-            </button>
+            <input
+              type="date"
+              className="input-compact date-input"
+              value={closeDate}
+              onChange={(e) => setCloseDate(e.target.value)}
+              aria-label="Fecha de venta"
+            />
+            <div className="close-row">
+              <button className="btn btn-ghost btn-tiny" onClick={() => setClosing(false)}>
+                No
+              </button>
+              <button className="btn btn-ghost btn-tiny" onClick={confirmClose}>
+                OK
+              </button>
+            </div>
           </div>
         ) : (
           <button className="btn btn-ghost btn-tiny" onClick={startClose}>

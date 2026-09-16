@@ -26,5 +26,4 @@ class GetSaldoEvolucionUseCase:
                 movements = self.ledger.recalculate_balances(list(movements))
         else:
             movements = self.ledger.recalculate_balances(list(movements))
-        with_media_movil = account.kind == AccountKind.CASH
-        return compute_saldo_evolucion(movements, range_type, year, reference, with_media_movil)
+        return compute_saldo_evolucion(movements, range_type, year, reference)

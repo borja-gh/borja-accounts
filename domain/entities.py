@@ -20,6 +20,10 @@ class Movement:
     otra pata * exchange_rate. None para cualquier movimiento que no sea
     una transferencia entre divisas distintas (incluida una transferencia
     entre dos cuentas de la misma divisa)."""
+    transfer_link_id: uuid.UUID | None = None
+    """UUID compartido por las dos patas de una transferencia. Un Ingreso
+    solo es transferencia entrante si lleva este id; un concepto
+    «Desde el trabajo» sin enlace cuenta como ingreso real."""
 
 
 @dataclass

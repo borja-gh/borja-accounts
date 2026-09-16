@@ -40,9 +40,10 @@ TZ = ZoneInfo("Europe/Madrid")
 #   TIPOS_KPI_ING, y se resta explícitamente de "gastos" en net_flows.
 # - Transferencia (salida) no cuenta como gasto -- mover dinero entre
 #   cuentas propias no es un gasto real.
-# - Un "Ingreso" que en realidad es una transferencia entrante (ver
-#   is_transfer_in, detecta el concepto "Desde X") tampoco cuenta como
-#   ingreso real, por el mismo motivo.
+# - Un "Ingreso" que en realidad es una transferencia entrante (lleva
+#   transfer_link_id; ver is_transfer_in) tampoco cuenta como ingreso
+#   real, por el mismo motivo. Un Ingreso «Desde el trabajo» sin enlace
+#   sí cuenta.
 # - Balance = ingresos - gastos (ambos ya netos) -- ya no es el cambio bruto
 #   de saldo de la cuenta: Transferencia/Apuestas/Inversión no pesan en él,
 #   igual que no pesan en ingresos/gastos, para que los tres KPIs cuadren

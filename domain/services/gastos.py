@@ -1,9 +1,7 @@
 """
-Agregación de gastos: alerta del mes, ranking por concepto, top-N del mes.
+Agregación de gastos: alerta del mes y ranking por concepto.
 
-`compute_top_merchants` sigue alimentando GET /gastos-mes-actual
-(`topMerchants`); la UI ya no pinta esos chips. La alerta sí se muestra
-(GastoAlert). El ranking alimenta GastosChart.
+La alerta sí se muestra (GastoAlert). El ranking alimenta GastosChart.
 """
 from dataclasses import dataclass
 from datetime import datetime
@@ -53,18 +51,6 @@ def compute_gasto_alert(movements: list[Movement], reference: datetime) -> Gasto
     pct = _r2((diff / avg) * 100)
     return GastoAlert(cur_total=cur_total, avg=avg, diff=diff, pct=pct,
                        months_count=len(with_data), is_warning=diff > 0)
-
-
-def compute_top_merchants(movements: list[Movement], reference: datetime, limit: int = 8) -> list[tuple[str, float]]:
-    reference_local = reference.astimezone(TZ)
-    cur = month_key(reference_local, 0)
-    by: dict[str, float] = {}
-    for m in movements:
-        if m.type != "Gasto" or _fecha_str(m)[:7] != cur:
-            continue
-        by[m.concept] = by.get(m.concept, 0.0) + m.amount
-    top = sorted(by.items(), key=lambda kv: kv[1], reverse=True)[:limit]
-    return [(c, _r2(v)) for c, v in top]
 
 
 def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int | str | None,
