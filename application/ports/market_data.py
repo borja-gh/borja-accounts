@@ -8,3 +8,8 @@ class MarketDataProvider(Protocol):
         el dict devuelto -- el llamador los trata como fallidos, nunca
         lanza por un fallo individual."""
         ...
+
+    def get_fx_rate(self, base: str, quote: str) -> float | None:
+        """Tipo de cambio al contado: unidades de `quote` por 1 `base`.
+        None si yfinance no responde o el par no existe."""
+        ...

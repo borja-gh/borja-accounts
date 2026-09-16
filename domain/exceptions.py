@@ -54,3 +54,11 @@ class AccountNotFoundError(DomainError):
 
 class PortfolioHoldingNotFoundError(DomainError):
     status_code = 404
+
+
+class InsufficientCashError(DomainError):
+    pass
+
+
+class FxRateUnavailableError(DomainError):
+    status_code = 502

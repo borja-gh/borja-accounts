@@ -151,9 +151,10 @@ def compute_presale_delta(holdings: list[PortfolioHolding]) -> float:
 def compute_open_investment_summary(movements: list[Movement], holdings: list[PortfolioHolding]) -> OpenInvestmentSummary:
     holdings_portfolios = compute_open_portfolios(holdings)
     holdings_names = {p.portfolio for p in holdings_portfolios}
+    lot_concepts = {holding_sale_concept(h) for h in holdings}
     legacy_open = [
         p for p in compute_open_positions(movements, "Inversión", "Inversión_r")
-        if p.concepto not in holdings_names
+        if p.concepto not in holdings_names and p.concepto not in lot_concepts
     ]
 
     capital = round(sum(p.capital_usd for p in holdings_portfolios) + sum(p.monto for p in legacy_open), 2)
@@ -179,14 +180,32 @@ def build_investment_ledger(account_id: str, movements: list[Movement], holdings
     entrada) intercaladas con las filas sintéticas, todo reordenado por
     fecha y con el saldo recalculado -- Inversión no mueve el saldo al
     abrir (ver ledger.py), así que el balance de las filas reales no
-    cambia por esta fusión."""
+    cambia por esta fusión.
+
+    Si el lote ya tiene una Inversión persistida (alta desde la UI, o
+    venta), no se duplica con una fila sintética de esa cartera."""
     portfolios = compute_open_portfolios(holdings)
+    skip = _portfolios_already_on_ledger(holdings, movements)
     synthetic = [
         Movement(
             account_id=account_id, occurred_at=pd.Timestamp(p.opened_at),
             type="Inversión", concept=p.portfolio, amount=p.capital_usd,
         )
         for p in portfolios
+        if p.portfolio not in skip
     ]
     combined = sorted([copy.copy(m) for m in movements] + synthetic, key=lambda m: m.occurred_at)
     return ledger.recalculate_balances(combined)
+
+
+def _portfolios_already_on_ledger(holdings: list[PortfolioHolding], movements: list[Movement]) -> set[str]:
+    persisted = {m.concept for m in movements if m.type == "Inversión"}
+    by_portfolio: dict[str, list[PortfolioHolding]] = {}
+    for h in holdings:
+        if h.close_price_usd is None:
+            by_portfolio.setdefault(h.portfolio, []).append(h)
+    skip: set[str] = set()
+    for portfolio, lots in by_portfolio.items():
+        if lots and all(holding_sale_concept(h) in persisted for h in lots):
+            skip.add(portfolio)
+    return skip

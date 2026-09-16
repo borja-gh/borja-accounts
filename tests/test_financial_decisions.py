@@ -76,6 +76,7 @@ def test_cerrar_holding_es_hecho_de_caja(repository, ledger):
     before = GetInvestmentKPIsUseCase(repository, ledger).execute(account.id, "año", now)
     assert before.en_carteras == 1000
     assert before.saldo == 1000
+    assert before.caja == 0
 
     UpdatePortfolioHoldingUseCase(repository, ledger).execute(
         account.id, holding.id,

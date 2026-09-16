@@ -26,6 +26,9 @@ import type {
   RefreshHoldingPricesResult,
   UpdatePortfolioHoldingRequest,
   UpdatePortfolioHoldingResult,
+  CreateHoldingRequest,
+  CreateHoldingResult,
+  FxRateResult,
 } from './types';
 import type { RangeFilter } from '../features/filters/RangeFilter';
 import type { ThemeName } from '../styles/themes';
@@ -144,6 +147,26 @@ export async function updatePortfolioHolding(
 
 export async function refreshHoldingPrices(cuenta: string): Promise<RefreshHoldingPricesResult> {
   const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings/refresh-prices`, { method: 'POST' });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function createPortfolioHolding(
+  cuenta: string,
+  body: CreateHoldingRequest,
+): Promise<CreateHoldingResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function fetchFxRate(base: string, quote: string): Promise<FxRateResult> {
+  const params = new URLSearchParams({ base, quote });
+  const res = await fetch(`/api/fx?${params}`);
   const json = await res.json();
   return { ok: res.ok, ...json };
 }

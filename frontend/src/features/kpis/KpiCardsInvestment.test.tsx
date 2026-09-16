@@ -21,9 +21,13 @@ describe('KpiCardsInvestment', () => {
       const kpi = backendFixture.investment1_kpis_by_period[period];
       const { container } = render(<KpiCardsInvestment kpi={kpi} period={period} currency="USD" />);
       const lbl = kpiLabel(period);
+      const caja = typeof kpi.caja === 'number'
+        ? kpi.caja
+        : Math.round((kpi.saldo - kpi.enCarteras) * 100) / 100;
       const expected = [
         'Saldo',
         money(kpi.saldo, 'USD'),
+        `A coste · caja ${money(caja, 'USD')}`,
         'Saldo preventa',
         money(kpi.saldoPreventa, 'USD'),
         'Con el último precio de mercado consultado',
@@ -32,7 +36,9 @@ describe('KpiCardsInvestment', () => {
         deltaText(kpi.aportadoDelta.diff),
         'En carteras',
         money(kpi.enCarteras, 'USD'),
-        kpi.enCarterasCount ? `${kpi.enCarterasCount} abierta${kpi.enCarterasCount !== 1 ? 's' : ''}` : 'ninguna abierta',
+        kpi.enCarterasCount
+          ? `${kpi.enCarterasCount} abierta${kpi.enCarterasCount !== 1 ? 's' : ''} · desglose, no sumar al Saldo`
+          : 'ninguna abierta · desglose, no sumar al Saldo',
         `P&L cerrado · ${lbl}`,
         money(kpi.pnl, 'USD'),
         deltaText(kpi.pnlDelta.diff),

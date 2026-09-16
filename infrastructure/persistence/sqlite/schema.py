@@ -66,4 +66,6 @@ def ensure_schema(conn):
         conn.execute("ALTER TABLE portfolio_holdings ADD COLUMN note TEXT")
     if "current_price_usd" not in holding_columns:
         conn.execute("ALTER TABLE portfolio_holdings ADD COLUMN current_price_usd REAL")
+    if "transfer_link_id" not in movement_columns:
+        conn.execute("ALTER TABLE movements ADD COLUMN transfer_link_id TEXT")
     conn.commit()

@@ -16,11 +16,20 @@ interface Props {
 // registrarse (TransferBetweenAccountsUseCase, scripts/backfill_exchange_rates.py).
 export function KpiCardsInvestment({ kpi, period, currency }: Props) {
   const lbl = kpiLabel(period);
+  const caja = typeof kpi.caja === 'number'
+    ? kpi.caja
+    : Math.round((kpi.saldo - kpi.enCarteras) * 100) / 100;
+  const openLabel = kpi.enCarterasCount
+    ? `${kpi.enCarterasCount} abierta${kpi.enCarterasCount !== 1 ? 's' : ''} · desglose, no sumar al Saldo`
+    : 'ninguna abierta · desglose, no sumar al Saldo';
   return (
     <>
       <div className="kpi">
         <div className="kpi-label">Saldo</div>
         <div className="kpi-value">{money(kpi.saldo, currency)}</div>
+        <div className={`kpi-delta ${caja < 0 ? 'neg' : 'neu'}`}>
+          {`A coste · caja ${money(caja, currency)}`}
+        </div>
       </div>
       <div className="kpi">
         <div className="kpi-label">Saldo preventa</div>
@@ -35,9 +44,7 @@ export function KpiCardsInvestment({ kpi, period, currency }: Props) {
       <div className="kpi">
         <div className="kpi-label">En carteras</div>
         <div className="kpi-value">{money(kpi.enCarteras, currency)}</div>
-        <div className="kpi-delta neu">
-          {kpi.enCarterasCount ? `${kpi.enCarterasCount} abierta${kpi.enCarterasCount !== 1 ? 's' : ''}` : 'ninguna abierta'}
-        </div>
+        <div className="kpi-delta neu">{openLabel}</div>
       </div>
       <div className="kpi">
         <div className="kpi-label">{`P&L cerrado · ${lbl}`}</div>

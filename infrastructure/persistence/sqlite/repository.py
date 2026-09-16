@@ -17,6 +17,7 @@ from domain.exceptions import AccountNotFoundError
 from domain.value_objects import AccountKind
 
 from .schema import ensure_schema
+from .transfer_links import backfill_transfer_links
 
 _DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
@@ -34,8 +35,11 @@ class SQLiteMovementRepository:
 
     def load(self, account_id: str) -> list[Movement]:
         with self._connect() as conn:
+            backfill_transfer_links(conn)
+            conn.commit()
             rows = conn.execute(
-                "SELECT id, account_id, occurred_at, type, concept, amount, balance, exchange_rate, rowid "
+                "SELECT id, account_id, occurred_at, type, concept, amount, balance, "
+                "exchange_rate, transfer_link_id, rowid "
                 "FROM movements WHERE account_id = ? ORDER BY occurred_at, rowid",
                 (account_id,),
             ).fetchall()
@@ -49,6 +53,7 @@ class SQLiteMovementRepository:
                 amount=r[5],
                 balance=r[6],
                 exchange_rate=r[7],
+                transfer_link_id=uuid.UUID(r[8]) if r[8] else None,
             )
             for r in rows
         ]
@@ -59,16 +64,19 @@ class SQLiteMovementRepository:
             try:
                 conn.execute("DELETE FROM movements WHERE account_id = ?", (account_id,))
                 conn.executemany(
-                    "INSERT INTO movements (id, account_id, occurred_at, type, concept, amount, balance, exchange_rate) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO movements (id, account_id, occurred_at, type, concept, amount, balance, "
+                    "exchange_rate, transfer_link_id) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [
                         (
                             str(m.id), m.account_id, m.occurred_at.strftime(_DATE_FORMAT),
                             m.type, m.concept, m.amount, m.balance, m.exchange_rate,
+                            str(m.transfer_link_id) if m.transfer_link_id else None,
                         )
                         for m in movements
                     ],
                 )
+                backfill_transfer_links(conn)
             except Exception:
                 conn.execute("ROLLBACK")
                 raise
@@ -150,6 +158,23 @@ class SQLiteMovementRepository:
                 raise
             else:
                 conn.execute("COMMIT")
+
+    def add_portfolio_holding(self, holding: PortfolioHolding) -> int:
+        """Inserta un lote nuevo (alta desde la UI) y devuelve su id."""
+        with self._connect() as conn:
+            cur = conn.execute(
+                "INSERT INTO portfolio_holdings "
+                "(account_id, portfolio, ticker, company, shares, price_usd, capital_usd, fee_usd, "
+                "contributed_at, source_file, close_price_usd, note, current_price_usd) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    holding.account_id, holding.portfolio, holding.ticker, holding.company,
+                    holding.shares, holding.price_usd, holding.capital_usd, holding.fee_usd,
+                    holding.contributed_at, holding.source_file, holding.close_price_usd,
+                    holding.note, holding.current_price_usd,
+                ),
+            )
+            return int(cur.lastrowid)
 
     def update_portfolio_holding(self, holding_id: int, close_price_usd: float | None, note: str | None,
                                   current_price_usd: float | None) -> None:
