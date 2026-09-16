@@ -46,6 +46,10 @@ class MovementRepository(Protocol):
         actualiza fila a fila."""
         ...
 
+    def add_portfolio_holding(self, holding: PortfolioHolding) -> int:
+        """Inserta un lote nuevo (alta desde la UI) y devuelve su id."""
+        ...
+
     def update_portfolio_holding(self, holding_id: int, close_price_usd: float | None, note: str | None,
                                   current_price_usd: float | None) -> None:
         """Actualiza close_price_usd/note/current_price_usd de una holding

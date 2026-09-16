@@ -146,7 +146,7 @@ Sin cuentas, un onboarding vacío invita a crear la primera.
 Cuatro tarjetas. El **PeriodSelector** (esquina del hero: **Mes** / **Trimestre** / **Año** / **Personalizado**) solo afecta a estas tarjetas, no a los gráficos:
 
 - **Saldo actual** — último balance del ledger (siempre el saldo real, **sin filtrar** por período)
-- **Ingresos** — `Nómina` + `Ingreso` en el período, **excluyendo** transferencias entrantes (`is_transfer_in`: concepto que empieza por `Desde `)
+- **Ingresos** — `Nómina` + `Ingreso` en el período, **excluyendo** transferencias entrantes (el `Ingreso` lleva `transfer_link_id`). Un ingreso «Desde el trabajo» cuenta como ingreso.
 - **Gastos** — `Gasto` − `Devolución` en el período, acotado a ≥ 0
 - **Balance** — ingresos − gastos (ambos ya netos). No es el cambio bruto de saldo: transferencias, apuestas e inversiones no pesan aquí, para que los tres KPIs de flujo cuadren entre sí
 
@@ -175,7 +175,7 @@ El selector de KPIs **Trimestre** usa los últimos 3 meses de calendario (no un 
 
 #### Gráfico: Evolución del saldo
 
-Línea de saldo a lo largo del tiempo, en la divisa de la cuenta. **No se pinta media móvil.** El backend sí calcula `mediaMovil` (30 días) en cuentas CASH (`GET /saldo-evolucion`); la UI la ignora (`SaldoChart.tsx`).
+Línea de saldo a lo largo del tiempo, en la divisa de la cuenta. **No hay media móvil** (ni en pantalla ni en el API).
 
 #### Gráfico: Evolución mensual
 
@@ -239,16 +239,16 @@ Botón en el hero. `DELETE /api/accounts/{cuenta}` borra la cuenta y su históri
 
 Vista de cartera de inversión (no cuenta corriente), en la **divisa de esa cuenta** (`accounts.currency`; el ejemplo `investment1` es USD). El acento visual y el monograma se eligen por cuenta (tema por defecto: forest para cuentas nuevas INVESTMENT, editable en el hero).
 
-Botón **Precios actuales** (`POST .../portfolio-holdings/refresh-prices`, yfinance) y banner con cuántas posiciones se actualizaron / qué tickers fallaron.
+Botón **Precios actuales** (`POST .../portfolio-holdings/refresh-prices`, yfinance) y banner con cuántas posiciones se actualizaron / qué tickers fallaron. Botón **+ Holding** abre el alta de un lote (`POST .../portfolio-holdings`): cartera, ticker, títulos, precio, fecha. Exige caja suficiente (Saldo − En carteras). Si la cuenta no es USD, se puede convertir un precio en USD con **Consultar ahora** (yfinance).
 
 #### KPIs (cinco tarjetas)
 
 PeriodSelector: **Mes** / **Trimestre** / **Año** (sin Personalizado). (`KpiCardsInvestment.tsx`, `domain/services/investment_kpi.py`)
 
-- **Saldo** — cash + capital invertido a **coste** (ledger fusionado; no es valor de mercado)
+- **Saldo** — cash + capital invertido a **coste** (ledger fusionado; no es valor de mercado). Comprar un lote **no saca** saldo: el dinero desplegado se ve en **En carteras**. Subtítulo: caja = Saldo − En carteras
 - **Saldo preventa** — Saldo + Σ(valor de mercado − coste) de holdings abiertas que ya tienen `current_price_usd`; las demás se quedan a coste
-- **Aportado neto** (período) — transferencias entrantes − salientes en el período (`is_transfer_in` / `is_transfer_out`)
-- **En carteras** — capital invertido a coste (snapshot) + recuento de abiertas
+- **Aportado neto** (período) — transferencias entrantes − salientes en el período (`transfer_link_id`)
+- **En carteras** — capital invertido a coste (snapshot) + recuento de abiertas. Es un **desglose** del Saldo, no un extra: no sumar las dos tarjetas
 - **P&L cerrado** (período) — suma de balances de posiciones `Inversión`/`Inversión_r` cerradas cuya fecha de cierre cae en el período
 
 #### Rango de desglose y carteras
@@ -269,7 +269,7 @@ Cada cartera abierta con holdings es una fila expandible: ticker, empresa, preci
 
 - El **PnL de un ticker** usa el precio de cierre si ya se vendió; si no, el último `current_price_usd`.
 - El **PnL de la cartera** aparece cuando **todos** sus tickers tienen algún precio.
-- **Cerrar** un lote es una **venta**: pide el precio, guarda `closePrice` y registra `Inversión` (coste) + `Inversión_r` (shares × precio) en el ledger. El saldo se mueve por el P&L neto; el lote sale de «En carteras»; el P&L entra en el KPI «P&L cerrado». El mismo endpoint edita `note` y `currentPrice` sin vender.
+- **Cerrar** un lote es una **venta**: pide el precio y la **fecha de venta**, guarda `closePrice` y registra `Inversión` (coste, si no existía) + `Inversión_r` (shares × precio) en el ledger. El saldo se mueve por el P&L neto; el lote sale de «En carteras»; el P&L entra en el KPI «P&L cerrado». El mismo endpoint edita `note` y `currentPrice` sin vender.
 - La **anotación** no entra en ningún cálculo.
 
 Una cartera legado (sin filas en `portfolio_holdings`, flujo `Inversión`/`Inversión_r` en `movements`) se muestra sin composición por ticker. El historial filtrado por fecha de cierre aplica a ese legado; las carteras con holdings se cierran holding a holding, no con el modal de cierre de apuestas.
@@ -297,7 +297,9 @@ El botón "⇄ Transferencia" en el header (visible solo con 2 o más cuentas) a
 - `Transferencia` (resta) en la cuenta origen, con el importe en su propia divisa
 - `Ingreso` (suma) en la cuenta destino, con el importe convertido a la divisa de esa cuenta
 
-**Si origen y destino tienen divisas distintas**, el modal pide el **tipo de cambio** (obligatorio; lo introduce el usuario -- no hay conversión automática contra una cotización externa). El importe en destino es `total origen × tipo de cambio`, redondeado a 2 decimales. El tipo se persiste en `movements.exchange_rate` en ambas patas. Si las divisas coinciden, no se pide y `exchange_rate` queda `NULL`.
+**Si origen y destino tienen divisas distintas**, el modal pide el **tipo de cambio** (obligatorio). Botón **Consultar ahora** rellena el par EUR/USD vía yfinance; el usuario puede editarlo. El importe en destino es `total origen × tipo de cambio`, redondeado a 2 decimales. El tipo se persiste en `movements.exchange_rate` en ambas patas. Si las divisas coinciden, no se pide y `exchange_rate` queda `NULL`.
+
+Las dos patas comparten `movements.transfer_link_id`. Borrar una (último movimiento de esa cuenta) borra la otra. Un Ingreso sin enlace no es transferencia.
 
 ---
 
@@ -315,20 +317,22 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | DELETE | `/api/accounts/{cuenta}` | Borra la cuenta y su histórico |
 | GET | `/api/data/{cuenta}` | Movimientos JSON (incluye `_idx` en filas reales; las sintéticas de holdings no tienen `_idx`) |
 | GET | `/api/accounts/{cuenta}/kpis` | KPIs CASH (saldo, ingresos, gastos, balance + deltas). `period=mes\|trimestre\|año\|custom` |
-| GET | `/api/accounts/{cuenta}/investment-kpis` | KPIs INVESTMENT (saldo, **saldoPreventa**, aportado, en carteras, PnL + deltas) |
-| GET | `/api/accounts/{cuenta}/saldo-evolucion` | Serie temporal de saldo. En CASH el JSON puede incluir `mediaMovil`; la UI no la usa |
+| GET | `/api/fx` | Tipo de cambio al contado `base`→`quote` (EUR/USD, yfinance). El usuario confirma |
+| GET | `/api/accounts/{cuenta}/investment-kpis` | KPIs INVESTMENT (saldo, **saldoPreventa**, **caja**, aportado, en carteras, PnL + deltas) |
+| GET | `/api/accounts/{cuenta}/saldo-evolucion` | Serie temporal de saldo |
+| GET | `/api/accounts/{cuenta}/gastos-mes-actual` | Alerta de gasto del mes (`alert`) |
+| POST | `/api/accounts/{cuenta}/portfolio-holdings` | Alta de un lote (exige caja ≥ capital) |
+| PUT | `/api/accounts/{cuenta}/portfolio-holdings/{id}` | Edita `closePrice` / `note` / `currentPrice` (venta: `fecha` opcional) |
 | GET | `/api/accounts/{cuenta}/mensual-evolucion` | Ingresos/gastos por mes |
 | GET | `/api/accounts/{cuenta}/carteras-ranking` | Ranking de conceptos `Inversión` (media/total) |
-| GET | `/api/accounts/{cuenta}/gastos-mes-actual` | Alerta de gasto del mes + `topMerchants` (los chips no se pintan; solo se usa `alert`) |
 | GET | `/api/accounts/{cuenta}/gastos-ranking` | Ranking de conceptos `Gasto` (media/total) |
-| GET | `/api/accounts/{cuenta}/transferencias` | Recibido / enviado / neto + lista (heurística de Concepto). **Sin sección UI** |
+| GET | `/api/accounts/{cuenta}/transferencias` | Recibido / enviado / neto + lista (`transfer_link_id`). **Sin sección UI** |
 | GET | `/api/accounts/{cuenta}/carteras` | Holdings abiertas (por ticker) + legado + historial |
-| PUT | `/api/accounts/{cuenta}/portfolio-holdings/{id}` | Edita `closePrice` / `note` / `currentPrice` |
 | POST | `/api/accounts/{cuenta}/portfolio-holdings/refresh-prices` | Refresca `current_price_usd` de holdings abiertas (yfinance) |
 | GET | `/api/accounts/{cuenta}/apuestas` | Abiertas + historial cerrado |
 | POST | `/api/movimiento/{cuenta}` | Añade un movimiento y recalcula el saldo |
 | PUT | `/api/movimiento/{cuenta}` | Edita tipo / concepto / total / fecha |
-| DELETE | `/api/movimiento/{cuenta}` | Borra el último movimiento y recalcula el saldo |
+| DELETE | `/api/movimiento/{cuenta}` | Borra el último movimiento; si es una pata de transferencia, borra la otra |
 | POST | `/api/transferencia` | Transferencia entre cuentas (`exchangeRate` si las divisas difieren) |
 
 ---
@@ -341,7 +345,9 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 - **`portfolio_holdings.current_price_usd`** se refresca a mano (yfinance). Puede fallar por ticker; un símbolo no cotizado puede colisionar con otro instrumento (ver `docs/ARCHITECTURE.md` §1).
 - **Tema por cuenta** (`accounts.theme`, seis paletas). Default por `kind`, editable en el hero.
 - **`run.sh`** abre el navegador por defecto y reconstruye `frontend/dist/` antes de arrancar.
-- **Saldo chart:** sin media móvil en pantalla. El backend aún calcula `mediaMovil` en CASH.
+- **Saldo chart:** sin media móvil.
+- **Transferencias:** `transfer_link_id` en ambas patas. Tipo de cambio consultable con yfinance, confirmado por el usuario.
+- **Holdings:** alta desde la UI; venta con fecha; caja = Saldo − En carteras.
 - **Fechas** en `%Y-%m-%d %H:%M:%S.%f` para ordenamiento estable con `mergesort`.
 - **Plotly.js** vía npm (`plotly.js-dist-min`), no CDN.
 - Servidor solo en `localhost` (puerto 8000). Sin auth. No exponer a red pública.

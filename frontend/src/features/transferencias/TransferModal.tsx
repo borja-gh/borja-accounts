@@ -3,6 +3,7 @@ import { submitTransfer } from '../../api/client';
 import type { AccountId, AccountSummary } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
 import { money, localISODate } from '../../lib/format';
+import { ExchangeRateField } from './ExchangeRateField';
 
 interface Props {
   open: boolean;
@@ -125,22 +126,19 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
           <input type="number" placeholder="0.00" step="0.01" min="0.01" value={total} onChange={(e) => setTotal(e.target.value)} />
         </div>
         {needsRate && (
-          <div className="fg">
-            <label>{`Tipo de cambio (1 ${cuentaOrigen!.currency} = ? ${cuentaDestino!.currency})`}</label>
-            <input
-              type="number"
-              placeholder="1.0000"
-              step="0.0001"
-              min="0.0001"
+          <>
+            <ExchangeRateField
+              from={cuentaOrigen!.currency}
+              to={cuentaDestino!.currency}
               value={exchangeRate}
-              onChange={(e) => setExchangeRate(e.target.value)}
+              onChange={setExchangeRate}
             />
             {showPreview && (
               <span className="hint-total">
                 {money(totalNum, cuentaOrigen!.currency)} → {money(totalNum * rateNum, cuentaDestino!.currency)}
               </span>
             )}
-          </div>
+          </>
         )}
         <div className="fg">
           <label>Fecha</label>
