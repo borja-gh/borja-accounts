@@ -41,7 +41,14 @@ Regla de dependencias: `domain` no importa `application` ni `infrastructure`; `a
 
 - No hay integración IBKR/Client Portal Gateway, `BrokerGateway`, órdenes ni trading.
 - No hay multiusuario, autenticación, Postgres, colas, cache, CQRS ni event sourcing.
-- La capa de IA no está implementada. Su proveedor, modelo, privacidad y alcance requieren una decisión explícita antes de introducir dependencias o endpoints. No dar al modelo SQL arbitrario ni permisos de escritura por defecto.
+- El asistente SQL LLM está en implementación inicial: `gemini-3.8-flash` genera una única consulta por petición y el backend devuelve el resultado o el error después de ejecutarla en SQLite. El modo `read` es de solo lectura; el modo `write` requiere confirmación explícita. No dar al modelo permisos fuera del modo y scope recibidos.
+
+## Backlog vigente
+
+- Presupuestos agregados mensuales/anuales para cuentas CASH: implementados en el commit actual.
+- Dashboard configurable por cuenta: aparcado; la composición de módulos sigue siendo fija.
+- Previsión mensual determinista: retirada; las previsiones futuras deben vivir dentro de la capa LLM pendiente de diseño.
+- Asistente SQL LLM: primera fase en curso; máximo dos intentos de consulta y sin previsiones todavía.
 
 ## Desarrollo y verificación
 

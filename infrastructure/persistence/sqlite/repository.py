@@ -12,8 +12,8 @@ import uuid
 
 import pandas as pd
 
-from domain.entities import Account, Movement, PortfolioHolding
-from domain.exceptions import AccountNotFoundError
+from domain.entities import Account, CashBudget, Movement, PortfolioHolding
+from domain.exceptions import AccountNotFoundError, CashBudgetNotFoundError
 from domain.value_objects import AccountKind
 
 from .schema import ensure_schema
@@ -207,12 +207,63 @@ class SQLiteMovementRepository:
                 (account.currency, account.theme, account.id),
             )
 
+    @staticmethod
+    def _cash_budget(row) -> CashBudget:
+        return CashBudget(
+            id=int(row[0]), account_id=row[1], period_type=row[2], year=int(row[3]),
+            month=int(row[4]), amount=float(row[5]),
+        )
+
+    def list_cash_budgets(self, account_id: str) -> list[CashBudget]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT id, account_id, period_type, year, month, amount "
+                "FROM cash_budgets WHERE account_id = ? "
+                "ORDER BY year DESC, month DESC, period_type, id DESC",
+                (account_id,),
+            ).fetchall()
+        return [self._cash_budget(row) for row in rows]
+
+    def get_cash_budget(self, account_id: str, period_type: str, year: int, month: int) -> CashBudget | None:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT id, account_id, period_type, year, month, amount "
+                "FROM cash_budgets WHERE account_id = ? AND period_type = ? AND year = ? AND month = ?",
+                (account_id, period_type, year, month),
+            ).fetchone()
+        return None if row is None else self._cash_budget(row)
+
+    def upsert_cash_budget(self, account_id: str, period_type: str, year: int, month: int, amount: float) -> CashBudget:
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO cash_budgets (account_id, period_type, year, month, amount) "
+                "VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(account_id, period_type, year, month) DO UPDATE SET amount = excluded.amount",
+                (account_id, period_type, year, month, amount),
+            )
+            row = conn.execute(
+                "SELECT id, account_id, period_type, year, month, amount "
+                "FROM cash_budgets WHERE account_id = ? AND period_type = ? AND year = ? AND month = ?",
+                (account_id, period_type, year, month),
+            ).fetchone()
+        return self._cash_budget(row)
+
+    def delete_cash_budget(self, account_id: str, budget_id: int) -> None:
+        with self._connect() as conn:
+            cur = conn.execute(
+                "DELETE FROM cash_budgets WHERE id = ? AND account_id = ?",
+                (budget_id, account_id),
+            )
+            if cur.rowcount == 0:
+                raise CashBudgetNotFoundError(f"Presupuesto {budget_id} no encontrado")
+
     def delete_account(self, account_id: str) -> None:
         with self._connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             try:
                 conn.execute("DELETE FROM portfolio_holdings WHERE account_id = ?", (account_id,))
                 conn.execute("DELETE FROM movements WHERE account_id = ?", (account_id,))
+                conn.execute("DELETE FROM cash_budgets WHERE account_id = ?", (account_id,))
                 conn.execute("DELETE FROM accounts WHERE id = ?", (account_id,))
             except Exception:
                 conn.execute("ROLLBACK")

@@ -22,6 +22,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from application.use_cases.add_movement import AddMovementUseCase
+from application.use_cases.ask_assistant import AskAssistantUseCase
 from application.use_cases.create_account import CreateAccountUseCase
 from application.use_cases.create_portfolio_holding import CreatePortfolioHoldingUseCase
 from application.use_cases.get_fx_rate import GetFxRateUseCase
@@ -30,6 +31,12 @@ from application.use_cases.delete_movement import DeleteMovementUseCase
 from application.use_cases.edit_movement import EditMovementUseCase
 from application.use_cases.get_account_kpis import GetAccountKPIsUseCase
 from application.use_cases.get_betting_report import GetBettingReportUseCase
+from application.use_cases.cash_budgets import (
+    DeleteCashBudgetUseCase,
+    GetCashBudgetStatusUseCase,
+    GetCashBudgetsUseCase,
+    UpsertCashBudgetUseCase,
+)
 from application.use_cases.get_investment_kpis import GetInvestmentKPIsUseCase
 from application.use_cases.get_mensual_evolucion import GetMensualEvolucionUseCase
 from application.use_cases.get_portfolio_report import GetPortfolioReportUseCase
@@ -42,12 +49,14 @@ from application.use_cases.refresh_holding_prices import RefreshHoldingPricesUse
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
 from application.use_cases.update_account_theme import UpdateAccountThemeUseCase
 from application.use_cases.update_portfolio_holding import UpdatePortfolioHoldingUseCase
-from domain.exceptions import DomainError
+from domain.exceptions import AssistantQueryError, DomainError
 from domain.services.ledger import LedgerService
 from domain.services.portfolio_holdings import build_investment_ledger
 from domain.value_objects import AccountKind
 from infrastructure.market_data.yfinance_provider import YFinanceProvider
+from infrastructure.ai.vertex_gemini import VertexGeminiModel
 from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository
+from infrastructure.persistence.sqlite.query_executor import SQLiteQueryExecutor
 
 BASE_DIR = _REPO_ROOT
 
@@ -115,6 +124,10 @@ def _reference_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _assistant_use_case() -> AskAssistantUseCase:
+    return AskAssistantUseCase(VertexGeminiModel.from_environment(), SQLiteQueryExecutor(DB_PATH))
+
+
 async def _read_json(request: Request):
     try:
         data = await request.json()
@@ -123,6 +136,30 @@ async def _read_json(request: Request):
     if not data:
         return None, JSONResponse({"error": "JSON inválido o Content-Type incorrecto"}, status_code=400)
     return data, None
+
+
+@app.post("/api/assistant")
+async def ask_assistant(request: Request):
+    data, err = await _read_json(request)
+    if err:
+        return err
+    if not isinstance(data, dict):
+        return JSONResponse({"error": "El cuerpo debe ser un objeto JSON"}, status_code=400)
+    try:
+        return _assistant_use_case().execute(
+            prompt=data.get("prompt"),
+            mode=data.get("mode", "read"),
+            scope=data.get("scope"),
+            confirmed=data.get("confirmed", False),
+            sql=data.get("sql"),
+        )
+    except AssistantQueryError as exc:
+        body = {"error": str(exc)}
+        if exc.attempts is not None:
+            body["attempts"] = exc.attempts
+        if exc.sql is not None:
+            body["sql"] = exc.sql
+        return JSONResponse(body, status_code=exc.status_code)
 
 
 @app.get("/")
@@ -286,6 +323,57 @@ def get_gastos_mes_actual(cuenta: str):
     if err:
         return err
     return report
+
+
+@app.get("/api/accounts/{cuenta}/budget")
+def get_cash_budgets(cuenta: str):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    result, err = _run(GetCashBudgetsUseCase(repository).execute, cuenta)
+    if err:
+        return err
+    return result
+
+
+@app.put("/api/accounts/{cuenta}/budget")
+async def upsert_cash_budget(cuenta: str, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    result, err = _run(UpsertCashBudgetUseCase(repository).execute, cuenta, data)
+    if err:
+        return err
+    return {"ok": True, "budget": result}
+
+
+@app.delete("/api/accounts/{cuenta}/budget/{budget_id}")
+def delete_cash_budget(cuenta: str, budget_id: int):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    _, err = _run(DeleteCashBudgetUseCase(repository).execute, cuenta, budget_id)
+    if err:
+        return err
+    return {"ok": True}
+
+
+@app.get("/api/accounts/{cuenta}/budget-status")
+def get_cash_budget_status(
+    cuenta: str,
+    period: str = "month",
+    year: int | None = None,
+    month: int | None = None,
+):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    result, err = _run(
+        GetCashBudgetStatusUseCase(repository).execute,
+        cuenta, period, year, month, _reference_now(),
+    )
+    if err:
+        return err
+    return result
 
 
 @app.get("/api/accounts/{cuenta}/gastos-ranking")

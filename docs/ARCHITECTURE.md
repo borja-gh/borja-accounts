@@ -22,6 +22,8 @@ Este documento describe lo que **hay**. Lo que no está implementado vive en §2
 | Divisa interna | Una cuenta no mezcla divisas: todo movimiento en `accounts.currency`. Solo EUR y USD (`_SUPPORTED_CURRENCIES`). | **Hecho** |
 | Saldo INVESTMENT | Sin `cash_override`. Saldo = balance final de `build_investment_ledger`. Caja = Saldo − En carteras. En carteras es desglose, no se suma al Saldo. | **Hecho** |
 | Tema | `accounts.theme`, 6 paletas, por cuenta (default clay/CASH, forest/INVESTMENT). | **Hecho** |
+| Presupuestos CASH | `cash_budgets`, agregado por cuenta y período mensual/anual; gasto real = `Gasto` − `Devolución`. | **Hecho** |
+| Asistente SQL | `gemini-3.8-flash` genera una única consulta por petición; SQLite ejecuta en modo read/write y devuelve resultado o error al modelo. | **En implementación** |
 | Integración IBKR / CPGW | No hay `BrokerGateway`, ni adapter CPGW, ni órdenes. `clientportal.gw.zip` puede estar en disco y está en `.gitignore`; **no está integrado**. | **No implementado** — §2 |
 | Esquema relacional to-be (`transfers`, `assets`, `positions`, `trades`) | No existe. `transfer_link_id` sí, en `movements`. | **Parcial** — §2 |
 | Media móvil 30d / `topMerchants` | Eliminados del backend y de la API. | **Hecho** |
@@ -42,8 +44,10 @@ borja-accounts/
 │       └── market_data.py   MarketDataProvider (precios on-demand)
 ├── infrastructure/
 │   ├── persistence/sqlite/  Store activo (schema + SQLiteMovementRepository)
+│   │                         + ejecutor SQL read/write con límites
 │   ├── persistence/csv/     Adapter CSV: import one-off + harness de tests (no es el store de la app)
-│   └── market_data/         YFinanceProvider
+│   ├── market_data/         YFinanceProvider
+│   └── ai/                  Cliente Vertex AI / Gemini
 ├── frontend/                React + TypeScript + Vite (build → frontend/dist/, servido por FastAPI)
 ├── tests/                   Golden master del backend (pytest)
 └── scripts/                 migrate_csv_to_sqlite.py, backfill_exchange_rates.py
@@ -55,7 +59,7 @@ El frontend solo habla con FastAPI (`/api/...`). En `npm run dev`, Vite proxific
 
 ### Esquema SQLite real
 
-Tres tablas. **No** existen `transfers`, `portfolios`, `assets`, `positions` ni `trades`.
+Cuatro tablas. **No** existen `transfers`, `portfolios`, `assets`, `positions` ni `trades`.
 
 ```
 accounts
@@ -83,6 +87,14 @@ portfolio_holdings
   contributed_at, source_file
   close_price_usd, note         -- ALTER TABLE
   current_price_usd             -- ALTER TABLE; precio de mercado bajo demanda (yfinance), no un stream en vivo
+
+cash_budgets
+  id INTEGER PK
+  account_id TEXT FK → accounts
+  period_type TEXT CHECK (month | year)
+  year INTEGER
+  month INTEGER                  -- 1..12 para month; 0 para year
+  amount REAL                    -- importe agregado no negativo
 ```
 
 `cash_override` existió en `accounts` y se elimina al abrir la DB si aún está (`ALTER TABLE ... DROP COLUMN`). El KPI Saldo de INVESTMENT sale del ledger fusionado (`build_investment_ledger`), no de un snapshot manual.
@@ -128,6 +140,9 @@ No son «arquitectura objetivo» de este repo. Si se retoman, será trabajo nuev
 - **Multiusuario / autenticación** de la app.
 - **Postgres**, colas, cache, DI container, CQRS, event sourcing.
 - **Más divisas** que EUR/USD.
+- **Dashboard configurable**: sigue en backlog; la composición actual continúa siendo fija por vista.
+- **Previsión mensual determinista**: retirada del backlog; las futuras previsiones se plantean dentro de una capa LLM todavía no implementada.
+- **Asistente SQL LLM**: en implementación; el modelo genera SQL por petición y el backend devuelve el resultado o el error, con máximo dos intentos.
 - **Bloque 6** del plan histórico (IBKR real) y **bloque 7** (empaquetado OSS: LICENSE, CONTRIBUTING, README portable de CPGW): **no hechos**. Los bloques 0–5 (golden master, FastAPI hexagonal, SQLite, lógica en backend, React) **sí**.
 
 El plan de bloques 0–7, el golden-master harness contra `index.html` vanilla / `app.py` Flask, y las secciones antiguas §7/§8 **ya no rigen**. La suite de regresión del backend está en `tests/` (ver `tests/README.md`).
@@ -145,4 +160,4 @@ Cerrar un holding (`PUT .../portfolio-holdings/{id}` con `closePrice` y `fecha`)
 No comprometidas. No son arquitectura vigente.
 
 - Empaquetado OSS (LICENSE, CONTRIBUTING): no hecho.
-- Capa de IA sobre SQL: sin explorar; no hay decisión.
+- Asistente SQL LLM: `POST /api/assistant`, `gemini-3.8-flash`, scope interactivo por petición y modos `read`/`write`; la UI y la evaluación de previsiones siguen pendientes.

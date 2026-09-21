@@ -11,6 +11,7 @@ import { CreateAccountModal } from './features/accounts/CreateAccountModal';
 import { OnboardingEmptyState } from './components/OnboardingEmptyState';
 import type { AccountViewHandle } from './features/shared/viewHandle';
 import { resolveTheme } from './styles/themes';
+import { AssistantPanel } from './features/asistente/AssistantPanel';
 import './styles/app.css';
 
 function App() {
@@ -54,6 +55,7 @@ function App() {
         />
       )}
       <main className="content">
+        {accounts && <AssistantPanel accounts={accounts} selectedAccount={account} />}
         {accounts && accounts.length === 0 && (
           <OnboardingEmptyState onCreateAccount={() => setCreateAccountModalOpen(true)} />
         )}

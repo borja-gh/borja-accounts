@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from domain.entities import Account, Movement, PortfolioHolding
+from domain.entities import Account, CashBudget, Movement, PortfolioHolding
 
 
 class MovementRepository(Protocol):
@@ -65,4 +65,16 @@ class MovementRepository(Protocol):
     def update_account(self, account: Account) -> None:
         """Actualiza currency/theme de una cuenta existente (id/kind son
         inmutables tras el alta)."""
+        ...
+
+    def list_cash_budgets(self, account_id: str) -> list[CashBudget]:
+        ...
+
+    def get_cash_budget(self, account_id: str, period_type: str, year: int, month: int) -> CashBudget | None:
+        ...
+
+    def upsert_cash_budget(self, account_id: str, period_type: str, year: int, month: int, amount: float) -> CashBudget:
+        ...
+
+    def delete_cash_budget(self, account_id: str, budget_id: int) -> None:
         ...

@@ -45,6 +45,23 @@ CREATE TABLE IF NOT EXISTS portfolio_holdings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_portfolio_holdings_account ON portfolio_holdings(account_id);
+
+CREATE TABLE IF NOT EXISTS cash_budgets (
+    id INTEGER PRIMARY KEY,
+    account_id TEXT NOT NULL REFERENCES accounts(id),
+    period_type TEXT NOT NULL CHECK (period_type IN ('month', 'year')),
+    year INTEGER NOT NULL,
+    month INTEGER NOT NULL DEFAULT 0,
+    amount REAL NOT NULL CHECK (amount >= 0),
+    CHECK (
+        (period_type = 'month' AND month BETWEEN 1 AND 12)
+        OR
+        (period_type = 'year' AND month = 0)
+    ),
+    UNIQUE(account_id, period_type, year, month)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cash_budgets_account ON cash_budgets(account_id);
 """
 
 def ensure_schema(conn):

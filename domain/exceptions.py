@@ -62,3 +62,20 @@ class InsufficientCashError(DomainError):
 
 class FxRateUnavailableError(DomainError):
     status_code = 502
+
+
+class InvalidBudgetError(DomainError):
+    pass
+
+
+class CashBudgetNotFoundError(DomainError):
+    status_code = 404
+
+
+class AssistantQueryError(DomainError):
+    status_code = 422
+
+    def __init__(self, message: str, *, attempts: int | None = None, sql: str | None = None):
+        super().__init__(message)
+        self.attempts = attempts
+        self.sql = sql
