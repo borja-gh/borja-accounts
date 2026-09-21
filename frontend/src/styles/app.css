@@ -223,6 +223,81 @@
       margin: 0 auto;
     }
 
+    .assistant-panel {
+      margin-bottom: 28px;
+      padding: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .assistant-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .assistant-head h2 { margin-top: 2px; color: var(--accent); font-size: 18px; letter-spacing: -0.02em; }
+    .assistant-head p { margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .eyebrow {
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .assistant-mode { display: flex; gap: 4px; flex-shrink: 0; }
+    .assistant-mode-btn {
+      padding: 7px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--muted);
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+    }
+    .assistant-mode-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .assistant-mode-btn.write.active { background: rgba(159,47,45,.08); border-color: var(--red-bright); color: var(--red-bright); }
+    .assistant-controls { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .assistant-controls .fg { flex: 0 1 180px; min-width: 140px; }
+    .assistant-controls .assistant-account-field { flex-basis: 240px; }
+    .assistant-input-row { display: flex; align-items: flex-end; gap: 10px; margin-top: 12px; }
+    .assistant-input-row textarea {
+      flex: 1;
+      min-height: 54px;
+      resize: vertical;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      outline: none;
+    }
+    .assistant-input-row textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .assistant-error { margin-top: 10px; color: var(--red-bright); font-size: 12px; }
+    .assistant-confirmation {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid rgba(159,47,45,.22);
+      border-radius: var(--radius-sm);
+      background: rgba(159,47,45,.05);
+    }
+    .assistant-confirmation strong { display: block; color: var(--red-bright); font-size: 12px; }
+    .assistant-confirmation code,
+    .assistant-answer code { display: block; margin-top: 6px; color: var(--text); font-family: var(--font-mono); font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .assistant-answer { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .assistant-answer-label { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .assistant-answer p { margin-top: 5px; color: var(--text); white-space: pre-wrap; }
+    .assistant-answer details { margin-top: 10px; color: var(--muted); font-size: 11px; }
+    .assistant-answer summary { cursor: pointer; }
+
     /* ── DASHBOARD SECTION HEADINGS ── */
     .dash-heading {
       display: flex;
@@ -840,6 +915,40 @@
       flex: 1 1 220px;
       min-width: 0;
     }
+
+    .budget-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .budget-toolbar {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      padding: 14px 16px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .budget-toolbar .fg { min-width: 130px; flex: 0 1 160px; }
+    .budget-toolbar .budget-year-field { flex-basis: 95px; min-width: 95px; }
+    .budget-toolbar .budget-amount-field { flex-basis: 150px; min-width: 150px; }
+    .budget-actions { display: flex; gap: 6px; margin-left: auto; }
+    .budget-error { padding: 9px 16px; color: var(--red-bright); font-size: 12px; border-bottom: 1px solid var(--border); }
+    .budget-empty { padding: 14px 16px; color: var(--muted); font-size: 12px; }
+    .budget-status { padding: 14px 16px 12px; }
+    .budget-status-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .budget-status-label { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+    .budget-status strong { display: inline-block; margin-top: 3px; font-family: var(--font-mono); font-size: 20px; font-weight: 500; }
+    .budget-status-sub { margin-left: 7px; color: var(--muted); font-size: 12px; }
+    .budget-remaining { color: var(--green-bright); font-family: var(--font-mono); font-size: 13px; }
+    .budget-remaining.over { color: var(--red-bright); }
+    .budget-progress { height: 8px; margin-top: 14px; overflow: hidden; border-radius: 999px; background: var(--surface2); }
+    .budget-progress span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .2s ease; }
+    .budget-progress span.over { background: var(--red-bright); }
+    .budget-status-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 7px; color: var(--muted); font-size: 11px; }
     .price-toolbar {
       display: flex;
       align-items: center;
@@ -947,6 +1056,11 @@
       .tabs { padding: 12px 16px 0; }
       .tab { padding: 8px 12px; font-size: 12px; }
       .content { padding: 16px; }
+      .assistant-head { flex-direction: column; }
+      .assistant-mode { width: 100%; }
+      .assistant-mode-btn { flex: 1; }
+      .assistant-input-row { align-items: stretch; flex-direction: column; }
+      .assistant-confirmation { align-items: stretch; flex-direction: column; }
       .account-hero {
         flex-wrap: wrap;
         gap: 10px;
@@ -961,6 +1075,8 @@
       .kpi-value { font-size: 22px; }
       .charts-grid { grid-template-columns: 1fr; }
       .form-body { grid-template-columns: 1fr; }
+      .budget-actions { margin-left: 0; width: 100%; }
+      .budget-actions .btn { flex: 1; }
       .section-kpi { flex-basis: 100%; border-right: none; border-bottom: 1px solid var(--border); }
       .section-kpi:last-child { border-bottom: none; }
       .filter-row { justify-content: flex-start; }

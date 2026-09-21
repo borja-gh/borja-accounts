@@ -156,6 +156,112 @@ Cada KPI de ingresos/gastos/balance muestra un delta `↑ +X vs ant.` comparando
 
 Si el gasto del mes calendario actual va por encima (o por debajo) de la media de los 3 meses anteriores con datos, aparece un aviso suave bajo los KPIs (`GastoAlert`), en la divisa de la cuenta.
 
+### Asistente SQL
+
+El asistente es local y trabaja sobre la SQLite de la aplicación. En cada petición el usuario elige el modo, el scope y el texto de consulta; no existe una sesión de contexto implícita entre peticiones.
+
+#### Puesta en marcha
+
+1. Instala las dependencias del backend y del frontend:
+
+   ```bash
+   uv sync
+   (cd frontend && npm install)
+   ```
+
+2. Configura ADC de Google Cloud y el proyecto de Vertex AI. La ubicación puede ser `global`, `us` o `eu` según la disponibilidad del modelo:
+
+   ```bash
+   gcloud auth application-default login
+   export GOOGLE_CLOUD_PROJECT=tu-proyecto
+   export GOOGLE_CLOUD_LOCATION=global
+   ```
+
+   El modelo por defecto es `gemini-3.8-flash`. Se puede sustituir con `BORJA_ACCOUNTS_LLM_MODEL` sin cambiar el flujo ni el contrato HTTP.
+
+3. Arranca la aplicación:
+
+   ```bash
+   ./run.sh
+   ```
+
+   Abre `http://localhost:8000`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente SQL**.
+
+#### Flujo de lectura
+
+La UI envía `POST /api/assistant` con un cuerpo de este tipo:
+
+```json
+{
+  "prompt": "¿Cuántos movimientos hay por tipo?",
+  "mode": "read",
+  "scope": {
+    "accountIds": ["*"]
+  }
+}
+```
+
+El panel construye el scope con `accountIds` y, cuando se rellenan los filtros, con `from` y `to`. El valor `['*']` representa todas las cuentas.
+
+El flujo es deliberadamente directo:
+
+1. `USERINPUT`: el modelo recibe la pregunta, el modo y el scope, y devuelve una única sentencia SQL en texto plano.
+2. El backend valida esa sentencia y la ejecuta con una conexión SQLite `ro`, limitada a las tablas permitidas.
+3. Si SQLite devuelve un error, el backend lo envía como `DBERROR` y el modelo puede generar una segunda sentencia. El máximo total es de dos intentos.
+4. Si la consulta funciona, el backend envía el resultado estructurado como `DBINPUT` junto con la pregunta original para redactar la respuesta final.
+
+La base de datos completa nunca se envía al modelo. En modo `read` solo se permiten consultas de lectura (`SELECT`, `WITH` o `EXPLAIN`), con límites de filas, tamaño y tiempo de ejecución.
+
+#### Flujo de escritura
+
+El modo **Escritura** mantiene dos pasos separados:
+
+1. La primera petición genera y valida la propuesta SQL, pero no la ejecuta. La respuesta incluye `requiresConfirmation: true` y la sentencia exacta.
+2. La UI muestra la sentencia y solo al pulsar **Confirmar escritura** reenvía esa misma SQL con `confirmed: true`.
+3. El backend ejecuta la sentencia dentro de una transacción y devuelve las filas afectadas. No reescribe silenciosamente la operación confirmada.
+
+Placeholder de escritura para normalizar un concepto existente, sin cambiar el tipo de movimiento:
+
+```json
+{
+  "prompt": "Cambia los conceptos exactamente iguales a 'clases' por 'Educación'. No cambies otros campos.",
+  "mode": "write",
+  "scope": {
+    "accountIds": ["*"]
+  }
+}
+```
+
+La propuesta esperada para este placeholder es:
+
+```sql
+UPDATE movements
+SET concept = 'Educación'
+WHERE concept = 'clases';
+```
+
+Este SQL es solo un ejemplo de la propuesta que debe revisar el usuario. No se ejecuta al cargar la documentación ni al cambiar el selector de modo. La autorización final pertenece siempre al botón de confirmación.
+
+#### Uso directo de la API
+
+El endpoint también puede invocarse desde otra interfaz local. El cliente debe conservar la misma secuencia de propuesta y confirmación para `write`:
+
+```bash
+curl -s http://localhost:8000/api/assistant \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "prompt": "¿Cuántas cuentas hay de cada tipo?",
+    "mode": "read",
+    "scope": {"accountIds": ["*"]}
+  }'
+```
+
+Los errores de validación, conexión o ejecución llegan como respuesta JSON con `error`, `attempts` y, cuando existe, la SQL que falló. El cliente no debe ejecutar SQL por su cuenta.
+
+#### Presupuesto de CASH
+
+Las cuentas CASH permiten definir un presupuesto agregado mensual o anual. El estado muestra presupuesto, gasto real (`Gasto` − `Devolución`), restante, porcentaje consumido y exceso. Los presupuestos no se aplican a cuentas INVESTMENT ni se desglosan por concepto.
+
 #### Rango de desglose y apuestas
 
 Un único **RangeFilterBar** compartido por los tres gráficos y por Análisis de apuestas. **Default: `Todo`.** No hay filtro independiente por panel.
@@ -321,6 +427,11 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | GET | `/api/accounts/{cuenta}/investment-kpis` | KPIs INVESTMENT (saldo, **saldoPreventa**, **caja**, aportado, en carteras, PnL + deltas) |
 | GET | `/api/accounts/{cuenta}/saldo-evolucion` | Serie temporal de saldo |
 | GET | `/api/accounts/{cuenta}/gastos-mes-actual` | Alerta de gasto del mes (`alert`) |
+| GET | `/api/accounts/{cuenta}/budget` | Presupuestos mensuales/anuales de una cuenta CASH |
+| PUT | `/api/accounts/{cuenta}/budget` | Crea o actualiza un presupuesto por cuenta y período |
+| DELETE | `/api/accounts/{cuenta}/budget/{id}` | Borra un presupuesto |
+| GET | `/api/accounts/{cuenta}/budget-status` | Gasto real y estado del presupuesto (`period=month\|year`) |
+| POST | `/api/assistant` | Genera y ejecuta SQL sobre SQLite según el modo `read`/`write` de la petición |
 | POST | `/api/accounts/{cuenta}/portfolio-holdings` | Alta de un lote (exige caja ≥ capital) |
 | PUT | `/api/accounts/{cuenta}/portfolio-holdings/{id}` | Edita `closePrice` / `note` / `currentPrice` (venta: `fecha` opcional) |
 | GET | `/api/accounts/{cuenta}/mensual-evolucion` | Ingresos/gastos por mes |

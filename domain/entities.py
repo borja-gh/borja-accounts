@@ -36,6 +36,16 @@ class Account:
 
 
 @dataclass
+class CashBudget:
+    id: int
+    account_id: str
+    period_type: str
+    year: int
+    month: int
+    amount: float
+
+
+@dataclass
 class PortfolioHolding:
     """Una fila de un CSV de carteras/ -- una aportación real a un ticker
     dentro de una cartera, en la fecha en que se hizo (no la fecha del

@@ -20,6 +20,7 @@ import { GastosChart } from '../charts/GastosChart';
 import { RankingModeToggle } from '../charts/RankingModeToggle';
 import { GastoAlert } from '../gastos/GastoAlert';
 import { useGastosMesActual } from '../gastos/useGastosMesActual';
+import { CashBudgetSection } from '../presupuestos/CashBudgetSection';
 import type { AccountViewHandle } from '../shared/viewHandle';
 import type { AccountSummary, KpiPeriodFilter, RankingMode } from '../../api/types';
 
@@ -33,6 +34,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [gastosMode, setGastosMode] = useState<RankingMode>('media');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [budgetReloadToken, setBudgetReloadToken] = useState(0);
   const { kpi, reload: reloadKpis } = useAccountKpis(account.id, period);
   const { data, reload: reloadData } = useAccountData(account.id);
   const { report: saldoReport, reload: reloadSaldo } = useRangeReport(
@@ -59,6 +61,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
     reloadMensual();
     reloadGastosRanking();
     reloadGastosMesActual();
+    setBudgetReloadToken((value) => value + 1);
     onDataChanged();
   }
 
@@ -97,6 +100,9 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
       <SectionHeading title="Resumen general" />
       <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} currency={account.currency} />}</div>
       {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} currency={account.currency} />}
+
+      <SectionHeading title="Presupuesto" />
+      <CashBudgetSection account={account.id} currency={account.currency} reloadToken={budgetReloadToken} />
 
       {data && (
         <div className="filter-row">
