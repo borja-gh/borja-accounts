@@ -305,4 +305,49 @@ export interface GastosMesActualReport {
   alert: GastoAlert | null;
 }
 
+export type BudgetPeriodType = 'month' | 'year';
+
+export interface CashBudget {
+  id: number;
+  accountId: AccountId;
+  periodType: BudgetPeriodType;
+  year: number;
+  month: number;
+  amount: number;
+}
+
+export interface CashBudgetsReport {
+  budgets: CashBudget[];
+}
+
+export interface CashBudgetStatus {
+  periodType: BudgetPeriodType;
+  year: number;
+  month: number;
+  budgetId: number | null;
+  budget: number | null;
+  spent: number;
+  remaining: number | null;
+  percentage: number | null;
+  overBudget: boolean;
+}
+
+export interface SaveCashBudgetRequest {
+  periodType: BudgetPeriodType;
+  year: number;
+  month: number;
+  amount: number;
+}
+
+export interface SaveCashBudgetResult {
+  ok: boolean;
+  budget?: CashBudget;
+  error?: string;
+}
+
+export interface DeleteCashBudgetResult {
+  ok: boolean;
+  error?: string;
+}
+
 export type RankingMode = 'media' | 'total';

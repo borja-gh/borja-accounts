@@ -156,6 +156,10 @@ Cada KPI de ingresos/gastos/balance muestra un delta `↑ +X vs ant.` comparando
 
 Si el gasto del mes calendario actual va por encima (o por debajo) de la media de los 3 meses anteriores con datos, aparece un aviso suave bajo los KPIs (`GastoAlert`), en la divisa de la cuenta.
 
+#### Presupuesto de CASH
+
+Las cuentas CASH permiten definir un presupuesto agregado mensual o anual. El estado muestra presupuesto, gasto real (`Gasto` − `Devolución`), restante, porcentaje consumido y exceso. Los presupuestos no se aplican a cuentas INVESTMENT ni se desglosan por concepto.
+
 #### Rango de desglose y apuestas
 
 Un único **RangeFilterBar** compartido por los tres gráficos y por Análisis de apuestas. **Default: `Todo`.** No hay filtro independiente por panel.
@@ -321,6 +325,10 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | GET | `/api/accounts/{cuenta}/investment-kpis` | KPIs INVESTMENT (saldo, **saldoPreventa**, **caja**, aportado, en carteras, PnL + deltas) |
 | GET | `/api/accounts/{cuenta}/saldo-evolucion` | Serie temporal de saldo |
 | GET | `/api/accounts/{cuenta}/gastos-mes-actual` | Alerta de gasto del mes (`alert`) |
+| GET | `/api/accounts/{cuenta}/budget` | Presupuestos mensuales/anuales de una cuenta CASH |
+| PUT | `/api/accounts/{cuenta}/budget` | Crea o actualiza un presupuesto por cuenta y período |
+| DELETE | `/api/accounts/{cuenta}/budget/{id}` | Borra un presupuesto |
+| GET | `/api/accounts/{cuenta}/budget-status` | Gasto real y estado del presupuesto (`period=month\|year`) |
 | POST | `/api/accounts/{cuenta}/portfolio-holdings` | Alta de un lote (exige caja ≥ capital) |
 | PUT | `/api/accounts/{cuenta}/portfolio-holdings/{id}` | Edita `closePrice` / `note` / `currentPrice` (venta: `fecha` opcional) |
 | GET | `/api/accounts/{cuenta}/mensual-evolucion` | Ingresos/gastos por mes |

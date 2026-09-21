@@ -62,3 +62,11 @@ class InsufficientCashError(DomainError):
 
 class FxRateUnavailableError(DomainError):
     status_code = 502
+
+
+class InvalidBudgetError(DomainError):
+    pass
+
+
+class CashBudgetNotFoundError(DomainError):
+    status_code = 404

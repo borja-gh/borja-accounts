@@ -22,6 +22,7 @@ Este documento describe lo que **hay**. Lo que no está implementado vive en §2
 | Divisa interna | Una cuenta no mezcla divisas: todo movimiento en `accounts.currency`. Solo EUR y USD (`_SUPPORTED_CURRENCIES`). | **Hecho** |
 | Saldo INVESTMENT | Sin `cash_override`. Saldo = balance final de `build_investment_ledger`. Caja = Saldo − En carteras. En carteras es desglose, no se suma al Saldo. | **Hecho** |
 | Tema | `accounts.theme`, 6 paletas, por cuenta (default clay/CASH, forest/INVESTMENT). | **Hecho** |
+| Presupuestos CASH | `cash_budgets`, agregado por cuenta y período mensual/anual; gasto real = `Gasto` − `Devolución`. | **Hecho** |
 | Integración IBKR / CPGW | No hay `BrokerGateway`, ni adapter CPGW, ni órdenes. `clientportal.gw.zip` puede estar en disco y está en `.gitignore`; **no está integrado**. | **No implementado** — §2 |
 | Esquema relacional to-be (`transfers`, `assets`, `positions`, `trades`) | No existe. `transfer_link_id` sí, en `movements`. | **Parcial** — §2 |
 | Media móvil 30d / `topMerchants` | Eliminados del backend y de la API. | **Hecho** |
@@ -83,6 +84,14 @@ portfolio_holdings
   contributed_at, source_file
   close_price_usd, note         -- ALTER TABLE
   current_price_usd             -- ALTER TABLE; precio de mercado bajo demanda (yfinance), no un stream en vivo
+
+cash_budgets
+  id INTEGER PK
+  account_id TEXT FK → accounts
+  period_type TEXT CHECK (month | year)
+  year INTEGER
+  month INTEGER                  -- 1..12 para month; 0 para year
+  amount REAL                    -- importe agregado no negativo
 ```
 
 `cash_override` existió en `accounts` y se elimina al abrir la DB si aún está (`ALTER TABLE ... DROP COLUMN`). El KPI Saldo de INVESTMENT sale del ledger fusionado (`build_investment_ledger`), no de un snapshot manual.
@@ -128,6 +137,8 @@ No son «arquitectura objetivo» de este repo. Si se retoman, será trabajo nuev
 - **Multiusuario / autenticación** de la app.
 - **Postgres**, colas, cache, DI container, CQRS, event sourcing.
 - **Más divisas** que EUR/USD.
+- **Dashboard configurable**: sigue en backlog; la composición actual continúa siendo fija por vista.
+- **Previsión mensual determinista**: retirada del backlog; las futuras previsiones se plantean dentro de una capa LLM todavía no implementada.
 - **Bloque 6** del plan histórico (IBKR real) y **bloque 7** (empaquetado OSS: LICENSE, CONTRIBUTING, README portable de CPGW): **no hechos**. Los bloques 0–5 (golden master, FastAPI hexagonal, SQLite, lógica en backend, React) **sí**.
 
 El plan de bloques 0–7, el golden-master harness contra `index.html` vanilla / `app.py` Flask, y las secciones antiguas §7/§8 **ya no rigen**. La suite de regresión del backend está en `tests/` (ver `tests/README.md`).
@@ -145,4 +156,4 @@ Cerrar un holding (`PUT .../portfolio-holdings/{id}` con `closePrice` y `fecha`)
 No comprometidas. No son arquitectura vigente.
 
 - Empaquetado OSS (LICENSE, CONTRIBUTING): no hecho.
-- Capa de IA sobre SQL: sin explorar; no hay decisión.
+- Capa LLM para análisis y previsiones: dirección acordada, pero proveedor, modelo, contrato de herramientas y privacidad siguen pendientes; no hay implementación.

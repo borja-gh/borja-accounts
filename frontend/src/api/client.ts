@@ -29,6 +29,12 @@ import type {
   CreateHoldingRequest,
   CreateHoldingResult,
   FxRateResult,
+  BudgetPeriodType,
+  CashBudgetsReport,
+  CashBudgetStatus,
+  SaveCashBudgetRequest,
+  SaveCashBudgetResult,
+  DeleteCashBudgetResult,
 } from './types';
 import type { RangeFilter } from '../features/filters/RangeFilter';
 import type { ThemeName } from '../styles/themes';
@@ -200,4 +206,37 @@ export function fetchCarterasRanking(cuenta: string, filter: RangeFilter, mode: 
 export async function fetchGastosMesActual(cuenta: string): Promise<GastosMesActualReport> {
   const res = await fetch(`/api/accounts/${cuenta}/gastos-mes-actual`);
   return res.json();
+}
+
+export async function fetchCashBudgets(cuenta: string): Promise<CashBudgetsReport> {
+  const res = await fetch(`/api/accounts/${cuenta}/budget`);
+  return res.json();
+}
+
+export async function fetchCashBudgetStatus(
+  cuenta: string,
+  periodType: BudgetPeriodType,
+  year: number,
+  month: number,
+): Promise<CashBudgetStatus> {
+  const selectedMonth = periodType === 'year' ? 0 : month;
+  const params = new URLSearchParams({ period: periodType, year: String(year), month: String(selectedMonth) });
+  const res = await fetch(`/api/accounts/${cuenta}/budget-status?${params}`);
+  return res.json();
+}
+
+export async function saveCashBudget(cuenta: string, body: SaveCashBudgetRequest): Promise<SaveCashBudgetResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/budget`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function deleteCashBudget(cuenta: string, budgetId: number): Promise<DeleteCashBudgetResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/budget/${budgetId}`, { method: 'DELETE' });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
 }

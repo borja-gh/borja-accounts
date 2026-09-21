@@ -30,6 +30,12 @@ from application.use_cases.delete_movement import DeleteMovementUseCase
 from application.use_cases.edit_movement import EditMovementUseCase
 from application.use_cases.get_account_kpis import GetAccountKPIsUseCase
 from application.use_cases.get_betting_report import GetBettingReportUseCase
+from application.use_cases.cash_budgets import (
+    DeleteCashBudgetUseCase,
+    GetCashBudgetStatusUseCase,
+    GetCashBudgetsUseCase,
+    UpsertCashBudgetUseCase,
+)
 from application.use_cases.get_investment_kpis import GetInvestmentKPIsUseCase
 from application.use_cases.get_mensual_evolucion import GetMensualEvolucionUseCase
 from application.use_cases.get_portfolio_report import GetPortfolioReportUseCase
@@ -286,6 +292,57 @@ def get_gastos_mes_actual(cuenta: str):
     if err:
         return err
     return report
+
+
+@app.get("/api/accounts/{cuenta}/budget")
+def get_cash_budgets(cuenta: str):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    result, err = _run(GetCashBudgetsUseCase(repository).execute, cuenta)
+    if err:
+        return err
+    return result
+
+
+@app.put("/api/accounts/{cuenta}/budget")
+async def upsert_cash_budget(cuenta: str, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    result, err = _run(UpsertCashBudgetUseCase(repository).execute, cuenta, data)
+    if err:
+        return err
+    return {"ok": True, "budget": result}
+
+
+@app.delete("/api/accounts/{cuenta}/budget/{budget_id}")
+def delete_cash_budget(cuenta: str, budget_id: int):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    _, err = _run(DeleteCashBudgetUseCase(repository).execute, cuenta, budget_id)
+    if err:
+        return err
+    return {"ok": True}
+
+
+@app.get("/api/accounts/{cuenta}/budget-status")
+def get_cash_budget_status(
+    cuenta: str,
+    period: str = "month",
+    year: int | None = None,
+    month: int | None = None,
+):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    result, err = _run(
+        GetCashBudgetStatusUseCase(repository).execute,
+        cuenta, period, year, month, _reference_now(),
+    )
+    if err:
+        return err
+    return result
 
 
 @app.get("/api/accounts/{cuenta}/gastos-ranking")
