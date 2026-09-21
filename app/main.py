@@ -22,6 +22,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from application.use_cases.add_movement import AddMovementUseCase
+from application.use_cases.ask_assistant import AskAssistantUseCase
 from application.use_cases.create_account import CreateAccountUseCase
 from application.use_cases.create_portfolio_holding import CreatePortfolioHoldingUseCase
 from application.use_cases.get_fx_rate import GetFxRateUseCase
@@ -48,12 +49,14 @@ from application.use_cases.refresh_holding_prices import RefreshHoldingPricesUse
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
 from application.use_cases.update_account_theme import UpdateAccountThemeUseCase
 from application.use_cases.update_portfolio_holding import UpdatePortfolioHoldingUseCase
-from domain.exceptions import DomainError
+from domain.exceptions import AssistantQueryError, DomainError
 from domain.services.ledger import LedgerService
 from domain.services.portfolio_holdings import build_investment_ledger
 from domain.value_objects import AccountKind
 from infrastructure.market_data.yfinance_provider import YFinanceProvider
+from infrastructure.ai.vertex_gemini import VertexGeminiModel
 from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository
+from infrastructure.persistence.sqlite.query_executor import SQLiteQueryExecutor
 
 BASE_DIR = _REPO_ROOT
 
@@ -121,6 +124,10 @@ def _reference_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _assistant_use_case() -> AskAssistantUseCase:
+    return AskAssistantUseCase(VertexGeminiModel.from_environment(), SQLiteQueryExecutor(DB_PATH))
+
+
 async def _read_json(request: Request):
     try:
         data = await request.json()
@@ -129,6 +136,30 @@ async def _read_json(request: Request):
     if not data:
         return None, JSONResponse({"error": "JSON inválido o Content-Type incorrecto"}, status_code=400)
     return data, None
+
+
+@app.post("/api/assistant")
+async def ask_assistant(request: Request):
+    data, err = await _read_json(request)
+    if err:
+        return err
+    if not isinstance(data, dict):
+        return JSONResponse({"error": "El cuerpo debe ser un objeto JSON"}, status_code=400)
+    try:
+        return _assistant_use_case().execute(
+            prompt=data.get("prompt"),
+            mode=data.get("mode", "read"),
+            scope=data.get("scope"),
+            confirmed=data.get("confirmed", False),
+            sql=data.get("sql"),
+        )
+    except AssistantQueryError as exc:
+        body = {"error": str(exc)}
+        if exc.attempts is not None:
+            body["attempts"] = exc.attempts
+        if exc.sql is not None:
+            body["sql"] = exc.sql
+        return JSONResponse(body, status_code=exc.status_code)
 
 
 @app.get("/")

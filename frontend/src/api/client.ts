@@ -35,6 +35,8 @@ import type {
   SaveCashBudgetRequest,
   SaveCashBudgetResult,
   DeleteCashBudgetResult,
+  AssistantRequest,
+  AssistantResult,
 } from './types';
 import type { RangeFilter } from '../features/filters/RangeFilter';
 import type { ThemeName } from '../styles/themes';
@@ -237,6 +239,16 @@ export async function saveCashBudget(cuenta: string, body: SaveCashBudgetRequest
 
 export async function deleteCashBudget(cuenta: string, budgetId: number): Promise<DeleteCashBudgetResult> {
   const res = await fetch(`/api/accounts/${cuenta}/budget/${budgetId}`, { method: 'DELETE' });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function askAssistant(body: AssistantRequest): Promise<AssistantResult> {
+  const res = await fetch('/api/assistant', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
   const json = await res.json();
   return { ok: res.ok, ...json };
 }

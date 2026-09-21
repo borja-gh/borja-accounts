@@ -350,4 +350,36 @@ export interface DeleteCashBudgetResult {
   error?: string;
 }
 
+export type AssistantMode = 'read' | 'write';
+
+export interface AssistantScope {
+  accountIds: string[];
+  from?: string;
+  to?: string;
+}
+
+export interface AssistantRequest {
+  mode: AssistantMode;
+  prompt: string;
+  scope: AssistantScope;
+  confirmed?: boolean;
+  sql?: string;
+}
+
+export interface AssistantResult {
+  ok: boolean;
+  answer?: string;
+  sql?: string;
+  attempts?: number;
+  requiresConfirmation?: boolean;
+  result?: {
+    columns: string[];
+    rows: Array<Record<string, string | number | null>>;
+    rowCount: number;
+    affectedRows?: number;
+    lastInsertId?: number;
+  };
+  error?: string;
+}
+
 export type RankingMode = 'media' | 'total';
