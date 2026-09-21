@@ -123,7 +123,7 @@ export function AssistantPanel({ accounts, selectedAccount }: Props) {
         <textarea
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
-          placeholder="Ej.: ¿Cuánto he gastado este mes?"
+          placeholder={mode === 'write' ? 'Ej.: Cambia el tipo del concepto Clases de ingreso a nómina' : 'Ej.: ¿Cuánto he gastado este mes?'}
           aria-label="Petición para el asistente"
           rows={2}
         />

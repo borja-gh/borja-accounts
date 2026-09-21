@@ -4,7 +4,7 @@ Panel financiero personal local de un único usuario. No tiene autenticación ni
 
 ## Fuente de verdad
 
-- `docs/ARCHITECTURE.md` describe la arquitectura y las decisiones vigentes.
+- `docs/BACKLOG.md` recoge el trabajo pendiente.
 - `README.md` documenta el comportamiento de producto, las invariantes financieras y la API.
 - `tests/README.md` describe el golden master del backend y el protocolo para cambios intencionales de comportamiento.
 - Si estos documentos discrepan con el código, comprueba primero la suite de regresión y actualiza la documentación afectada como parte del mismo cambio.
@@ -45,10 +45,7 @@ Regla de dependencias: `domain` no importa `application` ni `infrastructure`; `a
 
 ## Backlog vigente
 
-- Presupuestos agregados mensuales/anuales para cuentas CASH: implementados en el commit actual.
-- Dashboard configurable por cuenta: aparcado; la composición de módulos sigue siendo fija.
-- Previsión mensual determinista: retirada; las previsiones futuras deben vivir dentro de la capa LLM pendiente de diseño.
-- Asistente SQL LLM: primera fase en curso; máximo dos intentos de consulta y sin previsiones todavía.
+Ver `docs/BACKLOG.md`.
 
 ## Desarrollo y verificación
 
