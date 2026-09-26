@@ -27,7 +27,7 @@ borja-accounts/
 ├── <id-cuenta>.csv       ← Un CSV por cuenta (import/export, ya no activo; en .gitignore)
 ├── <id-cuenta>.example.csv ← Fixture sintético versionado (mismo formato, sin datos reales)
 ├── scripts/migrate_csv_to_sqlite.py ← Importa movimientos de los CSV a SQLite (una cuenta ya existente)
-├── docs/ARCHITECTURE.md   ← Source of truth de arquitectura (estado actual + decisiones + fuera de alcance)
+├── docs/BACKLOG.md        ← Trabajo pendiente
 └── tests/                 ← Suite de regresión del backend (ver tests/README.md)
 ```
 
@@ -67,7 +67,7 @@ Si no hay cuentas en la BD, el script termina con «cuentas conocidas: ninguna»
 
 ## Formato de los CSV (import/export)
 
-Cada CSV (uno por cuenta) tiene las mismas cinco columnas. Es el formato que entiende `scripts/migrate_csv_to_sqlite.py`, no la estructura interna de `accounts.db` (ver `docs/ARCHITECTURE.md` §1 para el esquema SQLite real):
+Cada CSV (uno por cuenta) tiene las mismas cinco columnas. Es el formato que entiende `scripts/migrate_csv_to_sqlite.py`, no la estructura interna de `accounts.db` (esquema en `infrastructure/persistence/sqlite/schema.py`):
 
 | Columna  | Tipo     | Descripción                               |
 |----------|----------|-------------------------------------------|
@@ -450,10 +450,10 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 
 ## Notas de arquitectura
 
-- **Hexagonal en la raíz**, no monorepo `backend/`. Ver `docs/ARCHITECTURE.md`.
+- **Hexagonal en la raíz**, no monorepo `backend/`.
 - **Filtros:** PeriodSelector (solo KPIs) + RangeFilterBar (gráficos y listas) por vista. Rangos = meses de calendario. El buscador de movimientos es independiente.
 - **KPIs de apuestas/carteras de sección son lifetime.** El rango solo recorta el historial cerrado (fecha de cierre `fr`).
-- **`portfolio_holdings.current_price_usd`** se refresca a mano (yfinance). Puede fallar por ticker; un símbolo no cotizado puede colisionar con otro instrumento (ver `docs/ARCHITECTURE.md` §1).
+- **`portfolio_holdings.current_price_usd`** se refresca a mano (yfinance). Puede fallar por ticker; un símbolo no cotizado puede colisionar con otro instrumento.
 - **Tema por cuenta** (`accounts.theme`, seis paletas). Default por `kind`, editable en el hero.
 - **`run.sh`** abre el navegador por defecto y reconstruye `frontend/dist/` antes de arrancar.
 - **Saldo chart:** sin media móvil.
