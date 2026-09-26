@@ -62,6 +62,18 @@ CREATE TABLE IF NOT EXISTS cash_budgets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_cash_budgets_account ON cash_budgets(account_id);
+
+CREATE TABLE IF NOT EXISTS assistant_saved_queries (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    sql TEXT NOT NULL,
+    scope_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_assistant_saved_queries_created
+    ON assistant_saved_queries(created_at DESC);
 """
 
 def ensure_schema(conn):

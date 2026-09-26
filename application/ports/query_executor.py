@@ -28,8 +28,11 @@ class QueryResult:
 
 
 class QueryExecutor(Protocol):
-    def validate(self, sql: str, mode: str) -> None:
+    def validate_scope(self, scope: dict) -> None:
         ...
 
-    def execute(self, sql: str, mode: str) -> QueryResult:
+    def validate(self, sql: str, mode: str, scope: dict | None = None) -> None:
+        ...
+
+    def execute(self, sql: str, mode: str, scope: dict | None = None) -> QueryResult:
         ...

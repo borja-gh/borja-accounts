@@ -29,7 +29,9 @@ interface Props {
   onDataChanged: () => void;
 }
 
-export const CashAccountView = forwardRef<AccountViewHandle, Props>(function CashAccountView({ account, onDataChanged }, ref) {
+export const CashAccountView = forwardRef<AccountViewHandle, Props>(function CashAccountView(
+  { account, onDataChanged }, ref,
+) {
   const [period, setPeriod] = useState<KpiPeriodFilter>({ type: 'mes' });
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [gastosMode, setGastosMode] = useState<RankingMode>('media');
@@ -137,7 +139,13 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
 
       <SectionHeading title="Movimientos" />
       {data && (
-        <MovimientosSection account={account.id} kind={account.kind} currency={account.currency} data={data} onDataChanged={refreshAll} />
+        <MovimientosSection
+          account={account.id}
+          kind={account.kind}
+          currency={account.currency}
+          data={data}
+          onDataChanged={refreshAll}
+        />
       )}
     </>
   );

@@ -7,6 +7,7 @@ import { AddMovementForm, type AddMovementFormHandle } from './AddMovementForm';
 import { EditMovementModal } from './EditMovementModal';
 import { MovimientosSearch } from './MovimientosSearch';
 import { MovimientosTable } from './MovimientosTable';
+import { MovementTotalPanel } from './MovementTotalPanel';
 import { EMPTY_SEARCH, isSearchActive, searchedMovs, type MovSearch } from './search';
 
 interface Props {
@@ -111,6 +112,7 @@ export function MovimientosSection({ account, kind, currency, data, onDataChange
           <span className="section-title">Añadir movimiento</span>
         </div>
         <AddMovementForm ref={formRef} account={account} kind={kind} currency={currency} data={data} onSaved={afterMutation} />
+        <MovementTotalPanel account={account} kind={kind} currency={currency} data={data} />
       </div>
 
       <EditMovementModal

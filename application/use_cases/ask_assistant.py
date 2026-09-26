@@ -24,12 +24,15 @@ class AskAssistantUseCase:
             raise AssistantQueryError("El modo debe ser 'read' o 'write'")
         if not isinstance(confirmed, bool):
             raise AssistantQueryError("confirmed debe ser booleano")
-        if scope is not None and not isinstance(scope, dict):
+        if not isinstance(scope, dict):
             raise AssistantQueryError("El scope debe ser un objeto JSON")
         if sql is not None and not (mode == "write" and confirmed):
             raise AssistantQueryError("Solo se puede ejecutar SQL explícito en una escritura confirmada")
 
-        scope = scope or {}
+        try:
+            self.query_executor.validate_scope(scope)
+        except QueryExecutionError as exc:
+            raise AssistantQueryError(str(exc)) from exc
         last_error = None
         last_sql = sql
         last_attempted_sql = sql
@@ -39,14 +42,14 @@ class AskAssistantUseCase:
             last_attempted_sql = last_sql
             try:
                 if mode == "write" and not confirmed:
-                    self.query_executor.validate(last_sql, mode)
+                    self.query_executor.validate(last_sql, mode, scope)
                     return {
                         "ok": True,
                         "requiresConfirmation": True,
                         "sql": last_sql,
                         "attempts": attempt,
                     }
-                result = self.query_executor.execute(last_sql, mode)
+                result = self.query_executor.execute(last_sql, mode, scope)
             except QueryExecutionError as exc:
                 last_error = str(exc)
                 if sql is not None:
@@ -54,14 +57,28 @@ class AskAssistantUseCase:
                 last_sql = None
                 continue
 
-            answer = self.model.generate_answer(prompt, scope, last_sql, result.as_dict())
-            return {
-                "ok": True,
-                "answer": answer,
-                "sql": last_sql,
-                "attempts": attempt,
-                "result": result.as_dict(),
-            }
+            if mode == "read" and hasattr(self.model, "generate_answer_with_title"):
+                generated = self.model.generate_answer_with_title(prompt, scope, last_sql, result.as_dict())
+                answer = generated["answerMarkdown"]
+                response = {
+                    "ok": True,
+                    "title": generated["title"],
+                    "answer": answer,
+                    "answerMarkdown": answer,
+                    "sql": last_sql,
+                    "attempts": attempt,
+                    "result": result.as_dict(),
+                }
+            else:
+                answer = self.model.generate_answer(prompt, scope, last_sql, result.as_dict())
+                response = {
+                    "ok": True,
+                    "answer": answer,
+                    "sql": last_sql,
+                    "attempts": attempt,
+                    "result": result.as_dict(),
+                }
+            return response
 
         raise AssistantQueryError(
             f"La consulta no se pudo ejecutar tras {MAX_SQL_ATTEMPTS} intentos: {last_error}",

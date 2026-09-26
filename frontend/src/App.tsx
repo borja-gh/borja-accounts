@@ -55,15 +55,30 @@ function App() {
         />
       )}
       <main className="content">
-        {accounts && <AssistantPanel accounts={accounts} selectedAccount={account} />}
+        {accounts && (
+          <AssistantPanel
+            accounts={accounts}
+            selectedAccount={account}
+          />
+        )}
         {accounts && accounts.length === 0 && (
           <OnboardingEmptyState onCreateAccount={() => setCreateAccountModalOpen(true)} />
         )}
         {selected &&
           (selected.kind === 'CASH' ? (
-            <CashAccountView key={selected.id} account={selected} ref={viewRef} onDataChanged={refreshAccounts} />
+            <CashAccountView
+              key={selected.id}
+              account={selected}
+              ref={viewRef}
+              onDataChanged={refreshAccounts}
+            />
           ) : (
-            <InvestmentAccountView key={selected.id} account={selected} ref={viewRef} onDataChanged={refreshAccounts} />
+            <InvestmentAccountView
+              key={selected.id}
+              account={selected}
+              ref={viewRef}
+              onDataChanged={refreshAccounts}
+            />
           ))}
       </main>
       <TransferModal

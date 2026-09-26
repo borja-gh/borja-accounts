@@ -41,7 +41,7 @@ Regla de dependencias: `domain` no importa `application` ni `infrastructure`; `a
 
 - No hay integración IBKR/Client Portal Gateway, `BrokerGateway`, órdenes ni trading.
 - No hay multiusuario, autenticación, Postgres, colas, cache, CQRS ni event sourcing.
-- El asistente SQL LLM está en implementación inicial: `gemini-3.8-flash` genera una única consulta por petición y el backend devuelve el resultado o el error después de ejecutarla en SQLite. El modo `read` es de solo lectura; el modo `write` requiere confirmación explícita. No dar al modelo permisos fuera del modo y scope recibidos.
+- El asistente usa `gemini-3.8-flash` para generar SQL y redactar respuestas Markdown con título. SQLite valida y ejecuta la consulta. Las consultas guardadas contienen SQL de lectura, título, pregunta y scope; se reejecutan sin llamada al LLM. El modo `write` requiere confirmación explícita. No dar al modelo permisos fuera del modo y scope recibidos.
 
 ## Backlog vigente
 

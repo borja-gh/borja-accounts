@@ -1,35 +1,20 @@
 # Backlog
 
-Trabajo pendiente. No comprometido salvo que se retome explícitamente.
+## Analítica y producto
 
-## Asistente SQL LLM (en curso)
+- Evaluar previsiones futuras con modelos de lenguaje.
+- Integrar las previsiones futuras dentro de una capa LLM.
+- Dashboard configurable por cuenta.
 
-Backend inicial: `POST /api/assistant`, `gemini-3.8-flash`, modos `read`/`write`, scope interactivo por petición, máximo dos intentos de consulta. Sin previsiones todavía.
+## Integración con broker
 
-- Completar UI del asistente y evaluación de previsiones.
-- Mejorar exposición en front de respuesta de agente.
-- Guardar y reejecutar consultas SQL del agente: flujo **prompt → consulta generada → ver consulta → guardar → lista de consultas guardadas** (título + ejecutar).
+- `BrokerGateway`, adapters CPGW/manual, sincronización de posiciones y frescura de cotizaciones (`LIVE`, `STALE`, `MANUAL`).
+- Integración del Client Portal Gateway de IBKR para lectura y escritura.
+- Operativa de trading manual con confirmación y evaluación de trading algorítmico.
 
-## UI / producto
+## Plataforma
 
-- Dashboard configurable por cuenta (la composición de módulos sigue siendo fija).
-- Previsiones futuras dentro de una capa LLM (la previsión mensual determinista quedó retirada).
-
-## Integraciones y broker
-
-- `BrokerGateway`, adapters CPGW / manual, sync de posiciones, `place_order` / `cancel_order`, frescura `Quote { LIVE, STALE, MANUAL }`.
-- Client Portal Gateway de IBKR como parte de la app (lectura o escritura). El zip gitignored no cuenta como integración.
-- Trading (manual confirmado o algorítmico).
-- Bloque 6 del plan histórico (IBKR real).
-
-## Infraestructura / esquema
-
-- Monorepo `backend/` + `frontend/` y árbol to-be con `interfaces/api/routers`, SQLAlchemy, entidades `Asset`/`Position`/`Portfolio`/`Trade`.
-- Esquema relacional to-be (`transfers`, `portfolios`, `assets`, `positions`, `trades`; saldo no persistido). `transfer_link_id` en `movements` ya está.
-- Multiusuario / autenticación de la app.
-- Postgres, colas, cache, DI container, CQRS, event sourcing.
-- Más divisas que EUR/USD.
-
-## Otros
-
-- Empaquetado OSS (LICENSE, CONTRIBUTING). Bloque 7 del plan histórico.
+- Multiusuario y autenticación.
+- Evaluar Postgres, colas y cache conforme aparezcan necesidades operativas.
+- Ampliar las divisas soportadas más allá de EUR/USD.
+- Empaquetado OSS (`LICENSE`, `CONTRIBUTING`).

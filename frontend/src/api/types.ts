@@ -366,9 +366,49 @@ export interface AssistantRequest {
   sql?: string;
 }
 
+export interface SavedAssistantQuery {
+  id: string;
+  title: string;
+  prompt: string;
+  sql: string;
+  scope: AssistantScope;
+  createdAt: string;
+}
+
+export interface SaveAssistantQueryRequest {
+  title: string;
+  prompt: string;
+  sql: string;
+  scope: AssistantScope;
+}
+
+export interface SaveAssistantQueryResult {
+  ok: boolean;
+  query?: SavedAssistantQuery;
+  error?: string;
+}
+
+export interface SavedAssistantQueriesResult {
+  queries: SavedAssistantQuery[];
+}
+
+export interface ExecuteSavedAssistantQueryResult {
+  ok: boolean;
+  sql?: string;
+  result?: AssistantResult['result'];
+  error?: string;
+}
+
+export interface DeleteSavedAssistantQueryResult {
+  ok: boolean;
+  error?: string;
+}
+
 export interface AssistantResult {
   ok: boolean;
+  title?: string;
   answer?: string;
+  answerMarkdown?: string;
   sql?: string;
   attempts?: number;
   requiresConfirmation?: boolean;
