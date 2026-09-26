@@ -79,3 +79,7 @@ class AssistantQueryError(DomainError):
         super().__init__(message)
         self.attempts = attempts
         self.sql = sql
+
+
+class SavedAssistantQueryNotFoundError(DomainError):
+    status_code = 404

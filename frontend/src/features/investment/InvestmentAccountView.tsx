@@ -180,7 +180,13 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
 
       <SectionHeading title="Movimientos" />
       {data && (
-        <MovimientosSection account={account.id} kind={account.kind} currency={account.currency} data={data} onDataChanged={refreshAll} />
+        <MovimientosSection
+          account={account.id}
+          kind={account.kind}
+          currency={account.currency}
+          data={data}
+          onDataChanged={refreshAll}
+        />
       )}
     </>
   );

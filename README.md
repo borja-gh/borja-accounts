@@ -185,7 +185,7 @@ El asistente es local y trabaja sobre la SQLite de la aplicación. En cada petic
    ./run.sh
    ```
 
-   Abre `http://localhost:8000`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente SQL**.
+   Abre `http://localhost:8000`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente financiero**. En escritorio, el panel comparte el ancho entre la consulta y la biblioteca de consultas guardadas.
 
 #### Flujo de lectura
 
@@ -203,14 +203,21 @@ La UI envía `POST /api/assistant` con un cuerpo de este tipo:
 
 El panel construye el scope con `accountIds` y, cuando se rellenan los filtros, con `from` y `to`. El valor `['*']` representa todas las cuentas.
 
-El flujo es deliberadamente directo:
+El backend valida el scope antes de llamar al LLM. `accountIds` debe contener ids existentes o únicamente `"*"`; `from` y `to` son fechas ISO inclusivas y `from` no puede ser posterior a `to`.
 
-1. `USERINPUT`: el modelo recibe la pregunta, el modo y el scope, y devuelve una única sentencia SQL en texto plano.
-2. El backend valida esa sentencia y la ejecuta con una conexión SQLite `ro`, limitada a las tablas permitidas.
-3. Si SQLite devuelve un error, el backend lo envía como `DBERROR` y el modelo puede generar una segunda sentencia. El máximo total es de dos intentos.
-4. Si la consulta funciona, el backend envía el resultado estructurado como `DBINPUT` junto con la pregunta original para redactar la respuesta final.
+El flujo de lectura es:
 
-La base de datos completa nunca se envía al modelo. En modo `read` solo se permiten consultas de lectura (`SELECT`, `WITH` o `EXPLAIN`), con límites de filas, tamaño y tiempo de ejecución.
+1. `USERINPUT` contiene la petición; `SCOPE` contiene las cuentas y fechas seleccionadas. El modelo devuelve una sentencia SQL sin Markdown.
+2. El backend crea tablas temporales SQLite que contienen solo las filas dentro del scope. Las lecturas contra `main.*` se deniegan; la conexión principal es de solo lectura.
+3. El ejecutor valida la SQL y limita las tablas permitidas, la duración, el número de filas y el tamaño de la respuesta. Los presupuestos mensuales se incluyen cuando su mes se solapa con el rango seleccionado.
+4. Si la SQL falla, el error se envía al siguiente intento como `DBERROR`. Hay un máximo de dos generaciones/ejecuciones de SQL. Si ambas fallan, se devuelve el error sin generar una respuesta narrativa.
+5. Con una consulta válida, `DBINPUT` contiene `columns`, `rows` y `rowCount`. El LLM recibe `USERINPUT`, `SCOPE`, `SQL` y `DBINPUT`, y devuelve JSON estructurado con `title` y `answerMarkdown`.
+
+La respuesta se representa como Markdown y tabla de datos. La UI ofrece guardar la consulta con el título generado. En SQLite se persisten título, pregunta original, SQL y scope. La biblioteca permite filtrar, renombrar, ejecutar o eliminar una consulta.
+
+Ejecutar una consulta guardada vuelve a ejecutar exactamente la SQL almacenada en modo solo lectura, usando también el scope persistido. No invoca el LLM; la UI presenta las filas actuales de SQLite en una tabla.
+
+La base de datos no se envía al modelo: solo el resultado acotado de la consulta. Las respuestas nuevas vacían el campo de petición al enviarse. Las sugerencias de concepto muestran el casing exacto guardado en SQLite.
 
 #### Flujo de escritura
 
@@ -218,7 +225,7 @@ El modo **Escritura** mantiene dos pasos separados:
 
 1. La primera petición genera y valida la propuesta SQL, pero no la ejecuta. La respuesta incluye `requiresConfirmation: true` y la sentencia exacta.
 2. La UI muestra la sentencia y solo al pulsar **Confirmar escritura** reenvía esa misma SQL con `confirmed: true`.
-3. El backend ejecuta la sentencia dentro de una transacción y devuelve las filas afectadas. No reescribe silenciosamente la operación confirmada.
+3. El backend ejecuta la sentencia dentro de una transacción. Guardas SQLite impiden insertar, actualizar o borrar filas fuera de las cuentas y fechas confirmadas. El modo write no admite subconsultas.
 
 Placeholder de escritura para normalizar un concepto existente, sin cambiar el tipo de movimiento:
 
@@ -241,6 +248,10 @@ WHERE concept = 'clases';
 ```
 
 Este SQL es solo un ejemplo de la propuesta que debe revisar el usuario. No se ejecuta al cargar la documentación ni al cambiar el selector de modo. La autorización final pertenece siempre al botón de confirmación.
+
+### Total por tipo y concepto
+
+La vista Movimientos incluye un cálculo determinista independiente del asistente. Permite elegir tipo, concepto con autocomplete basado en el histórico y rango Desde/Hasta propio; suma los importes de ese concepto en la cuenta activa. El rango es inclusivo y sus límites vacíos abarcan todo el histórico. La etiqueta de acción depende del tipo (`Gastado`, `Ingresado`, `Devuelto`, `Invertido`, entre otras). No llama al LLM.
 
 #### Uso directo de la API
 
@@ -432,6 +443,11 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | DELETE | `/api/accounts/{cuenta}/budget/{id}` | Borra un presupuesto |
 | GET | `/api/accounts/{cuenta}/budget-status` | Gasto real y estado del presupuesto (`period=month\|year`) |
 | POST | `/api/assistant` | Genera y ejecuta SQL sobre SQLite según el modo `read`/`write` de la petición |
+| GET | `/api/assistant/saved` | Lista las consultas SQL guardadas |
+| POST | `/api/assistant/saved` | Guarda título, pregunta, SQL de lectura y scope |
+| PUT | `/api/assistant/saved/{id}` | Renombra una consulta guardada |
+| POST | `/api/assistant/saved/{id}/execute` | Ejecuta una SQL guardada en modo lectura con su scope, sin llamar al LLM |
+| DELETE | `/api/assistant/saved/{id}` | Elimina una consulta guardada |
 | POST | `/api/accounts/{cuenta}/portfolio-holdings` | Alta de un lote (exige caja ≥ capital) |
 | PUT | `/api/accounts/{cuenta}/portfolio-holdings/{id}` | Edita `closePrice` / `note` / `currentPrice` (venta: `fecha` opcional) |
 | GET | `/api/accounts/{cuenta}/mensual-evolucion` | Ingresos/gastos por mes |
