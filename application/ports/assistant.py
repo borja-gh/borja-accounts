@@ -7,3 +7,6 @@ class AssistantModel(Protocol):
 
     def generate_answer(self, prompt: str, scope: dict, sql: str, db_input: dict) -> str:
         ...
+
+    def generate_answer_with_title(self, prompt: str, scope: dict, sql: str, db_input: dict) -> dict:
+        ...

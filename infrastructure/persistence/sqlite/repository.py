@@ -7,13 +7,19 @@ app; el adapter CSV queda para import one-off y el harness de tests.
 aquí facilitaría que un harness o script mal configurado abriera sin
 darse cuenta la base de datos real en vez de una de prueba.
 """
+import json
 import sqlite3
 import uuid
+from datetime import datetime, timezone
 
 import pandas as pd
 
 from domain.entities import Account, CashBudget, Movement, PortfolioHolding
-from domain.exceptions import AccountNotFoundError, CashBudgetNotFoundError
+from domain.exceptions import (
+    AccountNotFoundError,
+    CashBudgetNotFoundError,
+    SavedAssistantQueryNotFoundError,
+)
 from domain.value_objects import AccountKind
 
 from .schema import ensure_schema
@@ -256,6 +262,79 @@ class SQLiteMovementRepository:
             )
             if cur.rowcount == 0:
                 raise CashBudgetNotFoundError(f"Presupuesto {budget_id} no encontrado")
+
+    @staticmethod
+    def _saved_assistant_query(row) -> dict:
+        return {
+            "id": row[0],
+            "title": row[1],
+            "prompt": row[2],
+            "sql": row[3],
+            "scope": json.loads(row[4]),
+            "createdAt": row[5],
+        }
+
+    def list_saved_assistant_queries(self) -> list[dict]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT id, title, prompt, sql, scope_json, created_at "
+                "FROM assistant_saved_queries ORDER BY created_at DESC, rowid DESC"
+            ).fetchall()
+        return [self._saved_assistant_query(row) for row in rows]
+
+    def get_saved_assistant_query(self, query_id: str) -> dict | None:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT id, title, prompt, sql, scope_json, created_at "
+                "FROM assistant_saved_queries WHERE id = ?",
+                (query_id,),
+            ).fetchone()
+        return None if row is None else self._saved_assistant_query(row)
+
+    def save_assistant_query(self, title: str, prompt: str, sql: str, scope: dict) -> dict:
+        query_id = str(uuid.uuid4())
+        created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO assistant_saved_queries (id, title, prompt, sql, scope_json, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (query_id, title, prompt, sql, json.dumps(scope, ensure_ascii=False), created_at),
+            )
+        return {
+            "id": query_id,
+            "title": title,
+            "prompt": prompt,
+            "sql": sql,
+            "scope": scope,
+            "createdAt": created_at,
+        }
+
+    def delete_saved_assistant_query(self, query_id: str) -> None:
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "DELETE FROM assistant_saved_queries WHERE id = ?", (query_id,)
+            )
+            if cursor.rowcount == 0:
+                raise SavedAssistantQueryNotFoundError(
+                    f"Consulta guardada '{query_id}' no encontrada"
+                )
+
+    def rename_saved_assistant_query(self, query_id: str, title: str) -> dict:
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "UPDATE assistant_saved_queries SET title = ? WHERE id = ?",
+                (title, query_id),
+            )
+            if cursor.rowcount == 0:
+                raise SavedAssistantQueryNotFoundError(
+                    f"Consulta guardada '{query_id}' no encontrada"
+                )
+            row = conn.execute(
+                "SELECT id, title, prompt, sql, scope_json, created_at "
+                "FROM assistant_saved_queries WHERE id = ?",
+                (query_id,),
+            ).fetchone()
+        return self._saved_assistant_query(row)
 
     def delete_account(self, account_id: str) -> None:
         with self._connect() as conn:

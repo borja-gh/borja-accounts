@@ -23,6 +23,7 @@ from fastapi.staticfiles import StaticFiles
 
 from application.use_cases.add_movement import AddMovementUseCase
 from application.use_cases.ask_assistant import AskAssistantUseCase
+from application.ports.query_executor import QueryExecutionError
 from application.use_cases.create_account import CreateAccountUseCase
 from application.use_cases.create_portfolio_holding import CreatePortfolioHoldingUseCase
 from application.use_cases.get_fx_rate import GetFxRateUseCase
@@ -49,7 +50,7 @@ from application.use_cases.refresh_holding_prices import RefreshHoldingPricesUse
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
 from application.use_cases.update_account_theme import UpdateAccountThemeUseCase
 from application.use_cases.update_portfolio_holding import UpdatePortfolioHoldingUseCase
-from domain.exceptions import AssistantQueryError, DomainError
+from domain.exceptions import AssistantQueryError, DomainError, SavedAssistantQueryNotFoundError
 from domain.services.ledger import LedgerService
 from domain.services.portfolio_holdings import build_investment_ledger
 from domain.value_objects import AccountKind
@@ -160,6 +161,85 @@ async def ask_assistant(request: Request):
         if exc.sql is not None:
             body["sql"] = exc.sql
         return JSONResponse(body, status_code=exc.status_code)
+
+
+@app.post("/api/assistant/saved")
+async def save_assistant_query(request: Request):
+    data, err = await _read_json(request)
+    if err:
+        return err
+    if not isinstance(data, dict):
+        return JSONResponse({"error": "El cuerpo debe ser un objeto JSON"}, status_code=400)
+    title = data.get("title")
+    prompt = data.get("prompt")
+    sql = data.get("sql")
+    scope = data.get("scope")
+    if not isinstance(title, str) or not title.strip() or len(title.strip()) > 120:
+        return JSONResponse({"error": "El título debe tener entre 1 y 120 caracteres"}, status_code=422)
+    if not isinstance(prompt, str) or not prompt.strip():
+        return JSONResponse({"error": "La pregunta original está vacía"}, status_code=422)
+    if not isinstance(scope, dict):
+        return JSONResponse({"error": "El scope debe ser un objeto JSON"}, status_code=422)
+    account_ids = scope.get("accountIds")
+    if (
+        not isinstance(account_ids, list)
+        or not account_ids
+        or not all(isinstance(item, str) for item in account_ids)
+    ):
+        return JSONResponse({"error": "El scope debe incluir accountIds como una lista de cuentas"}, status_code=422)
+    if any(key in scope and not isinstance(scope[key], str) for key in ("from", "to")):
+        return JSONResponse({"error": "Las fechas del scope deben ser texto"}, status_code=422)
+    try:
+        executor = SQLiteQueryExecutor(DB_PATH)
+        executor.validate_scope(scope)
+        executor.validate(sql, "read", scope)
+    except QueryExecutionError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=422)
+    saved_query = repository.save_assistant_query(title.strip(), prompt.strip(), sql, scope)
+    return JSONResponse({"ok": True, "query": saved_query}, status_code=201)
+
+
+@app.get("/api/assistant/saved")
+def list_saved_assistant_queries():
+    return {"queries": repository.list_saved_assistant_queries()}
+
+
+@app.post("/api/assistant/saved/{query_id}/execute")
+def execute_saved_assistant_query(query_id: str):
+    saved_query = repository.get_saved_assistant_query(query_id)
+    if saved_query is None:
+        return JSONResponse({"error": "Consulta guardada no encontrada"}, status_code=404)
+    try:
+        result = SQLiteQueryExecutor(DB_PATH).execute(saved_query["sql"], "read", saved_query["scope"])
+    except QueryExecutionError as exc:
+        return JSONResponse({"error": str(exc), "sql": saved_query["sql"]}, status_code=422)
+    return {"ok": True, "sql": saved_query["sql"], "result": result.as_dict()}
+
+
+@app.delete("/api/assistant/saved/{query_id}")
+def delete_saved_assistant_query(query_id: str):
+    try:
+        repository.delete_saved_assistant_query(query_id)
+    except SavedAssistantQueryNotFoundError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=404)
+    return {"ok": True}
+
+
+@app.put("/api/assistant/saved/{query_id}")
+async def rename_saved_assistant_query(query_id: str, request: Request):
+    data, err = await _read_json(request)
+    if err:
+        return err
+    if not isinstance(data, dict):
+        return JSONResponse({"error": "El cuerpo debe ser un objeto JSON"}, status_code=400)
+    title = data.get("title")
+    if not isinstance(title, str) or not title.strip() or len(title.strip()) > 120:
+        return JSONResponse({"error": "El título debe tener entre 1 y 120 caracteres"}, status_code=422)
+    try:
+        query = repository.rename_saved_assistant_query(query_id, title.strip())
+    except SavedAssistantQueryNotFoundError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=404)
+    return {"ok": True, "query": query}
 
 
 @app.get("/")

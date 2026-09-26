@@ -37,6 +37,12 @@ import type {
   DeleteCashBudgetResult,
   AssistantRequest,
   AssistantResult,
+  SavedAssistantQuery,
+  SaveAssistantQueryRequest,
+  SaveAssistantQueryResult,
+  SavedAssistantQueriesResult,
+  ExecuteSavedAssistantQueryResult,
+  DeleteSavedAssistantQueryResult,
 } from './types';
 import type { RangeFilter } from '../features/filters/RangeFilter';
 import type { ThemeName } from '../styles/themes';
@@ -248,6 +254,45 @@ export async function askAssistant(body: AssistantRequest): Promise<AssistantRes
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function fetchSavedAssistantQueries(): Promise<SavedAssistantQueriesResult> {
+  const res = await fetch('/api/assistant/saved');
+  return res.json();
+}
+
+export async function saveAssistantQuery(body: SaveAssistantQueryRequest): Promise<SaveAssistantQueryResult> {
+  const res = await fetch('/api/assistant/saved', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function executeSavedAssistantQuery(query: SavedAssistantQuery): Promise<ExecuteSavedAssistantQueryResult> {
+  const res = await fetch(`/api/assistant/saved/${encodeURIComponent(query.id)}/execute`, {
+    method: 'POST',
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function deleteSavedAssistantQuery(queryId: string): Promise<DeleteSavedAssistantQueryResult> {
+  const res = await fetch(`/api/assistant/saved/${encodeURIComponent(queryId)}`, { method: 'DELETE' });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function renameSavedAssistantQuery(queryId: string, title: string): Promise<SaveAssistantQueryResult> {
+  const res = await fetch(`/api/assistant/saved/${encodeURIComponent(queryId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
   });
   const json = await res.json();
   return { ok: res.ok, ...json };
