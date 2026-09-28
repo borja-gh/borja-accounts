@@ -38,11 +38,12 @@ export function AssistantVisibilityToggle({ accountId, kind, visiblePanels, onSa
 
   return (
     <button
-      className="btn btn-ghost btn-compact"
+      className={`btn btn-compact assistant-visibility-btn ${isVisible ? 'is-visible' : 'is-hidden'}`}
       type="button"
       onClick={toggle}
       disabled={saving}
       aria-label={`${isVisible ? 'Ocultar' : 'Mostrar'} agente para esta cuenta`}
+      aria-pressed={isVisible}
     >
       {saving ? 'Guardando…' : `${isVisible ? 'Ocultar' : 'Mostrar'} agente`}
     </button>

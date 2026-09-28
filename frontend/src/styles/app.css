@@ -754,6 +754,20 @@
     }
     .btn-ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); opacity: 1; }
     .btn-compact { font-size: 12px; padding: 6px 12px; }
+    .assistant-visibility-btn {
+      border: 1px solid var(--accent);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .assistant-visibility-btn.is-visible {
+      background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+      color: var(--accent);
+    }
+    .assistant-visibility-btn.is-hidden {
+      background: var(--accent);
+      color: #fff;
+    }
+    .assistant-visibility-btn:hover:not(:disabled) { opacity: 1; filter: brightness(1.08); }
     .btn-tiny {
       font-size: 11px;
       padding: 3px 8px;
