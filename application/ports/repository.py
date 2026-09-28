@@ -67,6 +67,9 @@ class MovementRepository(Protocol):
         inmutables tras el alta)."""
         ...
 
+    def update_account_view(self, account_id: str, visible_panels: list[str]) -> None:
+        ...
+
     def list_cash_budgets(self, account_id: str) -> list[CashBudget]:
         ...
 

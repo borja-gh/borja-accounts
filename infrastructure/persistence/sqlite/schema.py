@@ -85,6 +85,8 @@ def ensure_schema(conn):
         conn.execute("ALTER TABLE accounts DROP COLUMN cash_override")
     if "theme" not in columns:
         conn.execute("ALTER TABLE accounts ADD COLUMN theme TEXT")
+    if "visible_panels" not in columns:
+        conn.execute("ALTER TABLE accounts ADD COLUMN visible_panels TEXT")
     movement_columns = {row[1] for row in conn.execute("PRAGMA table_info(movements)")}
     if "exchange_rate" not in movement_columns:
         conn.execute("ALTER TABLE movements ADD COLUMN exchange_rate REAL")

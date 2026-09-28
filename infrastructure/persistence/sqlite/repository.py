@@ -92,21 +92,28 @@ class SQLiteMovementRepository:
     def list_accounts(self) -> list[Account]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT id, name, kind, currency, theme FROM accounts ORDER BY rowid"
+                "SELECT id, name, kind, currency, theme, visible_panels FROM accounts ORDER BY rowid"
             ).fetchall()
         return [
-            Account(id=r[0], name=r[1], kind=AccountKind(r[2]), currency=r[3], theme=r[4])
+            Account(
+                id=r[0], name=r[1], kind=AccountKind(r[2]), currency=r[3], theme=r[4],
+                visible_panels=json.loads(r[5]) if r[5] else None,
+            )
             for r in rows
         ]
 
     def get_account(self, account_id: str) -> Account:
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT id, name, kind, currency, theme FROM accounts WHERE id = ?", (account_id,)
+                "SELECT id, name, kind, currency, theme, visible_panels FROM accounts WHERE id = ?",
+                (account_id,),
             ).fetchone()
         if row is None:
             raise AccountNotFoundError(f"Cuenta '{account_id}' no encontrada")
-        return Account(id=row[0], name=row[1], kind=AccountKind(row[2]), currency=row[3], theme=row[4])
+        return Account(
+            id=row[0], name=row[1], kind=AccountKind(row[2]), currency=row[3], theme=row[4],
+            visible_panels=json.loads(row[5]) if row[5] else None,
+        )
 
     def list_portfolio_holdings(self, account_id: str) -> list[PortfolioHolding]:
         with self._connect() as conn:
@@ -211,6 +218,13 @@ class SQLiteMovementRepository:
             conn.execute(
                 "UPDATE accounts SET currency = ?, theme = ? WHERE id = ?",
                 (account.currency, account.theme, account.id),
+            )
+
+    def update_account_view(self, account_id: str, visible_panels: list[str]) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE accounts SET visible_panels = ? WHERE id = ?",
+                (json.dumps(visible_panels), account_id),
             )
 
     @staticmethod
