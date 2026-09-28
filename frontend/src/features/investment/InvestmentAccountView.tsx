@@ -13,6 +13,9 @@ import { MovimientosSection } from '../movimientos/MovimientosSection';
 import { useAccountData } from '../movimientos/useAccountData';
 import { CreateHoldingModal } from '../inversiones/CreateHoldingModal';
 import { InversionesSection } from '../inversiones/InversionesSection';
+import { ViewCustomizer } from '../accounts/ViewCustomizer';
+import { AssistantVisibilityToggle } from '../accounts/AssistantVisibilityToggle';
+import { defaultVisiblePanels } from '../accounts/viewPanels';
 import { DEFAULT_RANGE_FILTER, type RangeFilter } from '../filters/RangeFilter';
 import { RangeFilterBar } from '../filters/RangeFilterBar';
 import { useRangeReport } from '../filters/useRangeReport';
@@ -56,6 +59,8 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
     rangeFilter,
     [account.id],
   );
+  const visiblePanels = new Set(account.visiblePanels ?? defaultVisiblePanels(account.kind));
+  const hasRangePanels = ['investment_balance', 'portfolios', 'holdings'].some((panel) => visiblePanels.has(panel));
 
   function refreshAll() {
     reloadKpis();
@@ -105,6 +110,18 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
           <p>Capital y carteras</p>
         </div>
         <div className="account-hero-actions">
+          <AssistantVisibilityToggle
+            accountId={account.id}
+            kind={account.kind}
+            visiblePanels={account.visiblePanels}
+            onSaved={onDataChanged}
+          />
+          <ViewCustomizer
+            accountId={account.id}
+            kind={account.kind}
+            visiblePanels={account.visiblePanels}
+            onSaved={onDataChanged}
+          />
           <button className="btn btn-ghost btn-compact" onClick={() => setDeleteModalOpen(true)}>
             Eliminar cuenta
           </button>
@@ -142,41 +159,57 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
         onCreated={refreshAll}
       />
 
-      <SectionHeading title="Resumen general" />
-      <div className="kpis kpis-5">{kpi && <KpiCardsInvestment kpi={kpi} period={period} currency={account.currency} />}</div>
+      {visiblePanels.has('overview') && (
+        <>
+          <SectionHeading title="Resumen general" />
+          <div className="kpis kpis-5">{kpi && <KpiCardsInvestment kpi={kpi} period={period} currency={account.currency} />}</div>
+        </>
+      )}
 
-      {data && (
+      {data && hasRangePanels && (
         <div className="filter-row">
           <RangeFilterBar data={data} filter={rangeFilter} onChange={setRangeFilter} />
         </div>
       )}
 
-      <SectionHeading title="Desglose" />
-      <div className="charts-grid">
-        <div className="chart-card">
-          <div className="chart-label">{`Capital aportado · histórico (${account.currency})`}</div>
-          <div className="chart-plot">
-            {saldoReport && <SaldoChart kind={account.kind} report={saldoReport} currency={account.currency} theme={account.theme} />}
+      {(visiblePanels.has('investment_balance') || visiblePanels.has('portfolios')) && (
+        <>
+          <SectionHeading title="Desglose" />
+          <div className="charts-grid">
+            {visiblePanels.has('investment_balance') && (
+              <div className="chart-card">
+                <div className="chart-label">{`Capital aportado · histórico (${account.currency})`}</div>
+                <div className="chart-plot">
+                  {saldoReport && <SaldoChart kind={account.kind} report={saldoReport} currency={account.currency} theme={account.theme} />}
+                </div>
+              </div>
+            )}
+            {visiblePanels.has('portfolios') && (
+              <div className="chart-card">
+                <div className="chart-head">
+                  <div className="chart-label">Capital por cartera</div>
+                  <RankingModeToggle mode={carterasMode} onChange={setCarterasMode} btnClass="carteras-mode-btn" />
+                </div>
+                <div className="chart-plot">
+                  {carterasReport && <CarterasChart report={carterasReport} kind={account.kind} theme={account.theme} />}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-        <div className="chart-card">
-          <div className="chart-head">
-            <div className="chart-label">Capital por cartera</div>
-            <RankingModeToggle mode={carterasMode} onChange={setCarterasMode} btnClass="carteras-mode-btn" />
-          </div>
-          <div className="chart-plot">
-            {carterasReport && <CarterasChart report={carterasReport} kind={account.kind} theme={account.theme} />}
-          </div>
-        </div>
-      </div>
+        </>
+      )}
 
-      <SectionHeading title="Inversiones" />
-      <InversionesSection
-        account={account.id}
-        currency={account.currency}
-        report={carterasDetail}
-        onSaved={refreshAll}
-      />
+      {visiblePanels.has('holdings') && (
+        <>
+          <SectionHeading title="Inversiones" />
+          <InversionesSection
+            account={account.id}
+            currency={account.currency}
+            report={carterasDetail}
+            onSaved={refreshAll}
+          />
+        </>
+      )}
 
       <SectionHeading title="Movimientos" />
       {data && (
@@ -185,6 +218,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
           kind={account.kind}
           currency={account.currency}
           data={data}
+          visiblePanels={account.visiblePanels ?? defaultVisiblePanels(account.kind)}
           onDataChanged={refreshAll}
         />
       )}

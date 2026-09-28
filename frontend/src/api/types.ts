@@ -20,6 +20,7 @@ export interface AccountSummary {
   currency: Currency;
   saldo: number;
   theme?: ThemeName | null;
+  visiblePanels?: string[] | null;
 }
 
 export interface CreateAccountRequest {
@@ -44,6 +45,13 @@ export interface UpdateAccountThemeResult {
   ok: boolean;
   id: string;
   theme?: ThemeName | null;
+  error?: string;
+}
+
+export interface UpdateAccountViewResult {
+  ok: boolean;
+  id?: string;
+  visiblePanels?: string[];
   error?: string;
 }
 

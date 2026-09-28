@@ -11,7 +11,8 @@ from domain.exceptions import AssistantQueryError
 SCHEMA_CONTEXT = """
 Tablas disponibles:
 
-accounts(id TEXT PRIMARY KEY, name TEXT, kind TEXT, currency TEXT, theme TEXT)
+accounts(id TEXT PRIMARY KEY, name TEXT, kind TEXT, currency TEXT, theme TEXT,
+         visible_panels TEXT)
 movements(id TEXT PRIMARY KEY, account_id TEXT, occurred_at TEXT, type TEXT,
           concept TEXT, amount REAL, balance REAL, exchange_rate REAL,
           transfer_link_id TEXT)
