@@ -23,6 +23,7 @@ import type {
   TransferRequest,
   TransferResult,
   UpdateAccountThemeResult,
+  UpdateAccountViewResult,
   RefreshHoldingPricesResult,
   UpdatePortfolioHoldingRequest,
   UpdatePortfolioHoldingResult,
@@ -78,6 +79,16 @@ export async function updateAccountTheme(cuenta: string, theme: ThemeName): Prom
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ theme }),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function updateAccountView(cuenta: string, visiblePanels: string[]): Promise<UpdateAccountViewResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/view`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ visiblePanels }),
   });
   const json = await res.json();
   return { ok: res.ok, ...json };

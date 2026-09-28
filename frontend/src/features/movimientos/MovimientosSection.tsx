@@ -15,10 +15,11 @@ interface Props {
   kind: AccountKind;
   currency: string;
   data: Movement[];
+  visiblePanels: string[];
   onDataChanged: () => void;
 }
 
-export function MovimientosSection({ account, kind, currency, data, onDataChanged }: Props) {
+export function MovimientosSection({ account, kind, currency, data, visiblePanels, onDataChanged }: Props) {
   const [search, setSearch] = useState<MovSearch>(EMPTY_SEARCH);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const formRef = useRef<AddMovementFormHandle>(null);
@@ -27,6 +28,9 @@ export function MovimientosSection({ account, kind, currency, data, onDataChange
 
   const movs = searchedMovs(data, search);
   const countLabel = isSearchActive(search) ? `${movs.length} resultado(s)` : 'Últimos 20';
+  const canAddMovement = visiblePanels.includes('add_movement');
+  const canShowMovementTotal = visiblePanels.includes('movement_total');
+  const hasSidePanels = canAddMovement || canShowMovementTotal;
 
   function afterMutation() {
     onDataChanged();
@@ -76,20 +80,22 @@ export function MovimientosSection({ account, kind, currency, data, onDataChange
   }
 
   return (
-    <div className="bottom-grid">
+    <div className={`bottom-grid ${hasSidePanels ? 'has-side-panels' : ''}`}>
       <div className="section section-raised">
         <div className="section-head">
           <span className="section-title">
             Movimientos · <span className="mov-count">{countLabel}</span>
           </span>
           <div className="section-head-actions">
-            <button
-              className="btn btn-ghost btn-compact"
-              onClick={handleRepeatLast}
-              title="Rellena el formulario con el último movimiento"
-            >
-              Repetir último
-            </button>
+            {canAddMovement && (
+              <button
+                className="btn btn-ghost btn-compact"
+                onClick={handleRepeatLast}
+                title="Rellena el formulario con el último movimiento"
+              >
+                Repetir último
+              </button>
+            )}
             <button className="btn btn-danger btn-compact" onClick={handleDeleteLast}>
               Borrar último
             </button>
@@ -101,19 +107,27 @@ export function MovimientosSection({ account, kind, currency, data, onDataChange
             rows={movs}
             currency={currency}
             onFilterByConcept={(concepto) => setSearch((s) => ({ ...s, concepto }))}
-            onDuplicate={handleDuplicate}
+            onDuplicate={canAddMovement ? handleDuplicate : undefined}
             onEdit={setEditingIdx}
           />
         </div>
       </div>
 
-      <div className="section section-raised" ref={formSectionRef}>
-        <div className="section-head">
-          <span className="section-title">Añadir movimiento</span>
+      {hasSidePanels && (
+        <div className="movement-side-panels">
+          {canAddMovement && (
+            <div className="section section-raised" ref={formSectionRef}>
+              <div className="section-head">
+                <span className="section-title">Añadir movimiento</span>
+              </div>
+              <AddMovementForm ref={formRef} account={account} kind={kind} currency={currency} data={data} onSaved={afterMutation} />
+            </div>
+          )}
+          {canShowMovementTotal && (
+            <MovementTotalPanel account={account} kind={kind} currency={currency} data={data} />
+          )}
         </div>
-        <AddMovementForm ref={formRef} account={account} kind={kind} currency={currency} data={data} onSaved={afterMutation} />
-        <MovementTotalPanel account={account} kind={kind} currency={currency} data={data} />
-      </div>
+      )}
 
       <EditMovementModal
         idx={editingIdx}

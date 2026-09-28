@@ -49,6 +49,7 @@ from application.use_cases.get_transfers_report import GetTransfersReportUseCase
 from application.use_cases.refresh_holding_prices import RefreshHoldingPricesUseCase
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
 from application.use_cases.update_account_theme import UpdateAccountThemeUseCase
+from application.use_cases.update_account_view import UpdateAccountViewUseCase
 from application.use_cases.update_portfolio_holding import UpdatePortfolioHoldingUseCase
 from domain.exceptions import AssistantQueryError, DomainError, SavedAssistantQueryNotFoundError
 from domain.services.ledger import LedgerService
@@ -269,6 +270,7 @@ def get_accounts():
         result.append({
             "id": account.id, "name": account.name, "kind": account.kind.value,
             "currency": account.currency, "saldo": saldo, "theme": account.theme,
+            "visiblePanels": account.visible_panels,
         })
     return result
 
@@ -284,6 +286,7 @@ async def create_account(request: Request):
     return {
         "ok": True, "id": account.id, "name": account.name, "kind": account.kind.value,
         "currency": account.currency, "theme": account.theme,
+        "visiblePanels": account.visible_panels,
     }
 
 
@@ -298,6 +301,19 @@ async def update_account_theme(cuenta: str, request: Request):
     if err:
         return err
     return {"ok": True, "id": account.id, "theme": account.theme}
+
+
+@app.put("/api/accounts/{cuenta}/view")
+async def update_account_view(cuenta: str, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    account, err = _run(UpdateAccountViewUseCase(repository).execute, cuenta, data)
+    if err:
+        return err
+    return {"ok": True, "id": account.id, "visiblePanels": account.visible_panels}
 
 
 @app.delete("/api/accounts/{cuenta}")

@@ -339,17 +339,17 @@
     .assistant-saved-actions .btn { flex: 1; }
     .assistant-saved-empty { padding: 16px 8px; color: var(--muted); font-size: 12px; text-align: center; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
-    .movement-total { margin: 16px 18px 4px; padding-top: 14px; border-top: 1px solid var(--border); }
-    .movement-total-head strong { font-size: 12px; }
-    .movement-total-head p { margin-top: 3px; color: var(--muted); font-size: 11px; }
-    .movement-total-controls { display: flex; align-items: flex-end; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+    .movement-side-panels { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+    .movement-side-panels > .section { margin-bottom: 0; }
+    .movement-total-head p { margin-top: 3px; color: var(--muted); font-size: 11px; text-transform: none; letter-spacing: 0; }
+    .movement-total-controls { display: flex; align-items: flex-end; gap: 8px; padding: 14px 18px 0; flex-wrap: wrap; }
     .movement-total-controls label { display: flex; min-width: 115px; flex: 1 1 115px; flex-direction: column; gap: 4px; color: var(--muted); font-size: 10px; }
     .movement-total-controls input, .movement-total-controls select { width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text); font: inherit; font-size: 12px; }
     .movement-total-controls .movement-total-concept { flex-basis: 180px; }
     .movement-total-controls .ac-wrap { width: 100%; }
     .movement-total-controls .ac-wrap input,
     .movement-total-controls .ac-item .ac-name { text-transform: none; }
-    .movement-total-result { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 11px; padding: 10px 11px; border-radius: var(--radius-sm); background: var(--surface2); color: var(--muted); font-size: 11px; }
+    .movement-total-result { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 11px 18px 18px; padding: 10px 11px; border-radius: var(--radius-sm); background: var(--surface2); color: var(--muted); font-size: 11px; }
     .movement-total-result strong { color: var(--accent); font-size: 14px; white-space: nowrap; }
 
     /* ── DASHBOARD SECTION HEADINGS ── */
@@ -754,6 +754,20 @@
     }
     .btn-ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); opacity: 1; }
     .btn-compact { font-size: 12px; padding: 6px 12px; }
+    .assistant-visibility-btn {
+      border: 1px solid var(--accent);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .assistant-visibility-btn.is-visible {
+      background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+      color: var(--accent);
+    }
+    .assistant-visibility-btn.is-hidden {
+      background: var(--accent);
+      color: #fff;
+    }
+    .assistant-visibility-btn:hover:not(:disabled) { opacity: 1; filter: brightness(1.08); }
     .btn-tiny {
       font-size: 11px;
       padding: 3px 8px;
@@ -840,6 +854,7 @@
       gap: 14px;
       align-items: start;
     }
+    .bottom-grid:not(.has-side-panels) { grid-template-columns: minmax(0, 1fr); }
 
     /* ── MODAL ── */
     .overlay {
@@ -867,6 +882,75 @@
     .modal .fg { margin-bottom: 12px; }
     .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
     .modal-wide { width: 440px; }
+    .view-customizer {
+      width: 480px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(23,19,14,.10);
+    }
+    .view-customizer h3 { font-size: 19px; margin-bottom: 8px; }
+    .view-customizer-copy { color: var(--muted); font-size: 13px; line-height: 1.55; margin: 0 0 20px; }
+    .view-customizer-list-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .05em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .view-customizer-options { display: grid; gap: 6px; }
+    .view-customizer-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 48px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 12px;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .view-customizer-option:hover { background: var(--surface2); border-color: var(--accent); }
+    .view-customizer-option span { font-size: 13px; font-weight: 500; }
+    .view-customizer-option input {
+      appearance: none;
+      position: relative;
+      flex: 0 0 auto;
+      width: 36px;
+      height: 21px;
+      margin: 0;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface2);
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .view-customizer-option input::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--surface);
+      box-shadow: 0 1px 2px rgba(23,19,14,.16);
+      transition: transform .15s;
+    }
+    .view-customizer-option input:checked { background: var(--accent); border-color: var(--accent); }
+    .view-customizer-option input:checked::after { transform: translateX(15px); }
+    .view-customizer-option input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .view-customizer-actions {
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+    .view-customizer-reset { padding: 7px 10px; font-size: 12px; }
+    .view-customizer-confirm-actions { display: flex; gap: 8px; }
     .fx-row {
       display: flex;
       gap: 8px;
@@ -1127,6 +1211,10 @@
       }
       .account-hero-actions { margin-left: 0; }
       .account-hero h2 { font-size: 20px; }
+      .view-customizer { width: calc(100vw - 32px); max-width: 480px; padding: 20px; }
+      .view-customizer-actions { align-items: stretch; flex-direction: column; }
+      .view-customizer-reset { align-self: flex-start; }
+      .view-customizer-confirm-actions { justify-content: flex-end; }
       .kpis,
       .kpis.kpis-5 { grid-template-columns: 1fr; }
       .kpis-5 .kpi-value,

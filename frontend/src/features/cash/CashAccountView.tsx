@@ -21,6 +21,9 @@ import { RankingModeToggle } from '../charts/RankingModeToggle';
 import { GastoAlert } from '../gastos/GastoAlert';
 import { useGastosMesActual } from '../gastos/useGastosMesActual';
 import { CashBudgetSection } from '../presupuestos/CashBudgetSection';
+import { ViewCustomizer } from '../accounts/ViewCustomizer';
+import { AssistantVisibilityToggle } from '../accounts/AssistantVisibilityToggle';
+import { defaultVisiblePanels } from '../accounts/viewPanels';
 import type { AccountViewHandle } from '../shared/viewHandle';
 import type { AccountSummary, KpiPeriodFilter, RankingMode } from '../../api/types';
 
@@ -55,6 +58,8 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
     [account.id, gastosMode],
   );
   const { report: gastosMesActual, reload: reloadGastosMesActual } = useGastosMesActual(account.id);
+  const visiblePanels = new Set(account.visiblePanels ?? defaultVisiblePanels(account.kind));
+  const hasRangePanels = ['cash_balance', 'monthly', 'expenses', 'bets'].some((panel) => visiblePanels.has(panel));
 
   function refreshAll() {
     reloadKpis();
@@ -87,6 +92,18 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
           <p>Día a día · gastos, nómina y apuestas</p>
         </div>
         <div className="account-hero-actions">
+          <AssistantVisibilityToggle
+            accountId={account.id}
+            kind={account.kind}
+            visiblePanels={account.visiblePanels}
+            onSaved={onDataChanged}
+          />
+          <ViewCustomizer
+            accountId={account.id}
+            kind={account.kind}
+            visiblePanels={account.visiblePanels}
+            onSaved={onDataChanged}
+          />
           <button className="btn btn-ghost btn-compact" onClick={() => setDeleteModalOpen(true)}>
             Eliminar cuenta
           </button>
@@ -99,43 +116,65 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
         onClose={() => setDeleteModalOpen(false)}
         onDeleted={onDataChanged}
       />
-      <SectionHeading title="Resumen general" />
-      <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} currency={account.currency} />}</div>
-      {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} currency={account.currency} />}
+      {visiblePanels.has('overview') && (
+        <>
+          <SectionHeading title="Resumen general" />
+          <div className="kpis">{kpi && <KpiCards kpi={kpi} period={period} currency={account.currency} />}</div>
+          {gastosMesActual && <GastoAlert alert={gastosMesActual.alert} currency={account.currency} />}
+        </>
+      )}
 
-      <SectionHeading title="Presupuesto" />
-      <CashBudgetSection account={account.id} currency={account.currency} reloadToken={budgetReloadToken} />
+      {visiblePanels.has('cash_budget') && (
+        <>
+          <SectionHeading title="Presupuesto" />
+          <CashBudgetSection account={account.id} currency={account.currency} reloadToken={budgetReloadToken} />
+        </>
+      )}
 
-      {data && (
+      {data && hasRangePanels && (
         <div className="filter-row">
           <span className="filter-row-label">Rango de Desglose y Apuestas</span>
           <RangeFilterBar data={data} filter={rangeFilter} onChange={setRangeFilter} />
         </div>
       )}
 
-      <SectionHeading title="Desglose" />
-      <div className="charts-grid">
-        <div className="chart-card">
-          <div className="chart-label">Evolución del saldo</div>
-          <div className="chart-plot">
-            {saldoReport && <SaldoChart kind={account.kind} report={saldoReport} currency={account.currency} theme={account.theme} />}
+      {(visiblePanels.has('cash_balance') || visiblePanels.has('monthly') || visiblePanels.has('expenses')) && (
+        <>
+          <SectionHeading title="Desglose" />
+          <div className="charts-grid">
+            {visiblePanels.has('cash_balance') && (
+              <div className="chart-card">
+                <div className="chart-label">Evolución del saldo</div>
+                <div className="chart-plot">
+                  {saldoReport && <SaldoChart kind={account.kind} report={saldoReport} currency={account.currency} theme={account.theme} />}
+                </div>
+              </div>
+            )}
+            {visiblePanels.has('monthly') && (
+              <div className="chart-card">
+                <div className="chart-label">Evolución mensual</div>
+                <div className="chart-plot">{mensualReport && <MensualChart report={mensualReport} />}</div>
+              </div>
+            )}
+            {visiblePanels.has('expenses') && gastosRanking && (
+              <div className="chart-card full">
+                <div className="chart-head">
+                  <div className="chart-label">Gastos por concepto</div>
+                  <RankingModeToggle mode={gastosMode} onChange={setGastosMode} btnClass="gastos-mode-btn" />
+                </div>
+                <GastosChart ranking={gastosRanking.ranking} />
+              </div>
+            )}
           </div>
-        </div>
-        <div className="chart-card">
-          <div className="chart-label">Evolución mensual</div>
-          <div className="chart-plot">{mensualReport && <MensualChart report={mensualReport} />}</div>
-        </div>
-        <div className="chart-card full">
-          <div className="chart-head">
-            <div className="chart-label">Gastos por concepto</div>
-            <RankingModeToggle mode={gastosMode} onChange={setGastosMode} btnClass="gastos-mode-btn" />
-          </div>
-          {gastosRanking && <GastosChart ranking={gastosRanking.ranking} />}
-        </div>
-      </div>
+        </>
+      )}
 
-      <SectionHeading title="Apuestas" />
-      <ApuestasSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
+      {visiblePanels.has('bets') && (
+        <>
+          <SectionHeading title="Apuestas" />
+          <ApuestasSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
+        </>
+      )}
 
       <SectionHeading title="Movimientos" />
       {data && (
@@ -144,6 +183,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
           kind={account.kind}
           currency={account.currency}
           data={data}
+          visiblePanels={account.visiblePanels ?? defaultVisiblePanels(account.kind)}
           onDataChanged={refreshAll}
         />
       )}

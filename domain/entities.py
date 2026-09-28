@@ -33,6 +33,7 @@ class Account:
     kind: AccountKind
     currency: str = "EUR"
     theme: str | None = None
+    visible_panels: list[str] | None = None
 
 
 @dataclass

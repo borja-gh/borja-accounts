@@ -49,10 +49,10 @@ export function MovementTotalPanel({ account, kind, currency, data }: Props) {
   const hasResult = Boolean(type && concept.trim());
 
   return (
-    <section className="movement-total" aria-label="Total por tipo y concepto">
-      <div className="movement-total-head">
+    <section className="section section-raised movement-total" aria-label="Total por tipo y concepto">
+      <div className="section-head movement-total-head">
         <div>
-          <strong>Total por tipo y concepto</strong>
+          <span className="section-title">Total por tipo y concepto</span>
           <p>Calcula el total de esta cuenta para un concepto y un periodo.</p>
         </div>
       </div>

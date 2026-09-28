@@ -12,6 +12,7 @@ import { OnboardingEmptyState } from './components/OnboardingEmptyState';
 import type { AccountViewHandle } from './features/shared/viewHandle';
 import { resolveTheme } from './styles/themes';
 import { AssistantPanel } from './features/asistente/AssistantPanel';
+import { defaultVisiblePanels } from './features/accounts/viewPanels';
 import './styles/app.css';
 
 function App() {
@@ -33,6 +34,9 @@ function App() {
   }, [refreshAccounts]);
 
   const selected = accounts?.find((a) => a.id === account) ?? null;
+  const assistantVisible = selected
+    ? (selected.visiblePanels ?? defaultVisiblePanels(selected.kind)).includes('assistant')
+    : true;
 
   useEffect(() => {
     if (!selected) return;
@@ -55,7 +59,7 @@ function App() {
         />
       )}
       <main className="content">
-        {accounts && (
+        {accounts && assistantVisible && (
           <AssistantPanel
             accounts={accounts}
             selectedAccount={account}

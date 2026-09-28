@@ -6,7 +6,7 @@ interface Props {
   rows: Movement[];
   currency: string;
   onFilterByConcept: (concepto: string) => void;
-  onDuplicate: (idx: number) => void;
+  onDuplicate?: (idx: number) => void;
   onEdit: (idx: number) => void;
 }
 
@@ -59,9 +59,11 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
               <td className="r">
                 {canAct && (
                   <div className="row-actions">
-                    <button className="btn btn-ghost btn-tiny" onClick={() => onDuplicate(r._idx!)}>
-                      Duplicar
-                    </button>
+                    {onDuplicate && (
+                      <button className="btn btn-ghost btn-tiny" onClick={() => onDuplicate(r._idx!)}>
+                        Duplicar
+                      </button>
+                    )}
                     <button className="btn btn-ghost btn-tiny" onClick={() => onEdit(r._idx!)}>
                       Editar
                     </button>
