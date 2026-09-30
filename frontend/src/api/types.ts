@@ -370,8 +370,16 @@ export interface AssistantRequest {
   mode: AssistantMode;
   prompt: string;
   scope: AssistantScope;
-  confirmed?: boolean;
-  sql?: string;
+}
+
+export interface AssistantQueryStep {
+  id: string;
+  description: string;
+  sql: string;
+  mode: AssistantMode;
+  status: 'executed' | 'failed' | 'confirmation_required';
+  error?: string | null;
+  rowCount?: number | null;
 }
 
 export interface SavedAssistantQuery {
@@ -388,6 +396,12 @@ export interface SaveAssistantQueryRequest {
   prompt: string;
   sql: string;
   scope: AssistantScope;
+}
+
+export interface PendingAssistantQueryResult {
+  ok: boolean;
+  query?: SavedAssistantQuery;
+  error?: string;
 }
 
 export interface SaveAssistantQueryResult {
@@ -407,6 +421,13 @@ export interface ExecuteSavedAssistantQueryResult {
   error?: string;
 }
 
+export interface ExecutePendingAssistantQueryResult {
+  ok: boolean;
+  query?: AssistantQueryStep;
+  result?: AssistantResult['result'];
+  error?: string;
+}
+
 export interface DeleteSavedAssistantQueryResult {
   ok: boolean;
   error?: string;
@@ -418,7 +439,9 @@ export interface AssistantResult {
   answer?: string;
   answerMarkdown?: string;
   sql?: string;
-  attempts?: number;
+  toolCalls?: number;
+  queries?: AssistantQueryStep[];
+  query?: AssistantQueryStep;
   requiresConfirmation?: boolean;
   result?: {
     columns: string[];
