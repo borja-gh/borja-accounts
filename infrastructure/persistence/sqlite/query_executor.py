@@ -255,7 +255,7 @@ class SQLiteQueryExecutor:
                 return sqlite3.SQLITE_DENY
             if action in {sqlite3.SQLITE_READ, *WRITE_ACTIONS} and arg1 not in READ_TABLES:
                 return sqlite3.SQLITE_DENY
-            if mode == "read" and action == sqlite3.SQLITE_READ and database != "temp":
+            if mode == "read" and action == sqlite3.SQLITE_READ and database not in {None, "temp"}:
                 return sqlite3.SQLITE_DENY
             return sqlite3.SQLITE_OK
 

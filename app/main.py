@@ -127,7 +127,9 @@ def _reference_now() -> datetime:
 
 
 def _assistant_use_case() -> AskAssistantUseCase:
-    return AskAssistantUseCase(VertexGeminiModel.from_environment(), SQLiteQueryExecutor(DB_PATH))
+    return AskAssistantUseCase(
+        VertexGeminiModel.from_environment(), SQLiteQueryExecutor(DB_PATH), repository
+    )
 
 
 async def _read_json(request: Request):
@@ -152,8 +154,6 @@ async def ask_assistant(request: Request):
             prompt=data.get("prompt"),
             mode=data.get("mode", "read"),
             scope=data.get("scope"),
-            confirmed=data.get("confirmed", False),
-            sql=data.get("sql"),
         )
     except AssistantQueryError as exc:
         body = {"error": str(exc)}
@@ -198,6 +198,26 @@ async def save_assistant_query(request: Request):
         return JSONResponse({"error": str(exc)}, status_code=422)
     saved_query = repository.save_assistant_query(title.strip(), prompt.strip(), sql, scope)
     return JSONResponse({"ok": True, "query": saved_query}, status_code=201)
+
+
+@app.post("/api/assistant/pending/{query_id}/save")
+def save_pending_assistant_query(query_id: str):
+    try:
+        saved_query = repository.save_pending_assistant_query(query_id)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=422)
+    if saved_query is None:
+        return JSONResponse({"error": "La consulta temporal no existe o ha caducado"}, status_code=404)
+    return JSONResponse({"ok": True, "query": saved_query}, status_code=201)
+
+
+@app.post("/api/assistant/pending/{query_id}/execute")
+def execute_pending_assistant_query(query_id: str):
+    try:
+        use_case = AskAssistantUseCase(None, SQLiteQueryExecutor(DB_PATH), repository)
+        return use_case.confirm_write(query_id)
+    except AssistantQueryError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=exc.status_code)
 
 
 @app.get("/api/assistant/saved")

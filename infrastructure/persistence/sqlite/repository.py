@@ -10,7 +10,7 @@ darse cuenta la base de datos real en vez de una de prueba.
 import json
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
@@ -322,6 +322,108 @@ class SQLiteMovementRepository:
             "scope": scope,
             "createdAt": created_at,
         }
+
+    @staticmethod
+    def _pending_assistant_query(row) -> dict:
+        return {
+            "id": row[0],
+            "title": row[1],
+            "prompt": row[2],
+            "sql": row[3],
+            "scope": json.loads(row[4]),
+            "mode": row[5],
+            "status": row[6],
+            "error": row[7],
+            "createdAt": row[8],
+            "expiresAt": row[9],
+        }
+
+    def record_pending_assistant_query(
+        self,
+        title: str,
+        prompt: str,
+        sql: str,
+        scope: dict,
+        mode: str,
+        status: str,
+    ) -> dict:
+        query_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc)
+        created_at = now.isoformat(timespec="seconds")
+        expires_at = (now + timedelta(hours=24)).isoformat(timespec="seconds")
+        with self._connect() as conn:
+            conn.execute("DELETE FROM assistant_pending_queries WHERE expires_at <= ?", (created_at,))
+            conn.execute(
+                "INSERT INTO assistant_pending_queries "
+                "(id, title, prompt, sql, scope_json, mode, status, created_at, expires_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    query_id,
+                    title,
+                    prompt,
+                    sql,
+                    json.dumps(scope, ensure_ascii=False),
+                    mode,
+                    status,
+                    created_at,
+                    expires_at,
+                ),
+            )
+        return {
+            "id": query_id,
+            "title": title,
+            "prompt": prompt,
+            "sql": sql,
+            "scope": scope,
+            "mode": mode,
+            "status": status,
+            "error": None,
+            "createdAt": created_at,
+            "expiresAt": expires_at,
+        }
+
+    def update_pending_assistant_query(self, query_id: str, status: str, error: str | None = None) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE assistant_pending_queries SET status = ?, error = ? WHERE id = ?",
+                (status, error, query_id),
+            )
+
+    def get_pending_assistant_query(self, query_id: str) -> dict | None:
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with self._connect() as conn:
+            conn.execute("DELETE FROM assistant_pending_queries WHERE expires_at <= ?", (now,))
+            row = conn.execute(
+                "SELECT id, title, prompt, sql, scope_json, mode, status, error, created_at, expires_at "
+                "FROM assistant_pending_queries WHERE id = ?",
+                (query_id,),
+            ).fetchone()
+        return None if row is None else self._pending_assistant_query(row)
+
+    def save_pending_assistant_query(self, query_id: str) -> dict | None:
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("DELETE FROM assistant_pending_queries WHERE expires_at <= ?", (now,))
+            row = conn.execute(
+                "SELECT id, title, prompt, sql, scope_json, mode, status, created_at "
+                "FROM assistant_pending_queries WHERE id = ?",
+                (query_id,),
+            ).fetchone()
+            if row is None:
+                conn.execute("COMMIT")
+                return None
+            if row[5] != "read" or row[6] != "executed":
+                conn.execute("ROLLBACK")
+                raise ValueError("Solo se pueden guardar consultas de lectura ejecutadas")
+            conn.execute(
+                "INSERT INTO assistant_saved_queries (id, title, prompt, sql, scope_json, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (row[0], row[1], row[2], row[3], row[4], row[7]),
+            )
+            conn.execute("DELETE FROM assistant_pending_queries WHERE id = ?", (query_id,))
+            conn.execute("COMMIT")
+        return self.get_saved_assistant_query(query_id)
 
     def delete_saved_assistant_query(self, query_id: str) -> None:
         with self._connect() as conn:
