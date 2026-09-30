@@ -169,7 +169,7 @@ El asistente es local y trabaja sobre la SQLite de la aplicación. En cada petic
    (cd frontend && npm install)
    ```
 
-2. Configura ADC de Google Cloud y el proyecto de Vertex AI. La ubicación puede ser `global`, `us` o `eu` según la disponibilidad del modelo:
+2. Configura ADC de Google Cloud y el proyecto de Vertex AI. `run.sh` comprueba si puede obtener un token ADC y solo abre el login si hace falta. La ubicación puede ser `global`, `us` o `eu` según la disponibilidad del modelo:
 
    ```bash
    gcloud auth application-default login
@@ -185,7 +185,7 @@ El asistente es local y trabaja sobre la SQLite de la aplicación. En cada petic
    ./run.sh
    ```
 
-   Abre `http://localhost:8000`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente financiero**. En escritorio, el panel comparte el ancho entre la consulta y la biblioteca de consultas guardadas.
+   El script valida ADC antes de arrancar, reconstruye el frontend y ejecuta la API. Abre `http://localhost:8000`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente financiero**. En escritorio, el panel comparte el ancho entre la consulta y la biblioteca de consultas guardadas.
 
 #### Flujo de lectura
 
@@ -205,15 +205,11 @@ El panel construye el scope con `accountIds` y, cuando se rellenan los filtros, 
 
 El backend valida el scope antes de llamar al LLM. `accountIds` debe contener ids existentes o únicamente `"*"`; `from` y `to` son fechas ISO inclusivas y `from` no puede ser posterior a `to`.
 
-El flujo de lectura es:
+El agente recibe `USERINPUT`, `SCOPE` y `MODE` en una conversación. En lectura dispone de `read_sql`; en modo escritura también puede proponer `write_sql`. Gemini decide si necesita llamar una herramienta, recibe su resultado como respuesta de herramienta y puede iterar antes de redactar la respuesta final. Una petición permite hasta veinte llamadas SQL; el límite es del caso de uso, no un control automático del SDK.
 
-1. `USERINPUT` contiene la petición; `SCOPE` contiene las cuentas y fechas seleccionadas. El modelo devuelve una sentencia SQL sin Markdown.
-2. El backend crea tablas temporales SQLite que contienen solo las filas dentro del scope. Las lecturas contra `main.*` se deniegan; la conexión principal es de solo lectura.
-3. El ejecutor valida la SQL y limita las tablas permitidas, la duración, el número de filas y el tamaño de la respuesta. Los presupuestos mensuales se incluyen cuando su mes se solapa con el rango seleccionado.
-4. Si la SQL falla, el error se envía al siguiente intento como `DBERROR`. Hay un máximo de dos generaciones/ejecuciones de SQL. Si ambas fallan, se devuelve el error sin generar una respuesta narrativa.
-5. Con una consulta válida, `DBINPUT` contiene `columns`, `rows` y `rowCount`. El LLM recibe `USERINPUT`, `SCOPE`, `SQL` y `DBINPUT`, y devuelve JSON estructurado con `title` y `answerMarkdown`.
+Cada llamada se valida y ejecuta en el backend. El ejecutor limita las tablas permitidas, la duración, el número de filas y el tamaño de cada resultado. Las lecturas contra `main.*` se deniegan; la conexión principal es de solo lectura. El scope se aplica en SQLite antes de exponer filas temporales al SQL. Los presupuestos mensuales se incluyen cuando su mes se solapa con el rango seleccionado. Si una sentencia falla, el error vuelve al agente para que pueda corregirla dentro del presupuesto de llamadas.
 
-La respuesta se representa como Markdown y tabla de datos. La UI ofrece guardar la consulta con el título generado. En SQLite se persisten título, pregunta original, SQL y scope. La biblioteca permite filtrar, renombrar, ejecutar o eliminar una consulta.
+La respuesta se representa como Markdown. Cada llamada SQL recibe un ID independiente y una descripción del modelo. La llamada se conserva temporalmente en SQLite durante 24 horas; las lecturas ejecutadas pueden guardarse individualmente, conservando su ID, y no se agrupan bajo una consulta padre. La biblioteca permite filtrar, renombrar, ejecutar o eliminar cada consulta. Solo se guardan consultas de lectura completadas.
 
 Ejecutar una consulta guardada vuelve a ejecutar exactamente la SQL almacenada en modo solo lectura, usando también el scope persistido. No invoca el LLM; la UI presenta las filas actuales de SQLite en una tabla.
 
@@ -221,11 +217,7 @@ La base de datos no se envía al modelo: solo el resultado acotado de la consult
 
 #### Flujo de escritura
 
-El modo **Escritura** mantiene dos pasos separados:
-
-1. La primera petición genera y valida la propuesta SQL, pero no la ejecuta. La respuesta incluye `requiresConfirmation: true` y la sentencia exacta.
-2. La UI muestra la sentencia y solo al pulsar **Confirmar escritura** reenvía esa misma SQL con `confirmed: true`.
-3. El backend ejecuta la sentencia dentro de una transacción. Guardas SQLite impiden insertar, actualizar o borrar filas fuera de las cuentas y fechas confirmadas. El modo write no admite subconsultas.
+El modo **Escritura** permite al agente leer primero y después llamar a `write_sql` si la petición lo requiere. Esa herramienta solo valida y guarda la propuesta temporal: no la ejecuta. La UI presenta la SQL exacta y, al pulsar **Confirmar escritura**, llama a `POST /api/assistant/pending/{id}/execute`. El backend ejecuta esa misma SQL dentro de una transacción. Guardas SQLite impiden modificar filas fuera de las cuentas y fechas seleccionadas; el modo write no admite subconsultas. Las escrituras no se ofrecen para guardar o repetir desde la biblioteca.
 
 Placeholder de escritura para normalizar un concepto existente, sin cambiar el tipo de movimiento:
 
@@ -239,7 +231,7 @@ Placeholder de escritura para normalizar un concepto existente, sin cambiar el t
 }
 ```
 
-La propuesta esperada para este placeholder es:
+La sentencia que podría proponer el agente para este ejemplo es:
 
 ```sql
 UPDATE movements
@@ -247,7 +239,7 @@ SET concept = 'Educación'
 WHERE concept = 'clases';
 ```
 
-Este SQL es solo un ejemplo de la propuesta que debe revisar el usuario. No se ejecuta al cargar la documentación ni al cambiar el selector de modo. La autorización final pertenece siempre al botón de confirmación.
+La SQL propuesta se revisa y confirma de forma explícita. Activar el modo Escritura no ejecuta cambios por sí solo.
 
 ### Total por tipo y concepto
 
@@ -267,7 +259,7 @@ curl -s http://localhost:8000/api/assistant \
   }'
 ```
 
-Los errores de validación, conexión o ejecución llegan como respuesta JSON con `error`, `attempts` y, cuando existe, la SQL que falló. El cliente no debe ejecutar SQL por su cuenta.
+Los errores de validación, conexión o ejecución llegan como respuesta JSON con `error`; las consultas del agente incluyen su propio `id`, descripción, SQL y estado. El cliente no debe ejecutar SQL por su cuenta.
 
 #### Presupuesto de CASH
 
@@ -442,9 +434,11 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | PUT | `/api/accounts/{cuenta}/budget` | Crea o actualiza un presupuesto por cuenta y período |
 | DELETE | `/api/accounts/{cuenta}/budget/{id}` | Borra un presupuesto |
 | GET | `/api/accounts/{cuenta}/budget-status` | Gasto real y estado del presupuesto (`period=month\|year`) |
-| POST | `/api/assistant` | Genera y ejecuta SQL sobre SQLite según el modo `read`/`write` de la petición |
+| POST | `/api/assistant` | Ejecuta function calling iterativo para la petición, el modo y el scope; devuelve respuesta y consultas individuales |
+| POST | `/api/assistant/pending/{id}/save` | Guarda una consulta temporal de lectura conservando su ID |
+| POST | `/api/assistant/pending/{id}/execute` | Ejecuta una propuesta de escritura confirmada por la UI |
 | GET | `/api/assistant/saved` | Lista las consultas SQL guardadas |
-| POST | `/api/assistant/saved` | Guarda título, pregunta, SQL de lectura y scope |
+| POST | `/api/assistant/saved` | Guarda título, pregunta, SQL de lectura y scope mediante el contrato existente |
 | PUT | `/api/assistant/saved/{id}` | Renombra una consulta guardada |
 | POST | `/api/assistant/saved/{id}/execute` | Ejecuta una SQL guardada en modo lectura con su scope, sin llamar al LLM |
 | DELETE | `/api/assistant/saved/{id}` | Elimina una consulta guardada |

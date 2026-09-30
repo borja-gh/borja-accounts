@@ -1,12 +1,28 @@
+from dataclasses import dataclass
 from typing import Protocol
 
 
+@dataclass(frozen=True)
+class AssistantToolCall:
+    id: str | None
+    name: str
+    arguments: dict
+
+
+@dataclass(frozen=True)
+class AssistantTurn:
+    text: str | None
+    tool_calls: list[AssistantToolCall]
+
+
+class AssistantConversation(Protocol):
+    def next_turn(self, allow_tools: bool = True) -> AssistantTurn:
+        ...
+
+    def submit_tool_results(self, results: list[dict]) -> None:
+        ...
+
+
 class AssistantModel(Protocol):
-    def generate_sql(self, prompt: str, mode: str, scope: dict, db_error: str | None = None) -> str:
-        ...
-
-    def generate_answer(self, prompt: str, scope: dict, sql: str, db_input: dict) -> str:
-        ...
-
-    def generate_answer_with_title(self, prompt: str, scope: dict, sql: str, db_input: dict) -> dict:
+    def start(self, prompt: str, mode: str, scope: dict) -> AssistantConversation:
         ...

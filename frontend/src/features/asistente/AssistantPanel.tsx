@@ -5,14 +5,16 @@ import {
   askAssistant,
   deleteSavedAssistantQuery,
   executeSavedAssistantQuery,
+  executePendingAssistantQuery,
   fetchSavedAssistantQueries,
   renameSavedAssistantQuery,
-  saveAssistantQuery,
+  savePendingAssistantQuery,
 } from '../../api/client';
 import type {
   AccountSummary,
   AssistantMode,
   AssistantRequest,
+  AssistantQueryStep,
   AssistantResult,
   SavedAssistantQuery,
 } from '../../api/types';
@@ -20,12 +22,6 @@ import type {
 interface Props {
   accounts: AccountSummary[];
   selectedAccount: string | null;
-}
-
-interface Proposal {
-  prompt: string;
-  scope: AssistantRequest['scope'];
-  sql: string;
 }
 
 export function AssistantPanel({ accounts, selectedAccount }: Props) {
@@ -36,8 +32,7 @@ export function AssistantPanel({ accounts, selectedAccount }: Props) {
   const [to, setTo] = useState('');
   const [result, setResult] = useState<AssistantResult | null>(null);
   const [resultSource, setResultSource] = useState<'llm' | 'saved'>('llm');
-  const [resultContext, setResultContext] = useState<{ prompt: string; scope: AssistantRequest['scope'] } | null>(null);
-  const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [proposal, setProposal] = useState<AssistantQueryStep | null>(null);
   const [queries, setQueries] = useState<SavedAssistantQuery[]>([]);
   const [queryFilter, setQueryFilter] = useState('');
   const [error, setError] = useState('');
@@ -65,11 +60,6 @@ export function AssistantPanel({ accounts, selectedAccount }: Props) {
       : queries;
   }, [queryFilter, queries]);
 
-  const currentQueryIsSaved = Boolean(result?.sql && resultContext && queries.some((query) =>
-    query.sql === result.sql
-    && query.prompt === resultContext.prompt
-    && JSON.stringify(query.scope) === JSON.stringify(resultContext.scope)));
-
   async function refreshSavedQueries() {
     try {
       const response = await fetchSavedAssistantQueries();
@@ -86,7 +76,6 @@ export function AssistantPanel({ accounts, selectedAccount }: Props) {
     setResult(null);
     setProposal(null);
     setResultSource('llm');
-    setResultContext({ prompt: request.prompt, scope: request.scope });
     try {
       const response = await askAssistant(request);
       setResult(response);
@@ -94,8 +83,9 @@ export function AssistantPanel({ accounts, selectedAccount }: Props) {
         setError(response.error || 'No se pudo resolver la consulta');
         return;
       }
-      if (response.requiresConfirmation && response.sql) {
-        setProposal({ prompt: request.prompt, scope: request.scope, sql: response.sql });
+      setPrompt((current) => current.trim() === request.prompt ? '' : current);
+      if (response.requiresConfirmation && response.query) {
+        setProposal(response.query);
       }
     } catch {
       setError('No se pudo conectar con el asistente');
@@ -110,32 +100,48 @@ export function AssistantPanel({ accounts, selectedAccount }: Props) {
       setError('Escribe una petición para el asistente');
       return;
     }
-    setPrompt('');
     void submit({ mode, prompt: submittedPrompt, scope });
   }
 
   function confirmWrite() {
     if (!proposal) return;
-    void submit({
-      mode: 'write',
-      prompt: proposal.prompt,
-      scope: proposal.scope,
-      sql: proposal.sql,
-      confirmed: true,
-    });
+    setPending(true);
+    setError('');
+    void executePendingAssistantQuery(proposal.id)
+      .then((response) => {
+        if (!response.ok || !response.query) {
+          const message = response.error || 'No se pudo ejecutar la escritura confirmada';
+          setError(message);
+          setProposal(null);
+          setResult((current) => current ? {
+            ...current,
+            requiresConfirmation: false,
+            query: { ...proposal, status: 'failed', error: message },
+            queries: current.queries?.map((query) => query.id === proposal.id
+              ? { ...query, status: 'failed', error: message }
+              : query),
+          } : current);
+          return;
+        }
+        setProposal(null);
+        setResult((current) => current ? {
+          ...current,
+          requiresConfirmation: false,
+          query: response.query,
+          result: response.result,
+          queries: current.queries?.map((query) => query.id === response.query!.id ? response.query! : query),
+          answerMarkdown: `Operación ejecutada. Filas afectadas: ${response.result?.affectedRows ?? 0}.`,
+        } : current);
+      })
+      .catch(() => setError('No se pudo conectar con el asistente'))
+      .finally(() => setPending(false));
   }
 
-  async function saveCurrentQuery() {
-    if (!result?.sql || !result.title || !resultContext) return;
+  async function saveCurrentQuery(query: AssistantQueryStep) {
     setPending(true);
     setSavedError('');
     try {
-      const response = await saveAssistantQuery({
-        title: result.title,
-        prompt: resultContext.prompt,
-        sql: result.sql,
-        scope: resultContext.scope,
-      });
+      const response = await savePendingAssistantQuery(query.id);
       if (!response.ok || !response.query) {
         setSavedError(response.error || 'No se pudo guardar la consulta');
         return;
@@ -159,7 +165,6 @@ export function AssistantPanel({ accounts, selectedAccount }: Props) {
     setResult(null);
     setProposal(null);
     setResultSource('saved');
-    setResultContext({ prompt: query.prompt, scope: query.scope });
     try {
       const response = await executeSavedAssistantQuery(query);
       if (!response.ok || !response.result) {
@@ -275,7 +280,7 @@ export function AssistantPanel({ accounts, selectedAccount }: Props) {
           {proposal && (
             <div className="assistant-confirmation">
               <div>
-                <strong>Revisa la operación antes de ejecutarla</strong>
+                <strong>{proposal.description} · revisa la operación antes de ejecutarla</strong>
                 <code>{proposal.sql}</code>
               </div>
               <button type="button" className="btn btn-danger" disabled={pending} onClick={confirmWrite}>
@@ -283,32 +288,30 @@ export function AssistantPanel({ accounts, selectedAccount }: Props) {
               </button>
             </div>
           )}
-          {result?.ok && !result.requiresConfirmation && (
+          {result && (result.ok || (result.queries?.length ?? 0) > 0) && (
             <div className="assistant-answer">
               <div className="assistant-answer-head">
                 <div>
-                  <div className="assistant-answer-label">{resultSource === 'saved' ? 'Consulta reejecutada' : 'Resultado'}</div>
+                  <div className="assistant-answer-label">
+                    {result.requiresConfirmation
+                      ? 'Confirmación necesaria'
+                      : !result.ok
+                        ? 'Ejecución parcial'
+                        : resultSource === 'saved'
+                          ? 'Consulta reejecutada'
+                          : 'Resultado'}
+                  </div>
                   {result.title && <h3>{result.title}</h3>}
                 </div>
-                {mode === 'read' && resultSource === 'llm' && result.title && result.sql && resultContext && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-compact"
-                    disabled={pending || currentQueryIsSaved}
-                    onClick={saveCurrentQuery}
-                  >
-                    {currentQueryIsSaved ? 'Consulta guardada' : `Guardar «${result.title}»`}
-                  </button>
-                )}
               </div>
-              {resultSource === 'saved' ? (
+              {result.ok && resultSource === 'saved' ? (
                 <p className="assistant-result-note">SQL guardada ejecutada sin llamar al LLM.</p>
-              ) : (result.answerMarkdown || result.answer) ? (
+              ) : result.ok && (result.answerMarkdown || result.answer) ? (
                 <div className="assistant-markdown">
                   <Markdown remarkPlugins={[remarkGfm]}>{result.answerMarkdown || result.answer || ''}</Markdown>
                 </div>
               ) : null}
-              {result.result && (
+              {result.ok && result.result && (
                 <div className="assistant-result-data">
                   <div className="assistant-result-meta">
                     {result.result.rowCount} fila{result.result.rowCount === 1 ? '' : 's'}
@@ -330,9 +333,43 @@ export function AssistantPanel({ accounts, selectedAccount }: Props) {
                   )}
                 </div>
               )}
+              {result.requiresConfirmation && <p className="assistant-result-note">La escritura no se ejecutará hasta que la confirmes.</p>}
+              {result.queries && result.queries.length > 0 && (
+                <section className="assistant-query-trace" aria-label="Consultas realizadas por el agente">
+                  <h4>Consultas realizadas</h4>
+                  {result.queries.map((query) => {
+                    const isSaved = queries.some((savedQuery) => savedQuery.id === query.id);
+                    return (
+                      <article className="assistant-query-step" key={query.id}>
+                        <div className="assistant-query-step-head">
+                          <div>
+                            <strong>{query.description}</strong>
+                            <span className={`assistant-query-status ${query.status}`}>{query.status === 'executed' ? 'Ejecutada' : query.status === 'failed' ? 'Error' : 'Pendiente de confirmación'}</span>
+                          </div>
+                          {query.mode === 'read' && query.status === 'executed' && resultSource === 'llm' && (
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-compact"
+                              disabled={pending || isSaved}
+                              onClick={() => void saveCurrentQuery(query)}
+                            >
+                              {isSaved ? 'Guardada' : 'Guardar consulta'}
+                            </button>
+                          )}
+                        </div>
+                        {query.error && <p className="assistant-query-error">{query.error}</p>}
+                        <details className="assistant-sql-details">
+                          <summary>Ver SQL</summary>
+                          <code>{query.sql}</code>
+                        </details>
+                      </article>
+                    );
+                  })}
+                </section>
+              )}
               {result.sql && (
                 <details className="assistant-sql-details">
-                  <summary>Ver SQL{result.attempts ? ` · ${result.attempts} intento${result.attempts === 1 ? '' : 's'}` : ''}</summary>
+                  <summary>Ver SQL</summary>
                   <code>{result.sql}</code>
                 </details>
               )}

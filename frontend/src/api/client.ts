@@ -39,10 +39,12 @@ import type {
   AssistantRequest,
   AssistantResult,
   SavedAssistantQuery,
+  PendingAssistantQueryResult,
   SaveAssistantQueryRequest,
   SaveAssistantQueryResult,
   SavedAssistantQueriesResult,
   ExecuteSavedAssistantQueryResult,
+  ExecutePendingAssistantQueryResult,
   DeleteSavedAssistantQueryResult,
 } from './types';
 import type { RangeFilter } from '../features/filters/RangeFilter';
@@ -280,6 +282,22 @@ export async function saveAssistantQuery(body: SaveAssistantQueryRequest): Promi
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function savePendingAssistantQuery(queryId: string): Promise<PendingAssistantQueryResult> {
+  const res = await fetch(`/api/assistant/pending/${encodeURIComponent(queryId)}/save`, {
+    method: 'POST',
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function executePendingAssistantQuery(queryId: string): Promise<ExecutePendingAssistantQueryResult> {
+  const res = await fetch(`/api/assistant/pending/${encodeURIComponent(queryId)}/execute`, {
+    method: 'POST',
   });
   const json = await res.json();
   return { ok: res.ok, ...json };

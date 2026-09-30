@@ -74,6 +74,22 @@ CREATE TABLE IF NOT EXISTS assistant_saved_queries (
 
 CREATE INDEX IF NOT EXISTS idx_assistant_saved_queries_created
     ON assistant_saved_queries(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS assistant_pending_queries (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    sql TEXT NOT NULL,
+    scope_json TEXT NOT NULL,
+    mode TEXT NOT NULL CHECK (mode IN ('read', 'write')),
+    status TEXT NOT NULL CHECK (status IN ('executing', 'executed', 'failed', 'confirmation_required')),
+    error TEXT,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_assistant_pending_queries_expires
+    ON assistant_pending_queries(expires_at);
 """
 
 def ensure_schema(conn):
