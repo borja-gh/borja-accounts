@@ -43,8 +43,8 @@ class CreatePortfolioHoldingUseCase:
         if not ticker:
             raise InvalidAmountError("El ticker no puede estar vacío")
 
-        shares = _positive_number(data.get("shares"), "Número de títulos inválido")
-        price = _positive_number(data.get("price"), "Precio inválido")
+        shares = _positive_number(data.get("shares"), "Número de títulos inválido", decimals=4)
+        price = _positive_number(data.get("price"), "Precio inválido", decimals=4)
         raw_capital = data.get("capital")
         capital = round(shares * price, 2) if raw_capital in (None, "") else _positive_number(
             raw_capital, "Capital inválido"
@@ -91,14 +91,14 @@ class CreatePortfolioHoldingUseCase:
         }
 
 
-def _positive_number(raw, message: str) -> float:
+def _positive_number(raw, message: str, decimals: int = 2) -> float:
     try:
         value = float(raw)
     except (TypeError, ValueError):
         raise InvalidAmountError(message)
     if value <= 0:
         raise InvalidAmountError(message)
-    return round(value, 2)
+    return round(value, decimals)
 
 
 def _non_negative_number(raw, message: str) -> float:

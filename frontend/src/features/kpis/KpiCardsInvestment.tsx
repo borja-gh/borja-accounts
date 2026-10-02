@@ -27,9 +27,12 @@ export function KpiCardsInvestment({ kpi, period, currency }: Props) {
       <div className="kpi">
         <div className="kpi-label">Saldo</div>
         <div className="kpi-value">{money(kpi.saldo, currency)}</div>
-        <div className={`kpi-delta ${caja < 0 ? 'neg' : 'neu'}`}>
-          {`A coste · caja ${money(caja, currency)}`}
-        </div>
+        <div className="kpi-delta neu">A coste</div>
+      </div>
+      <div className="kpi">
+        <div className="kpi-label">Efectivo</div>
+        <div className="kpi-value">{money(caja, currency)}</div>
+        <div className={`kpi-delta ${caja < 0 ? 'neg' : 'neu'}`}>Caja estimada</div>
       </div>
       <div className="kpi">
         <div className="kpi-label">Saldo preventa</div>

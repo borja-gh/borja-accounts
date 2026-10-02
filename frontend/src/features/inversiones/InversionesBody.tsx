@@ -107,7 +107,7 @@ function HoldingRow({ account, holding, currency, onSaved }: {
         <b>{holding.ticker}</b>
       </td>
       <td className="holdings-company" title={holding.company}>{holding.company}</td>
-      <td className="r">{money(holding.avgPrice, currency)}</td>
+      <td className="r">{money(holding.avgPrice, currency, 4)}</td>
       <td className="r">{money(holding.capital, currency)}</td>
       <td className="r">
         <input

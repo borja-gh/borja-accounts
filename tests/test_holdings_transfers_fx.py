@@ -87,6 +87,23 @@ def test_alta_holding_exige_caja_y_persiste_inversion(repository, ledger):
     assert ("Inversión", f"Core · AAPL #{result['id']}") in types
 
 
+def test_alta_holding_preserva_precision_del_precio_medio_y_comision(repository, ledger):
+    account = CreateAccountUseCase(repository, ledger).execute(
+        {"name": "IBKR", "kind": "INVESTMENT", "currency": "USD", "initialBalance": 1000}
+    )
+    result = CreatePortfolioHoldingUseCase(repository, ledger).execute(account.id, {
+        "portfolio": "GOOGL-UBER", "ticker": "UBER", "shares": 8.7992,
+        "price": 68.0740, "fee": 0.33, "fecha": "2026-10-02",
+    })
+
+    holding = repository.list_portfolio_holdings(account.id)[0]
+    assert result["capital"] == 599.00
+    assert holding.shares == 8.7992
+    assert holding.price_usd == 68.0740
+    assert holding.capital_usd == 599.00
+    assert holding.fee_usd == 0.33
+
+
 def test_alta_holding_rechaza_cuenta_cash(repository, ledger):
     account = CreateAccountUseCase(repository, ledger).execute(
         {"name": "Cash", "kind": "CASH", "currency": "EUR", "initialBalance": 1000}

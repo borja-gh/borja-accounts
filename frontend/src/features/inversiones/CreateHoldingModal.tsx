@@ -21,6 +21,7 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
   const [company, setCompany] = useState('');
   const [shares, setShares] = useState('');
   const [price, setPrice] = useState('');
+  const [fee, setFee] = useState('0');
   const [usdPrice, setUsdPrice] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
   const [fecha, setFecha] = useState(localISODate());
@@ -34,6 +35,7 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
       setCompany('');
       setShares('');
       setPrice('');
+      setFee('0');
       setUsdPrice('');
       setExchangeRate('');
       setFecha(localISODate());
@@ -64,7 +66,7 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
       showToast('Introduce precio en USD y tipo de cambio', 'err');
       return;
     }
-    setPrice((Math.round(usd * rate * 100) / 100).toFixed(2));
+    setPrice((Math.round(usd * rate * 10000) / 10000).toFixed(4));
   }
 
   if (!open) return null;
@@ -74,6 +76,7 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
     const trimmedTicker = ticker.trim().toUpperCase();
     const sharesNum = parseFloat(shares);
     const priceNum = parseFloat(price);
+    const feeNum = fee.trim() === '' ? 0 : Number(fee);
     if (!trimmedPortfolio) {
       showToast('Introduce el nombre de la cartera', 'err');
       return;
@@ -84,6 +87,10 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
     }
     if (!(sharesNum > 0) || !(priceNum > 0)) {
       showToast('Títulos y precio deben ser mayores que cero', 'err');
+      return;
+    }
+    if (!Number.isFinite(feeNum) || feeNum < 0) {
+      showToast('Comisión inválida', 'err');
       return;
     }
     if (!fecha) {
@@ -97,6 +104,8 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
         company: company.trim() || undefined,
         shares: sharesNum,
         price: priceNum,
+        capital: capital ?? undefined,
+        fee: feeNum,
         fecha,
       });
       if (!body.ok) {
@@ -146,8 +155,12 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
           <input type="number" step="0.0001" min="0" placeholder="0" value={shares} onChange={(e) => setShares(e.target.value)} />
         </div>
         <div className="fg">
-          <label>{`Precio (${currency})`}</label>
-          <input type="number" step="0.01" min="0" placeholder="0.00" value={price} onChange={(e) => setPrice(e.target.value)} />
+          <label>{`Precio medio (${currency})`}</label>
+          <input type="number" step="0.0001" min="0" placeholder="0.0000" value={price} onChange={(e) => setPrice(e.target.value)} />
+        </div>
+        <div className="fg">
+          <label>{`Comisión (${currency})`}</label>
+          <input type="number" step="0.01" min="0" placeholder="0.00" value={fee} onChange={(e) => setFee(e.target.value)} />
         </div>
         {needsUsdHelper && (
           <>
@@ -175,7 +188,7 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
           <input type="date" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </div>
         {capital != null && (
-          <span className="hint-total">{`Capital ${money(capital, currency)}`}</span>
+          <span className="hint-total">{`Capital (sin comisión) ${money(capital, currency)}`}</span>
         )}
         <div className="modal-actions">
           <button className="btn btn-ghost" onClick={onClose}>
