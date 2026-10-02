@@ -44,12 +44,12 @@
           "valor": 60.0
         },
         {
-          "concepto": "Gimnasio",
-          "valor": 26.67
+          "concepto": "Restaurante",
+          "valor": 45.0
         },
         {
-          "concepto": "Restaurante",
-          "valor": 15.0
+          "concepto": "Gimnasio",
+          "valor": 26.67
         }
       ],
       "hasGastos": true,
@@ -72,16 +72,16 @@
           "valor": 60.0
         },
         {
+          "concepto": "Restaurante",
+          "valor": 45.0
+        },
+        {
           "concepto": "Gimnasio",
           "valor": 34.29
         },
         {
           "concepto": "Reparación bici",
-          "valor": 12.14
-        },
-        {
-          "concepto": "Restaurante",
-          "valor": 6.43
+          "valor": 14.17
         }
       ],
       "hasGastos": true,

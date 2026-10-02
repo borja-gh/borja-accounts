@@ -32,6 +32,8 @@ Es la zona horaria real del usuario, y varios cálculos de calendario (`calendar
 
 Los snapshots capturan el comportamiento **ya corregido**. Cualquier futuro cambio de comportamiento intencional en el backend sigue el mismo protocolo: se regenera `snapshot_backend.json` a mano y el commit documenta los números antes/después. `snapshot_frontend.json`/`snapshot_frontend_values.json` ya no se regeneran nunca (sin generador vivo, ver arriba) — si algún día su contenido dejara de encajar con un cambio de UI intencional, se edita el test de componente afectado, con comentario explicando el porqué (mismo patrón que ya usan `SaldoChart.test.tsx`/`CarterasChart.test.tsx` para sus excepciones conocidas).
 
+El ranking **Media/mes** de gastos divide por concepto desde su primera aparición, incluyendo meses sin movimientos; por eso `cash1_gastos_ranking_all_media` y `cash1_gastos_ranking_3m_media` pueden cambiar respecto a snapshots anteriores.
+
 ## Regenerar (solo tras un cambio de comportamiento intencional y revisado)
 
 ```bash

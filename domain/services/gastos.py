@@ -57,6 +57,7 @@ def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int
                             reference: datetime, mode: str = "media", limit: int = 20) -> dict:
     entries, hover_suffix, has_gastos = rank_by_concept(
         movements, "Gasto", range_type, year, reference, mode, limit,
+        average_from_first_occurrence=True,
     )
     return {
         "entries": [{"concepto": c, "valor": v} for c, v in entries],
