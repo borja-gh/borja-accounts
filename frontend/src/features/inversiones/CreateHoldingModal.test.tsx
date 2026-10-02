@@ -31,10 +31,20 @@ describe('CreateHoldingModal', () => {
     fireEvent.change(screen.getByPlaceholderText('p.ej. Cartera Core'), { target: { value: 'Core' } });
     fireEvent.change(screen.getByPlaceholderText('AAPL'), { target: { value: 'aapl' } });
     fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '4' } });
-    fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '100' } });
+    fireEvent.change(screen.getByPlaceholderText('0.0000'), { target: { value: '100.1234' } });
+    fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '0.35' } });
+    expect(screen.getByText('Capital (sin comisión) 400,49$')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Registrar lote'));
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(request.body as string)).toMatchObject({
+      ticker: 'AAPL',
+      shares: 4,
+      price: 100.1234,
+      capital: 400.49,
+      fee: 0.35,
+    });
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/accounts/investment1/portfolio-holdings',
       expect.objectContaining({

@@ -10,11 +10,11 @@ export const CURRENCY_SUFFIX: Record<string, string> = { EUR: '€', USD: '$' };
 /** Igual que eur() pero para cualquier divisa soportada -- el símbolo va
  * detrás del número en los dos casos que existen hoy (EUR/USD), así que no
  * hace falta Intl.NumberFormat por-locale para esto. */
-export function money(v: number, currency: string): string {
+export function money(v: number, currency: string, fractionDigits = 2): string {
   const suffix = CURRENCY_SUFFIX[currency] ?? currency;
   return (Number.isFinite(v) ? v : 0).toLocaleString('es-ES', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }) + suffix;
 }
 

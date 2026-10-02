@@ -146,4 +146,17 @@ describe('InversionesBody', () => {
     expect(aaplRow.textContent).toContain('31.33%');
     expect(aaplRow.querySelectorAll('td')).toHaveLength(8);
   });
+
+  it('muestra el precio medio con cuatro decimales', () => {
+    const report = structuredClone(backendFixture.investment1_carteras_report_3m) as PortfolioReport;
+    const aapl = report.openPositions[0].holdings.find((h) => h.ticker === 'AAPL')!;
+    aapl.avgPrice = 68.074;
+
+    const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
+    fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
+
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('.holdings-table tbody tr'));
+    const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
+    expect(aaplRow.textContent).toContain('68,0740$');
+  });
 });

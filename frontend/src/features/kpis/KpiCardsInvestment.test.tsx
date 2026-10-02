@@ -27,7 +27,10 @@ describe('KpiCardsInvestment', () => {
       const expected = [
         'Saldo',
         money(kpi.saldo, 'USD'),
-        `A coste · caja ${money(caja, 'USD')}`,
+        'A coste',
+        'Efectivo',
+        money(caja, 'USD'),
+        'Caja estimada',
         'Saldo preventa',
         money(kpi.saldoPreventa, 'USD'),
         'Con el último precio de mercado consultado',

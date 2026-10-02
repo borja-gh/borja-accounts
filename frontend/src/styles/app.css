@@ -396,6 +396,9 @@
     .kpis.kpis-5 { grid-template-columns: repeat(5, 1fr); }
     .kpis-5 .kpi { padding: 16px 14px; }
     .kpis-5 .kpi-value { font-size: 22px; }
+    .kpis.kpis-6 { grid-template-columns: repeat(6, 1fr); }
+    .kpis-6 .kpi { padding: 14px 12px; }
+    .kpis-6 .kpi-value { font-size: 20px; }
 
     .kpi {
       background: var(--surface);
@@ -1192,6 +1195,7 @@
       .kpis { grid-template-columns: repeat(2, 1fr); }
       .kpis.kpis-5 { grid-template-columns: repeat(3, 1fr); }
       .kpis-5 .kpi-value { font-size: 22px; }
+      .kpis.kpis-6 { grid-template-columns: repeat(3, 1fr); }
       .bottom-grid { grid-template-columns: 1fr; }
       .section-kpis { flex-wrap: wrap; }
       .section-kpi { flex: 1 1 40%; min-width: 140px; }
@@ -1227,8 +1231,10 @@
       .view-customizer-reset { align-self: flex-start; }
       .view-customizer-confirm-actions { justify-content: flex-end; }
       .kpis,
-      .kpis.kpis-5 { grid-template-columns: 1fr; }
+      .kpis.kpis-5,
+      .kpis.kpis-6 { grid-template-columns: 1fr; }
       .kpis-5 .kpi-value,
+      .kpis-6 .kpi-value,
       .kpi-value { font-size: 22px; }
       .charts-grid { grid-template-columns: 1fr; }
       .form-body { grid-template-columns: 1fr; }
