@@ -292,7 +292,7 @@ Barras de ingresos y gastos por mes, con línea de balance neto. Respeta el Rang
 
 #### Gráfico: Gastos por concepto
 
-**Ranking** — barras horizontales con los 20 conceptos `Gasto` mayores. Arranca en modo **Media/mes** (`Mes`→÷1, `3 meses`→÷3, `6 meses`→÷6); también hay **Total**. No hay donut. No hay chips «Top del mes».
+**Ranking** — barras horizontales con los 20 conceptos `Gasto` mayores. En modo **Media/mes**, cada concepto divide su gasto total del período entre los meses naturales desde su primera aparición hasta el fin del período, ambos inclusivos. Los meses sin gasto cuentan como cero; si apareció una sola vez en abril y el período llega hasta octubre, se divide entre 7. En rangos acotados, el cálculo empieza en la fecha más tardía entre la primera aparición y el inicio del rango. También hay modo **Total**. No hay donut ni chips «Top del mes».
 
 #### Análisis de apuestas
 
