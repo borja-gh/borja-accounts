@@ -162,7 +162,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       {visiblePanels.has('overview') && (
         <>
           <SectionHeading title="Resumen general" />
-          <div className="kpis kpis-5">{kpi && <KpiCardsInvestment kpi={kpi} period={period} currency={account.currency} />}</div>
+          <div className="kpis kpis-6">{kpi && <KpiCardsInvestment kpi={kpi} period={period} currency={account.currency} />}</div>
         </>
       )}
 
