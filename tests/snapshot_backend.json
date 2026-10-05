@@ -33,27 +33,72 @@
       "entries": [
         {
           "concepto": "Alquiler",
+          "desviacion": 0.0,
+          "mensual": [
+            900.0,
+            900.0,
+            900.0
+          ],
+          "mesesConGasto": 3,
+          "mesesEvaluados": 3,
           "valor": 900.0
         },
         {
           "concepto": "Supermercado",
+          "desviacion": 49.89,
+          "mensual": [
+            210.0,
+            250.0,
+            130.0
+          ],
+          "mesesConGasto": 3,
+          "mesesEvaluados": 3,
           "valor": 196.67
         },
         {
           "concepto": "Transporte",
+          "desviacion": 0.0,
+          "mensual": [
+            60.0,
+            60.0,
+            60.0
+          ],
+          "mesesConGasto": 3,
+          "mesesEvaluados": 3,
           "valor": 60.0
         },
         {
           "concepto": "Restaurante",
+          "desviacion": 0.0,
+          "mensual": [
+            0.0,
+            0.0,
+            45.0
+          ],
+          "mesesConGasto": 1,
+          "mesesEvaluados": 1,
           "valor": 45.0
         },
         {
           "concepto": "Gimnasio",
+          "desviacion": 18.86,
+          "mensual": [
+            40.0,
+            40.0,
+            0.0
+          ],
+          "mesesConGasto": 2,
+          "mesesEvaluados": 3,
           "valor": 26.67
         }
       ],
       "hasGastos": true,
-      "hoverSuffix": "€/mes"
+      "hoverSuffix": "€/mes",
+      "meses": [
+        "2026-05",
+        "2026-06",
+        "2026-07"
+      ]
     }
   },
   "cash1_gastos_ranking_all_media": {
@@ -61,31 +106,112 @@
       "entries": [
         {
           "concepto": "Alquiler",
+          "desviacion": 0.0,
+          "mensual": [
+            900.0,
+            900.0,
+            900.0,
+            900.0,
+            900.0,
+            900.0,
+            900.0
+          ],
+          "mesesConGasto": 7,
+          "mesesEvaluados": 7,
           "valor": 900.0
         },
         {
           "concepto": "Supermercado",
+          "desviacion": 40.0,
+          "mensual": [
+            220.0,
+            240.0,
+            260.0,
+            230.0,
+            210.0,
+            250.0,
+            130.0
+          ],
+          "mesesConGasto": 7,
+          "mesesEvaluados": 7,
           "valor": 220.0
         },
         {
           "concepto": "Transporte",
+          "desviacion": 0.0,
+          "mensual": [
+            60.0,
+            60.0,
+            60.0,
+            60.0,
+            60.0,
+            60.0,
+            60.0
+          ],
+          "mesesConGasto": 7,
+          "mesesEvaluados": 7,
           "valor": 60.0
         },
         {
           "concepto": "Restaurante",
+          "desviacion": 0.0,
+          "mensual": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            45.0
+          ],
+          "mesesConGasto": 1,
+          "mesesEvaluados": 1,
           "valor": 45.0
         },
         {
           "concepto": "Gimnasio",
+          "desviacion": 14.0,
+          "mensual": [
+            40.0,
+            40.0,
+            40.0,
+            40.0,
+            40.0,
+            40.0,
+            0.0
+          ],
+          "mesesConGasto": 6,
+          "mesesEvaluados": 7,
           "valor": 34.29
         },
         {
           "concepto": "Reparación bici",
+          "desviacion": 31.68,
+          "mensual": [
+            0.0,
+            85.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "mesesConGasto": 1,
+          "mesesEvaluados": 6,
           "valor": 14.17
         }
       ],
       "hasGastos": true,
-      "hoverSuffix": "€/mes"
+      "hoverSuffix": "€/mes",
+      "meses": [
+        "2026-01",
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07"
+      ]
     }
   },
   "cash1_kpis_by_period": {
