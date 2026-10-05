@@ -169,7 +169,7 @@ El asistente es local y trabaja sobre la SQLite de la aplicación. En cada petic
    (cd frontend && npm install)
    ```
 
-2. Configura ADC de Google Cloud y el proyecto de Vertex AI. `run.sh` comprueba si puede obtener un token ADC y solo abre el login si hace falta. La ubicación puede ser `global`, `us` o `eu` según la disponibilidad del modelo:
+2. Configura ADC de Google Cloud y el proyecto de Vertex AI. `run.sh` comprueba si puede obtener un token ADC; si no hay sesión activa, pregunta si quieres iniciar sesión. Si respondes que no, la aplicación arranca sin asistente de IA. La ubicación puede ser `global`, `us` o `eu` según la disponibilidad del modelo:
 
    ```bash
    gcloud auth application-default login
@@ -185,7 +185,7 @@ El asistente es local y trabaja sobre la SQLite de la aplicación. En cada petic
    ./run.sh
    ```
 
-   El script valida ADC antes de arrancar, reconstruye el frontend y ejecuta la API. Abre `http://localhost:8000`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente financiero**. En escritorio, el panel comparte el ancho entre la consulta y la biblioteca de consultas guardadas.
+   El script valida ADC antes de arrancar, reconstruye el frontend y ejecuta la API. Si no hay una terminal interactiva, omite el login ADC y arranca sin asistente de IA. Abre `http://localhost:8000`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente financiero**. En escritorio, el panel comparte el ancho entre la consulta y la biblioteca de consultas guardadas.
 
 #### Flujo de lectura
 
