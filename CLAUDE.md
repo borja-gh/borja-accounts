@@ -42,7 +42,7 @@ Regla de dependencias: `domain` no importa `application` ni `infrastructure`; `a
 - No hay integración IBKR/Client Portal Gateway, `BrokerGateway`, órdenes ni trading.
 - No hay multiusuario, autenticación, Postgres, colas, cache, CQRS ni event sourcing.
 - El asistente usa `gemini-3.8-flash` con function calling iterativo y un máximo de 20 llamadas por petición. SQLite valida y ejecuta cada SQL dentro del scope; el frontend expone la respuesta Markdown y cada consulta con su propio ID y descripción, sin agruparlas bajo una consulta padre. Las lecturas ejecutadas se guardan individualmente y se reejecutan sin llamada al LLM. Las escrituras requieren confirmación explícita y no se guardan para reejecución. No dar al modelo permisos fuera del modo y scope recibidos.
-- `run.sh` comprueba que Google Cloud CLI esté disponible y que ADC pueda emitir un token; si no, inicia `gcloud auth application-default login` antes de arrancar la aplicación.
+- `run.sh` comprueba que Google Cloud CLI esté disponible y que ADC pueda emitir un token. Si no hay sesión y existe una terminal interactiva, pregunta si debe iniciar `gcloud auth application-default login`; al rechazarlo, o si no hay terminal, arranca sin asistente de IA.
 
 ## Backlog vigente
 

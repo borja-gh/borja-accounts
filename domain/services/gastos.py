@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 from domain.entities import Movement
 from domain.services.calendar import month_key
-from domain.services.concept_ranking import rank_by_concept
+from domain.services.concept_ranking import monthly_concept_details, rank_by_concept
 
 TZ = ZoneInfo("Europe/Madrid")
 
@@ -59,8 +59,16 @@ def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int
         movements, "Gasto", range_type, year, reference, mode, limit,
         average_from_first_occurrence=True,
     )
+    concepts = [concept for concept, _ in entries]
+    months, details = monthly_concept_details(
+        movements, "Gasto", concepts, range_type, year, reference,
+    ) if concepts else ([], {})
     return {
-        "entries": [{"concepto": c, "valor": v} for c, v in entries],
+        "entries": [
+            {"concepto": concept, "valor": value, **details[concept]}
+            for concept, value in entries
+        ],
+        "meses": months,
         "hoverSuffix": hover_suffix,
         "hasGastos": has_gastos,
     }

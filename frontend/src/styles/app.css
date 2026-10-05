@@ -551,6 +551,53 @@
     }
     .chart-head .chart-label { margin-bottom: 0; }
     .chart-plot { height: 280px; }
+    .gastos-ranking-head,
+    .gastos-ranking-row {
+      display: grid;
+      grid-template-columns: minmax(180px, 1.1fr) minmax(190px, 1.4fr) 150px 112px;
+      align-items: center;
+      gap: 14px;
+    }
+    .gastos-ranking-head {
+      padding: 0 10px 8px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .gastos-ranking-head span:nth-child(n+2) { text-align: right; }
+    .gastos-ranking-head span:nth-child(2) { text-align: left; }
+    .gastos-ranking-row {
+      min-height: 54px;
+      padding: 7px 10px;
+      border-top: 1px solid var(--border);
+    }
+    .gastos-ranking-row.is-total { grid-template-columns: minmax(180px, 1.1fr) minmax(190px, 1.4fr) 112px; }
+    .gastos-ranking-concept { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+    .gastos-ranking-concept strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gastos-ranking-recurrence { flex: none; color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .gastos-ranking-bar { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .gastos-ranking-track { height: 14px; flex: 1; overflow: hidden; border-radius: 7px; background: var(--surface2); }
+    .gastos-ranking-track span { display: block; height: 100%; min-width: 2px; border-radius: inherit; background: var(--accent); }
+    .gastos-ranking-bar strong { min-width: 78px; font-size: 12px; text-align: right; white-space: nowrap; }
+    .gastos-ranking-deviation {
+      justify-self: end;
+      padding: 6px 9px;
+      border: 1px solid var(--accent-soft);
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .gastos-ranking-deviation small { font-size: 14px; }
+    .gastos-detail-toggle { justify-self: end; white-space: nowrap; }
+    .gastos-monthly-detail { margin: 0 12% 0 27%; padding: 12px 10px 18px; border-top: 1px solid var(--border); }
+    .gastos-hist-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .gastos-hist-head .chart-label { margin-bottom: 0; }
+    .gastos-hist-head > span { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .gastos-hist-empty { margin: 8px 0; color: var(--muted); font-size: 12px; }
 
     /* ── SECTION ── */
     .section {
@@ -1237,6 +1284,14 @@
       .kpis-6 .kpi-value,
       .kpi-value { font-size: 22px; }
       .charts-grid { grid-template-columns: 1fr; }
+      .gastos-ranking-head { display: none; }
+      .gastos-ranking-row.is-average,
+      .gastos-ranking-row.is-total { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; }
+      .gastos-ranking-concept { grid-column: 1 / -1; }
+      .gastos-ranking-bar { grid-column: 1 / -1; }
+      .gastos-ranking-deviation { justify-self: start; }
+      .gastos-monthly-detail { margin: 0; padding: 12px 6px 14px; }
+      .gastos-hist-head { align-items: flex-start; flex-direction: column; gap: 4px; }
       .form-body { grid-template-columns: 1fr; }
       .budget-actions { margin-left: 0; width: 100%; }
       .budget-actions .btn { flex: 1; }

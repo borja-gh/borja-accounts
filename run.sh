@@ -9,7 +9,19 @@ if ! command -v gcloud >/dev/null 2>&1; then
 fi
 
 if ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
-  gcloud auth application-default login
+  if [ -t 0 ]; then
+    read -r -p "No hay una sesión ADC activa. ¿Quieres iniciar sesión con gcloud? (s/n): " login_choice
+    case "$login_choice" in
+      s|S|si|Si|SI|sí|Sí|SÍ)
+        gcloud auth application-default login
+        ;;
+      *)
+        echo "Se omite el login ADC. El asistente de IA no estará disponible."
+        ;;
+    esac
+  else
+    echo "No hay una sesión ADC activa y no existe terminal interactiva; se omite el login." >&2
+  fi
 fi
 
 # GET / sirve frontend/dist/ (build de Vite, gitignored) -- se reconstruye
