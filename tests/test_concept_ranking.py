@@ -24,7 +24,14 @@ def test_average_divides_by_months_since_first_occurrence_even_without_later_spe
         [movement("A", "2026-04-12", 70)], "all", None, REFERENCE, "media"
     )
 
-    assert result["entries"] == [{"concepto": "A", "valor": 10.0}]
+    entry = result["entries"][0]
+    assert (entry["concepto"], entry["valor"]) == ("A", 10.0)
+    assert (entry["mesesConGasto"], entry["mesesEvaluados"]) == (1, 7)
+    assert entry["desviacion"] == 24.49
+    assert result["meses"] == [
+        "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10",
+    ]
+    assert entry["mensual"] == [70.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
 def test_average_uses_selected_range_for_existing_and_new_concepts():
@@ -37,10 +44,11 @@ def test_average_uses_selected_range_for_existing_and_new_concepts():
 
     result = compute_gastos_ranking(movements, "3m", None, REFERENCE, "media")
 
-    assert result["entries"] == [
-        {"concepto": "Nuevo", "valor": 60.0},
-        {"concepto": "Anterior", "valor": 30.0},
+    assert [(entry["concepto"], entry["valor"]) for entry in result["entries"]] == [
+        ("Nuevo", 60.0),
+        ("Anterior", 30.0),
     ]
+    assert [entry["mesesEvaluados"] for entry in result["entries"]] == [2, 3]
 
 
 def test_total_mode_is_unchanged():
@@ -48,4 +56,6 @@ def test_total_mode_is_unchanged():
         [movement("A", "2026-04-12", 70)], "all", None, REFERENCE, "total"
     )
 
-    assert result["entries"] == [{"concepto": "A", "valor": 70.0}]
+    assert [(entry["concepto"], entry["valor"]) for entry in result["entries"]] == [
+        ("A", 70.0),
+    ]

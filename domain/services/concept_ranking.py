@@ -5,6 +5,7 @@ cálculo que comparten chartGastos (Tipo=Gasto, top 20) y chartCarteras
 duplicado sobre un tipo y un top-N distintos.
 """
 from datetime import datetime
+from math import sqrt
 from zoneinfo import ZoneInfo
 
 from domain.entities import Movement
@@ -51,6 +52,60 @@ def _months_for_concept(first_month: str, range_start: str | None, range_end: st
     start_month = max(first_month, range_start) if range_start else first_month
     end_month = max(start_month, range_end)
     return months_between(start_month, end_month)
+
+
+def monthly_concept_details(
+    movements: list[Movement], tipo: str, concepts: list[str], range_type: str,
+    year: int | str | None, reference: datetime,
+) -> tuple[list[str], dict[str, dict[str, float | int | list[float]]]]:
+    reference_local = reference.astimezone(TZ)
+    range_start, range_end = _range_month_bounds(range_type, year, reference_local)
+    first_month_by_concept: dict[str, str] = {}
+    for movement in movements:
+        if movement.type != tipo or movement.amount is None or movement.concept not in concepts:
+            continue
+        month = _fecha_str(movement)[:7]
+        first_month_by_concept[movement.concept] = min(
+            month, first_month_by_concept.get(movement.concept, month)
+        )
+
+    starts = {
+        concept: max(first_month_by_concept[concept], range_start) if range_start else first_month_by_concept[concept]
+        for concept in concepts
+    }
+    ends = {concept: max(starts[concept], range_end) for concept in concepts}
+    first_shared_month = min(starts.values())
+    months = [
+        shift_ym(first_shared_month, offset)
+        for offset in range(months_between(first_shared_month, max(ends.values())))
+    ]
+    monthly_totals = {concept: {} for concept in concepts}
+    filtered = filter_by_field(movements, _fecha_str, range_type, year, reference_local)
+    for movement in filtered:
+        if movement.type != tipo or movement.amount is None or movement.concept not in concepts:
+            continue
+        month = _fecha_str(movement)[:7]
+        if starts[movement.concept] <= month <= ends[movement.concept]:
+            monthly_totals[movement.concept][month] = (
+                monthly_totals[movement.concept].get(month, 0.0) + movement.amount
+            )
+
+    details: dict[str, dict[str, float | int | list[float]]] = {}
+    for concept in concepts:
+        concept_months = [
+            shift_ym(starts[concept], offset)
+            for offset in range(months_between(starts[concept], ends[concept]))
+        ]
+        values = [monthly_totals[concept].get(month, 0.0) for month in concept_months]
+        average = sum(values) / len(values)
+        deviation = sqrt(sum((value - average) ** 2 for value in values) / len(values))
+        details[concept] = {
+            "mesesConGasto": sum(value > 0 for value in values),
+            "mesesEvaluados": len(values),
+            "desviacion": _r2(deviation),
+            "mensual": [monthly_totals[concept].get(month, 0.0) for month in months],
+        }
+    return months, details
 
 
 def rank_by_concept(

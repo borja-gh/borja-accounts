@@ -287,9 +287,17 @@ export interface RankingEntry {
 }
 
 export interface GastosRankingSection {
-  entries: RankingEntry[];
+  entries: GastosRankingEntry[];
   hasGastos: boolean;
   hoverSuffix: string;
+  meses: string[];
+}
+
+export interface GastosRankingEntry extends RankingEntry {
+  mesesConGasto: number;
+  mesesEvaluados: number;
+  desviacion: number;
+  mensual: number[];
 }
 
 export interface GastosRankingReport {
