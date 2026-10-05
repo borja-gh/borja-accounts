@@ -3,6 +3,8 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
+export ACCOUNTS_ASSISTANT_ENABLED=1
+
 if ! command -v gcloud >/dev/null 2>&1; then
   echo "Instala Google Cloud CLI para autenticar Vertex AI (gcloud)." >&2
   exit 1
@@ -16,10 +18,12 @@ if ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
         gcloud auth application-default login
         ;;
       *)
+        export ACCOUNTS_ASSISTANT_ENABLED=0
         echo "Se omite el login ADC. El asistente de IA no estará disponible."
         ;;
     esac
   else
+    export ACCOUNTS_ASSISTANT_ENABLED=0
     echo "No hay una sesión ADC activa y no existe terminal interactiva; se omite el login." >&2
   fi
 fi

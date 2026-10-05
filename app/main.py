@@ -164,6 +164,11 @@ async def ask_assistant(request: Request):
         return JSONResponse(body, status_code=exc.status_code)
 
 
+@app.get("/api/assistant/status")
+def assistant_status():
+    return {"enabled": os.environ.get("ACCOUNTS_ASSISTANT_ENABLED", "1") != "0"}
+
+
 @app.post("/api/assistant/saved")
 async def save_assistant_query(request: Request):
     data, err = await _read_json(request)

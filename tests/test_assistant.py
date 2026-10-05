@@ -192,6 +192,21 @@ def test_asistente_valida_scope_antes_de_llamar_al_modelo(database):
     assert model.requests == []
 
 
+def test_http_assistant_status_refleja_la_configuracion_de_arranque(monkeypatch):
+    monkeypatch.setenv("ACCOUNTS_ASSISTANT_ENABLED", "0")
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    spec = importlib.util.spec_from_file_location("app_http_assistant_status_test", os.path.join(repo_root, "app", "main.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    from fastapi.testclient import TestClient
+
+    client = TestClient(module.app)
+    assert client.get("/api/assistant/status").json() == {"enabled": False}
+
+    monkeypatch.setenv("ACCOUNTS_ASSISTANT_ENABLED", "1")
+    assert client.get("/api/assistant/status").json() == {"enabled": True}
+
+
 def test_http_assistant_devuelve_respuesta_y_consultas(database, monkeypatch):
     db_path, repository, account = database
     monkeypatch.setenv("BORJA_ACCOUNTS_DB", db_path)

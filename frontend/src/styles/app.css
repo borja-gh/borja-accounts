@@ -145,6 +145,24 @@
       border: 1px solid var(--border);
       white-space: nowrap;
     }
+    .patrimonio-estimate {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .patrimonio-estimate select {
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1px 3px;
+      font: inherit;
+    }
     .patrimonio-account {
       font-size: 11px;
       padding: 1px 8px;

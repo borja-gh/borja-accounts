@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Header } from './components/Header';
 import { Tabs } from './components/Tabs';
 import { ToastProvider } from './components/ToastContext';
-import { fetchAccounts } from './api/client';
+import { fetchAccounts, fetchAssistantStatus } from './api/client';
 import type { AccountId, AccountSummary } from './api/types';
 import { CashAccountView } from './features/cash/CashAccountView';
 import { InvestmentAccountView } from './features/investment/InvestmentAccountView';
@@ -17,6 +17,7 @@ import './styles/app.css';
 
 function App() {
   const [accounts, setAccounts] = useState<AccountSummary[] | null>(null);
+  const [assistantEnabled, setAssistantEnabled] = useState(false);
   const [account, setAccount] = useState<AccountId | null>(null);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [createAccountModalOpen, setCreateAccountModalOpen] = useState(false);
@@ -31,6 +32,7 @@ function App() {
 
   useEffect(() => {
     refreshAccounts();
+    fetchAssistantStatus().then(setAssistantEnabled).catch(() => setAssistantEnabled(false));
   }, [refreshAccounts]);
 
   const selected = accounts?.find((a) => a.id === account) ?? null;
@@ -59,7 +61,7 @@ function App() {
         />
       )}
       <main className="content">
-        {accounts && assistantVisible && (
+        {accounts && assistantEnabled && assistantVisible && (
           <AssistantPanel
             accounts={accounts}
             selectedAccount={account}
