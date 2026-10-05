@@ -66,6 +66,12 @@ export async function fetchAccounts(): Promise<AccountSummary[]> {
   return res.json();
 }
 
+export async function fetchAssistantStatus(): Promise<boolean> {
+  const res = await fetch('/api/assistant/status');
+  const json = await res.json();
+  return json.enabled === true;
+}
+
 export async function createAccount(body: CreateAccountRequest): Promise<CreateAccountResult> {
   const res = await fetch('/api/accounts', {
     method: 'POST',

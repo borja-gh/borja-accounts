@@ -1,11 +1,8 @@
+import { useEffect, useState } from 'react';
+import { fetchFxRate } from '../api/client';
 import { money } from '../lib/format';
 import type { AccountSummary } from '../api/types';
 
-// El patrimonio total nunca suma cuentas de distinta divisa entre sí (EUR +
-// USD directamente sería sumar unidades distintas) -- se agrupa por
-// divisa y se muestra un total por cada una. Sin conversión de tipo de
-// cambio: es una decisión explícita, no una limitación temporal (ver
-// conversación de diseño del punto 5).
 function totalsByCurrency(accounts: AccountSummary[]): [string, number][] {
   const totals = new Map<string, number>();
   for (const a of accounts) {
@@ -16,6 +13,35 @@ function totalsByCurrency(accounts: AccountSummary[]): [string, number][] {
 
 export function Header({ accounts, onOpenTransfer }: { accounts: AccountSummary[] | null; onOpenTransfer: () => void }) {
   const totals = accounts ? totalsByCurrency(accounts) : [];
+  const hasMultipleCurrencies = totals.length > 1;
+  const [estimateCurrency, setEstimateCurrency] = useState<AccountSummary['currency']>('EUR');
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!hasMultipleCurrencies) {
+      setExchangeRate(null);
+      return;
+    }
+    setExchangeRate(null);
+    let active = true;
+    const source = estimateCurrency === 'EUR' ? 'USD' : 'EUR';
+    fetchFxRate(source, estimateCurrency)
+      .then((result) => {
+        if (active) setExchangeRate(result.ok && typeof result.rate === 'number' ? result.rate : null);
+      })
+      .catch(() => {
+        if (active) setExchangeRate(null);
+      });
+    return () => { active = false; };
+  }, [estimateCurrency, hasMultipleCurrencies]);
+
+  const estimatedTotal = hasMultipleCurrencies && exchangeRate !== null && accounts
+    ? accounts.reduce(
+        (total, account) => total + account.saldo * (account.currency === estimateCurrency ? 1 : exchangeRate),
+        0,
+      )
+    : null;
+
   return (
     <header className="header">
       <div className="brand">
@@ -37,6 +63,20 @@ export function Header({ accounts, onOpenTransfer }: { accounts: AccountSummary[
                 </span>
               ))}
             </span>
+            {hasMultipleCurrencies && (
+              <span className="patrimonio-estimate">
+                <span>Capital estimado en</span>
+                <select
+                  aria-label="Divisa del capital estimado"
+                  value={estimateCurrency}
+                  onChange={(event) => setEstimateCurrency(event.target.value as AccountSummary['currency'])}
+                >
+                  <option value="EUR">EUR</option>
+                  <option value="USD">USD</option>
+                </select>
+                <b>{estimatedTotal === null ? '—' : money(estimatedTotal, estimateCurrency)}</b>
+              </span>
+            )}
             {accounts.length > 0 && (
               <span className="patrimonio-accounts">
                 {accounts.map((a) => (
