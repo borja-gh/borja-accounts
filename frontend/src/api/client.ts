@@ -11,6 +11,8 @@ import type {
   EditMovementRequest,
   GastosMesActualReport,
   GastosRankingReport,
+  ExpenseRecurrenceList,
+  ExpenseRecurrenceUpdateResult,
   InvestmentKpis,
   KpiPeriod,
   KpiPeriodFilter,
@@ -224,6 +226,25 @@ export function fetchMensualEvolucion(cuenta: string, filter: RangeFilter): Prom
 
 export function fetchGastosRanking(cuenta: string, filter: RangeFilter, mode: RankingMode): Promise<GastosRankingReport> {
   return fetchRangeReport(`/api/accounts/${cuenta}/gastos-ranking`, filter, { mode });
+}
+
+export async function fetchExpenseRecurrences(cuenta: string): Promise<ExpenseRecurrenceList> {
+  const res = await fetch(`/api/accounts/${cuenta}/gastos/recurrentes`);
+  return res.json();
+}
+
+export async function updateExpenseRecurrence(
+  cuenta: string,
+  concepto: string,
+  recurrente: boolean,
+): Promise<ExpenseRecurrenceUpdateResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/gastos/recurrentes`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ concepto, recurrente }),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
 }
 
 export function fetchCarterasRanking(cuenta: string, filter: RangeFilter, mode: RankingMode): Promise<CarterasRankingReport> {

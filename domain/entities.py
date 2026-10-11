@@ -24,6 +24,7 @@ class Movement:
     """UUID compartido por las dos patas de una transferencia. Un Ingreso
     solo es transferencia entrante si lleva este id; un concepto
     «Desde el trabajo» sin enlace cuenta como ingreso real."""
+    recurrente: bool = False
 
 
 @dataclass

@@ -20,6 +20,7 @@ import { GastosChart } from '../charts/GastosChart';
 import { RankingModeToggle } from '../charts/RankingModeToggle';
 import { GastoAlert } from '../gastos/GastoAlert';
 import { useGastosMesActual } from '../gastos/useGastosMesActual';
+import { ExpenseRecurrenceSection } from '../gastos/ExpenseRecurrenceSection';
 import { CashBudgetSection } from '../presupuestos/CashBudgetSection';
 import { ViewCustomizer } from '../accounts/ViewCustomizer';
 import { AssistantVisibilityToggle } from '../accounts/AssistantVisibilityToggle';
@@ -40,6 +41,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
   const [gastosMode, setGastosMode] = useState<RankingMode>('media');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [budgetReloadToken, setBudgetReloadToken] = useState(0);
+  const [recurrenceReloadToken, setRecurrenceReloadToken] = useState(0);
   const { kpi, reload: reloadKpis } = useAccountKpis(account.id, period);
   const { data, reload: reloadData } = useAccountData(account.id);
   const { report: saldoReport, reload: reloadSaldo } = useRangeReport(
@@ -69,6 +71,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
     reloadGastosRanking();
     reloadGastosMesActual();
     setBudgetReloadToken((value) => value + 1);
+    setRecurrenceReloadToken((value) => value + 1);
     onDataChanged();
   }
 
@@ -163,6 +166,15 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
                   <RankingModeToggle mode={gastosMode} onChange={setGastosMode} btnClass="gastos-mode-btn" />
                 </div>
                 <GastosChart ranking={gastosRanking.ranking} />
+              </div>
+            )}
+            {visiblePanels.has('expenses') && (
+              <div className="chart-card full">
+                <ExpenseRecurrenceSection
+                  account={account.id}
+                  reloadToken={recurrenceReloadToken}
+                  onUpdated={refreshAll}
+                />
               </div>
             )}
           </div>

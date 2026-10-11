@@ -68,6 +68,10 @@ class InvalidBudgetError(DomainError):
     pass
 
 
+class InvalidExpenseRecurrenceError(DomainError):
+    status_code = 422
+
+
 class CashBudgetNotFoundError(DomainError):
     status_code = 404
 

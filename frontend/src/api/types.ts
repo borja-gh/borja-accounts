@@ -100,6 +100,7 @@ export interface AddMovementRequest {
   tipo: string;
   concepto: string;
   total: number;
+  recurrente?: boolean;
 }
 
 export interface EditMovementRequest {
@@ -294,10 +295,27 @@ export interface GastosRankingSection {
 }
 
 export interface GastosRankingEntry extends RankingEntry {
+  recurrente: boolean;
   mesesConGasto: number;
   mesesEvaluados: number;
   desviacion: number;
   mensual: number[];
+}
+
+export interface ExpenseRecurrenceConcept {
+  concepto: string;
+  recurrente: boolean;
+}
+
+export interface ExpenseRecurrenceList {
+  conceptos: ExpenseRecurrenceConcept[];
+}
+
+export interface ExpenseRecurrenceUpdateResult {
+  ok: boolean;
+  concepto?: string;
+  recurrente?: boolean;
+  error?: string;
 }
 
 export interface GastosRankingReport {

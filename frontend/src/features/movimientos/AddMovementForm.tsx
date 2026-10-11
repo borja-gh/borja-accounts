@@ -31,15 +31,29 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
   const [fecha, setFecha] = useState(localISODate());
   const [tipo, setTipo] = useState(tipos[0]);
   const [concepto, setConcepto] = useState('');
+  const [recurrente, setRecurrente] = useState(true);
   const [total, setTotal] = useState('');
   const conceptoRef = useRef<HTMLInputElement>(null);
+  const wasNewExpenseConcept = useRef(false);
   const showToast = useToast();
+  const trimmedConcepto = concepto.trim();
+  const existingExpenseConcept = tipo === 'Gasto' && data.some(
+    (movement) => movement.Tipo === 'Gasto' && movement.Concepto === trimmedConcepto,
+  );
+  const isNewExpenseConcept = tipo === 'Gasto' && !!trimmedConcepto && !existingExpenseConcept;
+
+  useEffect(() => {
+    if (isNewExpenseConcept && !wasNewExpenseConcept.current) setRecurrente(true);
+    wasNewExpenseConcept.current = isNewExpenseConcept;
+  }, [isNewExpenseConcept]);
 
   useEffect(() => {
     setFecha(localISODate());
     setTipo(TIPOS_POR_KIND[kind][0]);
     setConcepto('');
+    setRecurrente(true);
     setTotal('');
+    wasNewExpenseConcept.current = false;
   }, [account, kind]);
 
   useImperativeHandle(
@@ -66,7 +80,6 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
       showToast('Introduce una fecha', 'err');
       return;
     }
-    const trimmedConcepto = concepto.trim();
     if (!trimmedConcepto) {
       showToast('Introduce un concepto', 'err');
       return;
@@ -77,7 +90,10 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
       return;
     }
     try {
-      const body = await addMovement(account, { fecha, tipo, concepto: trimmedConcepto, total: totalNum });
+      const body = await addMovement(account, {
+        fecha, tipo, concepto: trimmedConcepto, total: totalNum,
+        ...(isNewExpenseConcept ? { recurrente } : {}),
+      });
       if (!body.ok) {
         showToast(body.error || 'Error al guardar', 'err');
         return;
@@ -86,6 +102,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
       setFecha(localISODate());
       setTipo(tipos[0]);
       setConcepto('');
+      setRecurrente(true);
       setTotal('');
       onSaved();
     } catch {
@@ -129,6 +146,31 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
           onEnterWithMeta={handleSubmit}
         />
       </div>
+      {isNewExpenseConcept && (
+        <div className="fg full new-expense-recurrence">
+          <span className="new-expense-recurrence-title">¿Es recurrente?</span>
+          <div className="new-expense-recurrence-options" role="radiogroup" aria-label="¿Es recurrente?">
+            <label className={recurrente ? 'is-selected' : ''}>
+              <input
+                type="radio"
+                name="new-expense-recurrence"
+                checked={recurrente}
+                onChange={() => setRecurrente(true)}
+              />
+              <span>Sí, recurrente</span>
+            </label>
+            <label className={!recurrente ? 'is-selected' : ''}>
+              <input
+                type="radio"
+                name="new-expense-recurrence"
+                checked={!recurrente}
+                onChange={() => setRecurrente(false)}
+              />
+              <span>No, puntual</span>
+            </label>
+          </div>
+        </div>
+      )}
       <div className="fg full">
         <label>Total ({currency})</label>
         <input type="number" placeholder="0.00" step="0.01" min={tipo === 'Apuestas_r' ? '0' : '0.01'} value={total} onChange={(e) => setTotal(e.target.value)} />

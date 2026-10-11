@@ -9,13 +9,14 @@ TZ = ZoneInfo("Europe/Madrid")
 REFERENCE = datetime(2026, 10, 15, 12, tzinfo=TZ)
 
 
-def movement(concept: str, date: str, amount: float) -> Movement:
+def movement(concept: str, date: str, amount: float, recurrente: bool = False) -> Movement:
     return Movement(
         account_id="cash",
         occurred_at=datetime.fromisoformat(date).replace(tzinfo=TZ),
         type="Gasto",
         concept=concept,
         amount=amount,
+        recurrente=recurrente,
     )
 
 
@@ -45,10 +46,31 @@ def test_average_uses_selected_range_for_existing_and_new_concepts():
     result = compute_gastos_ranking(movements, "3m", None, REFERENCE, "media")
 
     assert [(entry["concepto"], entry["valor"]) for entry in result["entries"]] == [
-        ("Nuevo", 60.0),
+        ("Nuevo", 40.0),
         ("Anterior", 30.0),
     ]
-    assert [entry["mesesEvaluados"] for entry in result["entries"]] == [2, 3]
+    assert [entry["mesesEvaluados"] for entry in result["entries"]] == [3, 3]
+
+
+def test_media_recurrente_desde_aparicion_y_puntual_sobre_todo_el_registro():
+    movements = [
+        Movement(
+            account_id="cash", occurred_at=datetime(2026, 1, 1, tzinfo=TZ),
+            type="Saldo Inicial", concept="Apertura", amount=1000,
+        ),
+        movement("Recurrente", "2026-04-12", 70, recurrente=True),
+        movement("Puntual", "2026-10-12", 70),
+    ]
+
+    result = compute_gastos_ranking(movements, "all", None, REFERENCE, "media")
+    entries = {entry["concepto"]: entry for entry in result["entries"]}
+
+    assert entries["Recurrente"]["valor"] == 10.0
+    assert entries["Recurrente"]["recurrente"] is True
+    assert (entries["Recurrente"]["mesesConGasto"], entries["Recurrente"]["mesesEvaluados"]) == (1, 7)
+    assert entries["Puntual"]["valor"] == 7.0
+    assert entries["Puntual"]["recurrente"] is False
+    assert (entries["Puntual"]["mesesConGasto"], entries["Puntual"]["mesesEvaluados"]) == (1, 10)
 
 
 def test_total_mode_is_unchanged():
