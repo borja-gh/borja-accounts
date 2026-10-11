@@ -34,9 +34,18 @@ class EditMovementUseCase:
         account = self.repository.get_account(account_id)
         self.ledger.validate_type_and_concept(account.kind, movements, tipo, concepto, exclude_id=objetivo.id)
 
+        recurrente = objetivo.recurrente if tipo == "Gasto" and concepto == objetivo.concept and objetivo.type == "Gasto" else next(
+            (
+                m.recurrente for m in movements
+                if m.id != objetivo.id and tipo == "Gasto" and m.type == tipo and m.concept == concepto
+            ),
+            False,
+        )
+
         objetivo.type = tipo
         objetivo.concept = concepto
         objetivo.amount = total
+        objetivo.recurrente = recurrente if tipo == "Gasto" else False
         if data.get("fecha"):
             objetivo.occurred_at = parse_fecha(data)
         movements = sorted(movements, key=lambda m: m.occurred_at)

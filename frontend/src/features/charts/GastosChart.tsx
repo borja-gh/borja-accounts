@@ -95,8 +95,12 @@ export function GastosChart({ ranking }: { ranking: GastosRankingSection }) {
           <div className="gastos-ranking-item" key={entry.concepto}>
             <div className={`gastos-ranking-row ${showMonthlyMetrics ? 'is-average' : 'is-total'}`}>
               <div className="gastos-ranking-concept">
-                {showMonthlyMetrics && (
-                  <span className="gastos-ranking-recurrence">
+                {showMonthlyMetrics && entry.recurrente && (
+                  <span
+                    className="gastos-ranking-recurrence"
+                    title={`Gasto en ${entry.mesesConGasto} de ${entry.mesesEvaluados} meses desde la primera aparición del concepto recurrente`}
+                    aria-label={`Gasto en ${entry.mesesConGasto} de ${entry.mesesEvaluados} meses desde la primera aparición del concepto recurrente`}
+                  >
                     {entry.mesesConGasto}/{entry.mesesEvaluados} meses
                   </span>
                 )}

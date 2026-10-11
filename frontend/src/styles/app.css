@@ -616,6 +616,22 @@
     .gastos-hist-head .chart-label { margin-bottom: 0; }
     .gastos-hist-head > span { color: var(--muted); font-size: 11px; white-space: nowrap; }
     .gastos-hist-empty { margin: 8px 0; color: var(--muted); font-size: 12px; }
+    .expense-recurrence-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 2px 0; border: 0; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+    .expense-recurrence-toggle-copy { display: grid; gap: 3px; }
+    .expense-recurrence-toggle-copy strong { font-size: 14px; }
+    .expense-recurrence-toggle-copy > span { color: var(--muted); font-size: 12px; }
+    .expense-recurrence-chevron { color: var(--accent); font-size: 23px; line-height: 1; transform: rotate(0); transition: transform 160ms ease; }
+    .expense-recurrence-chevron.is-open { transform: rotate(180deg); }
+    .expense-recurrence-content { padding-top: 14px; }
+    .expense-recurrence-copy { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+    .expense-recurrence-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+    .expense-recurrence-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); }
+    .expense-recurrence-item > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+    .expense-recurrence-control { display: inline-flex; align-items: center; gap: 7px; flex: none; color: var(--muted); font-size: 12px; cursor: pointer; }
+    .expense-recurrence-control input { accent-color: var(--accent); }
+    .expense-recurrence-control input:disabled { cursor: wait; }
+    .expense-recurrence-empty, .expense-recurrence-error { color: var(--muted); font-size: 12px; }
+    .expense-recurrence-error { color: var(--red); }
 
     /* ── SECTION ── */
     .section {
@@ -722,6 +738,12 @@
 
     .fg { display: flex; flex-direction: column; gap: 5px; }
     .fg.full { grid-column: 1 / -1; }
+    .new-expense-recurrence { gap: 7px; }
+    .new-expense-recurrence-title { color: var(--muted); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .new-expense-recurrence-options { display: inline-flex; width: fit-content; padding: 3px; gap: 3px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); }
+    .new-expense-recurrence-options label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: calc(var(--radius-sm) - 2px); color: var(--muted); cursor: pointer; font-size: 12px; letter-spacing: normal; text-transform: none; }
+    .new-expense-recurrence-options label.is-selected { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px #00000012; }
+    .new-expense-recurrence-options input { accent-color: var(--accent); margin: 0; }
 
     label {
       font-size: 11px;
