@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS movements (
     type TEXT NOT NULL,
     concept TEXT NOT NULL,
     amount REAL NOT NULL,
-    balance REAL NOT NULL
+    balance REAL NOT NULL,
+    recurrente INTEGER NOT NULL DEFAULT 0 CHECK (recurrente IN (0, 1))
 );
 
 CREATE INDEX IF NOT EXISTS idx_movements_account ON movements(account_id);
@@ -115,4 +116,6 @@ def ensure_schema(conn):
         conn.execute("ALTER TABLE portfolio_holdings ADD COLUMN current_price_usd REAL")
     if "transfer_link_id" not in movement_columns:
         conn.execute("ALTER TABLE movements ADD COLUMN transfer_link_id TEXT")
+    if "recurrente" not in movement_columns:
+        conn.execute("ALTER TABLE movements ADD COLUMN recurrente INTEGER NOT NULL DEFAULT 0 CHECK (recurrente IN (0, 1))")
     conn.commit()

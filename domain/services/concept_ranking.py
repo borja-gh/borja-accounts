@@ -54,6 +54,10 @@ def _months_for_concept(first_month: str, range_start: str | None, range_end: st
     return months_between(start_month, end_month)
 
 
+def _record_start_month(movements: list[Movement], default: str) -> str:
+    return min((_fecha_str(movement)[:7] for movement in movements), default=default)
+
+
 def monthly_concept_details(
     movements: list[Movement], tipo: str, concepts: list[str], range_type: str,
     year: int | str | None, reference: datetime,
@@ -61,6 +65,7 @@ def monthly_concept_details(
     reference_local = reference.astimezone(TZ)
     range_start, range_end = _range_month_bounds(range_type, year, reference_local)
     first_month_by_concept: dict[str, str] = {}
+    recurrence_by_concept: dict[str, bool] = {}
     for movement in movements:
         if movement.type != tipo or movement.amount is None or movement.concept not in concepts:
             continue
@@ -68,9 +73,12 @@ def monthly_concept_details(
         first_month_by_concept[movement.concept] = min(
             month, first_month_by_concept.get(movement.concept, month)
         )
+        recurrence_by_concept[movement.concept] = movement.recurrente
 
     starts = {
-        concept: max(first_month_by_concept[concept], range_start) if range_start else first_month_by_concept[concept]
+        concept: (
+            max(first_month_by_concept[concept], range_start) if range_start else first_month_by_concept[concept]
+        ) if recurrence_by_concept[concept] else (range_start or _record_start_month(movements, range_end))
         for concept in concepts
     }
     ends = {concept: max(starts[concept], range_end) for concept in concepts}
@@ -100,6 +108,7 @@ def monthly_concept_details(
         average = sum(values) / len(values)
         deviation = sqrt(sum((value - average) ** 2 for value in values) / len(values))
         details[concept] = {
+            "recurrente": recurrence_by_concept[concept],
             "mesesConGasto": sum(value > 0 for value in values),
             "mesesEvaluados": len(values),
             "desviacion": _r2(deviation),
@@ -137,6 +146,7 @@ def rank_by_concept(
     if mode == "media":
         if average_from_first_occurrence:
             first_month_by_concept: dict[str, str] = {}
+            recurrence_by_concept: dict[str, bool] = {}
             for movement in movements:
                 if movement.type != tipo or movement.amount is None:
                     continue
@@ -144,12 +154,16 @@ def rank_by_concept(
                 first_month_by_concept[movement.concept] = min(
                     month, first_month_by_concept.get(movement.concept, month)
                 )
+                recurrence_by_concept[movement.concept] = movement.recurrente
             range_start, range_end = _range_month_bounds(range_type, year, reference_local)
+            total_range_start = range_start or _record_start_month(movements, range_end)
             entries = [
                 (
                     concept,
-                    _r2(total / _months_for_concept(
-                        first_month_by_concept[concept], range_start, range_end
+                    _r2(total / (
+                        _months_for_concept(first_month_by_concept[concept], range_start, range_end)
+                        if recurrence_by_concept[concept]
+                        else months_between(total_range_start, range_end)
                     )),
                 )
                 for concept, total in by_concepto.items()

@@ -45,6 +45,7 @@ from application.use_cases.get_saldo_evolucion import GetSaldoEvolucionUseCase
 from application.use_cases.get_carteras_ranking import GetCarterasRankingUseCase
 from application.use_cases.get_gastos_mes_actual import GetGastosMesActualUseCase
 from application.use_cases.get_gastos_ranking import GetGastosRankingUseCase
+from application.use_cases.manage_expense_recurrence import ManageExpenseRecurrenceUseCase
 from application.use_cases.get_transfers_report import GetTransfersReportUseCase
 from application.use_cases.refresh_holding_prices import RefreshHoldingPricesUseCase
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
@@ -507,6 +508,28 @@ def get_gastos_ranking(cuenta: str, range: str = "all", year: str | None = None,
     if err:
         return err
     return report
+
+
+@app.get("/api/accounts/{cuenta}/gastos/recurrentes")
+def get_gastos_recurrentes(cuenta: str):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    return {"conceptos": ManageExpenseRecurrenceUseCase(repository).list(cuenta)}
+
+
+@app.put("/api/accounts/{cuenta}/gastos/recurrentes")
+async def update_gasto_recurrente(cuenta: str, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    if not isinstance(data, dict):
+        return JSONResponse({"error": "El cuerpo debe ser un objeto JSON"}, status_code=400)
+    result, err = _run(ManageExpenseRecurrenceUseCase(repository).update, cuenta, data)
+    if err:
+        return err
+    return result
 
 
 @app.get("/api/accounts/{cuenta}/transferencias")

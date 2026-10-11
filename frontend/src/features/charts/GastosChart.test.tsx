@@ -14,8 +14,10 @@ describe('GastosChart', () => {
 
   it('muestra recurrencia, barra, desviación y detalle por concepto', () => {
     const ranking = backendFixture.cash1_gastos_ranking_all_media.ranking as GastosRankingSection;
-    render(<GastosChart ranking={ranking} />);
-    expect(screen.getAllByText(/meses$/)).toHaveLength(ranking.entries.length);
+    const { container } = render(<GastosChart ranking={ranking} />);
+    expect(screen.getAllByText(/meses$/)).toHaveLength(ranking.entries.filter((entry) => entry.recurrente).length);
+    expect(container.querySelector('.gastos-ranking-recurrence'))
+      .toHaveAttribute('title', expect.stringContaining('desde la primera aparición del concepto recurrente'));
     expect(screen.getAllByRole('button', { name: /^Ver detalle de / })).toHaveLength(ranking.entries.length);
     expect(screen.getAllByText(/σ/)).toHaveLength(ranking.entries.length);
     const colors = ranking.entries.map((entry) => {

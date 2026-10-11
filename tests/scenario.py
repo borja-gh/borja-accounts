@@ -76,6 +76,11 @@ def _seed_sqlite_from_fixture(repo_root, csv_dir, db_path):
     for account_id in ARCHIVOS:
         sqlite_repo.save(account_id, csv_repo.load(account_id))
 
+    from application.use_cases.manage_expense_recurrence import ManageExpenseRecurrenceUseCase
+    recurrence = ManageExpenseRecurrenceUseCase(sqlite_repo)
+    for concept in ("Alquiler", "Supermercado", "Transporte", "Gimnasio"):
+        recurrence.update("cash1", {"concepto": concept, "recurrente": True})
+
     # "Cartera Tech"/"Cartera Bonos"/"Cartera Global" (investment1.example.csv)
     # se quedan como legado vía movements -- dan cobertura al path histórico
     # (compute_closed_positions) que sigue existiendo para Cartera 1 en

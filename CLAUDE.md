@@ -31,6 +31,7 @@ Regla de dependencias: `domain` no importa `application` ni `infrastructure`; `a
 ## Invariantes de negocio relevantes
 
 - Una cuenta tiene `kind` `CASH` o `INVESTMENT`, una única divisa interna (`EUR` o `USD`) y se crea desde la UI.
+- La recurrencia de gastos se persiste por movimiento, pero su edición es por concepto dentro de la cuenta. Todos los movimientos `Gasto` del concepto comparten el booleano; los nuevos gastos heredan su valor y un concepto nuevo es recurrente por defecto. La media mensual usa meses desde la primera aparición si es recurrente y todos los meses del rango si es puntual.
 - `movements.balance` se recalcula completo en cada escritura. El orden estable por fecha usa `mergesort`; no perder microsegundos de `occurred_at` sin validar el efecto.
 - Una transferencia son dos movimientos enlazados por `transfer_link_id`; un `Ingreso` sin ese enlace es ingreso real. Al borrar una pata, se elimina la otra.
 - En cuentas INVESTMENT, `Saldo` se deriva de `build_investment_ledger`. `En carteras` es un desglose a coste, no una cifra que se sume al saldo. `Caja = Saldo - En carteras`.

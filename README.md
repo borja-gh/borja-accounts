@@ -292,7 +292,7 @@ Barras de ingresos y gastos por mes, con línea de balance neto. Respeta el Rang
 
 #### Gráfico: Gastos por concepto
 
-**Ranking** — barras horizontales con los 20 conceptos `Gasto` mayores. En modo **Media/mes**, cada concepto divide su gasto total del período entre los meses naturales desde su primera aparición hasta el fin del período, ambos inclusivos. Los meses sin gasto cuentan como cero; si apareció una sola vez en abril y el período llega hasta octubre, se divide entre 7. En rangos acotados, el cálculo empieza en la fecha más tardía entre la primera aparición y el inicio del rango. También hay modo **Total**. No hay donut ni chips «Top del mes».
+**Ranking** — barras horizontales con los 20 conceptos `Gasto` mayores. La sección **Recurrencia de gastos**, debajo del ranking, permite clasificar cada concepto de la cuenta como recurrente o puntual; el cambio afecta a todos sus gastos y los nuevos movimientos heredan esa marca. Un concepto nuevo es recurrente por defecto; el formulario permite marcarlo puntual al crearlo. En modo **Media/mes**, los recurrentes dividen el gasto del período por los meses desde su primera aparición hasta el fin del rango. Los puntuales dividen por todos los meses del rango; en `Todo`, desde el primer movimiento registrado en la cuenta hasta el mes actual. Los gastos existentes reciben `recurrente = false` al migrar la base de datos y se pueden clasificar desde esa sección. También hay modo **Total**. No hay donut ni chips «Top del mes».
 
 #### Análisis de apuestas
 
@@ -447,6 +447,8 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | GET | `/api/accounts/{cuenta}/mensual-evolucion` | Ingresos/gastos por mes |
 | GET | `/api/accounts/{cuenta}/carteras-ranking` | Ranking de conceptos `Inversión` (media/total) |
 | GET | `/api/accounts/{cuenta}/gastos-ranking` | Ranking de conceptos `Gasto` (media/total) |
+| GET | `/api/accounts/{cuenta}/gastos/recurrentes` | Lista conceptos de gasto y su clasificación recurrente/puntual |
+| PUT | `/api/accounts/{cuenta}/gastos/recurrentes` | Actualiza la clasificación de un concepto de gasto para todo su histórico |
 | GET | `/api/accounts/{cuenta}/transferencias` | Recibido / enviado / neto + lista (`transfer_link_id`). **Sin sección UI** |
 | GET | `/api/accounts/{cuenta}/carteras` | Holdings abiertas (por ticker) + legado + historial |
 | POST | `/api/accounts/{cuenta}/portfolio-holdings/refresh-prices` | Refresca `current_price_usd` de holdings abiertas (yfinance) |
