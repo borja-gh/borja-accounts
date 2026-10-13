@@ -37,7 +37,7 @@ describe('InversionesBody', () => {
     expect(screen.getByText('Cartera Bonos')).toBeInTheDocument();
   });
 
-  it('la cartera abierta empieza colapsada y se expande al hacer click, mostrando el detalle por ticker', () => {
+  it('la cartera abierta empieza colapsada y expone solo los tickers todavía abiertos', () => {
     const report = backendFixture.investment1_carteras_report_3m;
     const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
 
@@ -49,22 +49,21 @@ describe('InversionesBody', () => {
 
     expect(details.open).toBe(true);
     expect(screen.getByText('AAPL')).toBeInTheDocument();
-    expect(screen.getByText('MSFT')).toBeInTheDocument();
+    expect(screen.queryByText('MSFT')).not.toBeInTheDocument();
+    expect(screen.getByText('Cartera Prueba · MSFT')).toBeInTheDocument();
     expect(screen.getByText('Apple Inc.')).toBeInTheDocument();
   });
 
-  it('AAPL (sin cierre) no muestra PnL; MSFT (ya vendida) muestra PnL y su anotación', () => {
+  it('AAPL abierta no muestra PnL; MSFT vendida aparece en el historial', () => {
     const report = backendFixture.investment1_carteras_report_3m;
     const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
     fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
 
-    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('tbody tr'));
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('.holdings-table tbody tr'));
     const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
-    const msftRow = rows.find((r) => r.textContent?.includes('MSFT'))!;
 
     expect(aaplRow.textContent).toContain('—');
-    expect(msftRow.textContent).toContain('-100,00$');
-    expect((msftRow.querySelector('input[type="text"]') as HTMLInputElement).value).toBe('Vendida con pérdida');
+    expect(screen.getByText('Cartera Prueba · MSFT').closest('tr')?.textContent).toContain('-100,00$');
     // La cartera en su conjunto tampoco muestra PnL porque no todos sus holdings están cerrados.
     expect(screen.getAllByText('—').length).toBeGreaterThan(0);
   });
@@ -128,6 +127,45 @@ describe('InversionesBody', () => {
     );
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
     expect(await screen.findByText('Cartera cerrada')).toBeInTheDocument();
+  });
+
+  it('vende todos los lotes abiertos del ticker sin cerrar el resto de la cartera', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, portfolio: 'Cartera Prueba', ticker: 'AAPL', closed: 1, shares: 10 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const report = structuredClone(backendFixture.investment1_carteras_report_3m) as PortfolioReport;
+    const portfolio = report.openPositions.find((position) => position.concepto === 'Cartera Prueba')!;
+    const aapl = portfolio.holdings.find((holding) => holding.ticker === 'AAPL')!;
+    aapl.currentPrice = 150;
+    portfolio.holdings.push({ ...aapl, id: 99, shares: 2, capital: 300 });
+    portfolio.holdings.push({ ...aapl, id: 100, ticker: 'GOOGL', shares: 3, capital: 450 });
+    const onSaved = vi.fn();
+    const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved });
+    fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
+    expect(screen.getAllByText('Cerrar')).toHaveLength(2);
+    fireEvent.click(screen.getAllByText('Cerrar')[0]);
+
+    expect(screen.getByText('Venta de AAPL')).toBeInTheDocument();
+    expect(screen.getByText('Se venderán 12 acciones. El resto de la cartera seguirá abierto.')).toBeInTheDocument();
+    expect(screen.getAllByText('Cerrar')).toHaveLength(2);
+    const dateInput = container.querySelector('.holding-close-row input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2026-10-02' } });
+    fireEvent.change(screen.getByLabelText('Precio de venta AAPL'), { target: { value: '155.25' } });
+    fireEvent.click(screen.getByText('Confirmar venta'));
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/accounts/investment1/portfolio-holdings/close-position',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ portfolio: 'Cartera Prueba', ticker: 'AAPL', closePrice: 155.25, fecha: '2026-10-02' }),
+      }),
+    );
+    await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText('Posición AAPL cerrada')).toBeInTheDocument();
   });
 
   it('el precio de mercado se muestra a 2 decimales, sin la basura IEEE de yfinance', () => {

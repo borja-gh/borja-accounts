@@ -200,6 +200,46 @@ def test_cerrar_cartera_guarda_todos_los_lotes_y_agrupa_su_historial(repository,
     assert report["closedPositions"][0]["bal"] == 235.32
 
 
+def test_cerrar_posicion_mantiene_cartera_abierta_y_envia_ticker_a_historico(repository, ledger):
+    account = CreateAccountUseCase(repository, ledger).execute(
+        {"name": "IBKR", "kind": "INVESTMENT", "currency": "USD", "initialBalance": 5000}
+    )
+    create = CreatePortfolioHoldingUseCase(repository, ledger)
+    first = create.execute(account.id, {
+        "portfolio": "Core", "ticker": "AAPL", "shares": 5, "price": 10,
+        "fecha": "2026-05-01",
+    })
+    second = create.execute(account.id, {
+        "portfolio": "Core", "ticker": "AAPL", "shares": 3, "price": 12,
+        "fecha": "2026-06-01",
+    })
+    other = create.execute(account.id, {
+        "portfolio": "Core", "ticker": "MSFT", "shares": 2, "price": 100,
+        "fecha": "2026-06-01",
+    })
+
+    result = ClosePortfolioUseCase(repository, ledger).execute_position(account.id, {
+        "portfolio": "Core", "ticker": "AAPL", "closePrice": 15, "fecha": "2026-10-13",
+    })
+    report = GetPortfolioReportUseCase(repository).execute(
+        account.id, "all", None, datetime(2026, 10, 14, tzinfo=timezone.utc)
+    )
+    holdings = {holding.id: holding for holding in repository.list_portfolio_holdings(account.id)}
+
+    assert result == {"ok": True, "portfolio": "Core", "ticker": "AAPL", "closed": 2, "shares": 8}
+    assert holdings[first["id"]].close_price_usd == 15
+    assert holdings[second["id"]].close_price_usd == 15
+    assert holdings[other["id"]].close_price_usd is None
+    assert report["openCount"] == 1
+    assert report["openPositions"][0]["concepto"] == "Core"
+    assert [holding["ticker"] for holding in report["openPositions"][0]["holdings"]] == ["MSFT"]
+    assert report["closedCount"] == 1
+    assert report["closedPositions"][0]["Concepto"] == "Core · AAPL"
+    assert report["closedPositions"][0]["invertido"] == 86
+    assert report["closedPositions"][0]["devuelto"] == 120
+    assert report["closedPositions"][0]["bal"] == 34
+
+
 def test_http_create_account_sigue_disponible(tmp_path, monkeypatch):
     db_path = tmp_path / "http.db"
     monkeypatch.setenv("BORJA_ACCOUNTS_DB", str(db_path))
@@ -217,3 +257,36 @@ def test_http_create_account_sigue_disponible(tmp_path, monkeypatch):
     body = resp.json()
     assert body["ok"] is True
     assert body["id"] == "caja-http"
+
+
+def test_http_close_position_cierra_ticker_y_conserva_cartera(tmp_path, monkeypatch):
+    monkeypatch.setenv("BORJA_ACCOUNTS_DB", str(tmp_path / "http-close.db"))
+    import importlib.util
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    spec = importlib.util.spec_from_file_location("app_http_close_test", os.path.join(repo_root, "app", "main.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    from fastapi.testclient import TestClient
+    client = TestClient(mod.app)
+    account = client.post("/api/accounts", json={
+        "name": "IBKR HTTP", "kind": "INVESTMENT", "currency": "USD", "initialBalance": 5000,
+    }).json()
+    for ticker, shares, price in (("AAPL", 8, 10), ("MSFT", 2, 100)):
+        response = client.post(f"/api/accounts/{account['id']}/portfolio-holdings", json={
+            "portfolio": "Core", "ticker": ticker, "shares": shares,
+            "price": price, "fecha": "2026-05-01",
+        })
+        assert response.status_code == 200
+
+    closed = client.post(f"/api/accounts/{account['id']}/portfolio-holdings/close-position", json={
+        "portfolio": "Core", "ticker": "AAPL", "closePrice": 15, "fecha": "2026-10-13",
+    })
+    report = client.get(f"/api/accounts/{account['id']}/carteras?range=all").json()
+
+    assert closed.status_code == 200
+    assert closed.json() == {
+        "ok": True, "portfolio": "Core", "ticker": "AAPL", "closed": 1, "shares": 8,
+    }
+    assert report["openPositions"][0]["concepto"] == "Core"
+    assert [holding["ticker"] for holding in report["openPositions"][0]["holdings"]] == ["MSFT"]
+    assert report["closedPositions"][0]["Concepto"] == "Core · AAPL"

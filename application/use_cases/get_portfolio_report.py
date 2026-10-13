@@ -42,7 +42,7 @@ class GetPortfolioReportUseCase:
                         "pnl": h.pnl_usd, "pnlPct": h.pnl_pct,
                         "note": h.note,
                     }
-                    for h in p.holdings
+                    for h in p.holdings if h.close_price_usd is None
                 ],
             }
             for p in summary.holdings_portfolios
@@ -94,18 +94,32 @@ def _closed_portfolios(closed_positions: list[ClosedPosition], holdings) -> list
     for portfolio, rows in grouped.items():
         portfolio_holdings = holdings_by_portfolio[portfolio]
         partial = any(holding.close_price_usd is None for holding in portfolio_holdings)
-        invested = round(sum(row.invertido for row in rows), 2)
-        returned = round(sum(row.devuelto for row in rows), 2)
-        balance = round(returned - invested, 2)
-        aggregated.append(ClosedPosition(
-            concepto=f"{portfolio} · cierre parcial" if partial else portfolio,
-            fi=min(row.fi for row in rows),
-            fr=max(row.fr for row in rows),
-            invertido=invested,
-            devuelto=returned,
-            bal=balance,
-            pct=round(balance / invested * 100, 2) if invested > 0 else 0.0,
-        ))
+        ticker_groups = {}
+        for row in rows:
+            holding = by_sale_concept[row.concepto]
+            ticker_groups.setdefault(holding.ticker, []).append(row)
+
+        row_groups = ticker_groups.items() if partial else [(None, rows)]
+        for ticker, ticker_rows in row_groups:
+            invested = round(sum(row.invertido for row in ticker_rows), 2)
+            returned = round(sum(row.devuelto for row in ticker_rows), 2)
+            balance = round(returned - invested, 2)
+            ticker_open = ticker is not None and any(
+                holding.ticker == ticker and holding.close_price_usd is None
+                for holding in portfolio_holdings
+            )
+            concept = portfolio if ticker is None else f"{portfolio} · {ticker}"
+            if ticker_open:
+                concept += " · cierre parcial"
+            aggregated.append(ClosedPosition(
+                concepto=concept,
+                fi=min(row.fi for row in ticker_rows),
+                fr=max(row.fr for row in ticker_rows),
+                invertido=invested,
+                devuelto=returned,
+                bal=balance,
+                pct=round(balance / invested * 100, 2) if invested > 0 else 0.0,
+            ))
 
     aggregated.sort(key=lambda row: row.fr)
     cumulative_balance = 0.0
