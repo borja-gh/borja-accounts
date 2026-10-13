@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { closePortfolio, updatePortfolioHolding } from '../../api/client';
+import { closePortfolio, closePortfolioPosition, updatePortfolioHolding } from '../../api/client';
 import type { AccountId, ClosedInvestPosition, OpenInvestPosition, PortfolioHoldingDetail, PortfolioReport } from '../../api/types';
 import { DataTable, type Column } from '../../components/DataTable';
 import { SectionKpis, type SectionKpiItem } from '../../components/SectionKpis';
@@ -26,11 +26,36 @@ function sectionKpis(report: PortfolioReport, currency: string): SectionKpiItem[
   ];
 }
 
-function HoldingRow({ account, holding, currency, onSaved }: {
+function HoldingRow({
+  account,
+  holding,
+  currency,
+  onSaved,
+  canClosePosition,
+  isClosingPosition,
+  closePositionMessage,
+  closeDate,
+  positionClosePrice,
+  onClosePosition,
+  onCloseDateChange,
+  onClosePriceChange,
+  onCancelClosePosition,
+  onConfirmClosePosition,
+}: {
   account: AccountId;
   holding: PortfolioHoldingDetail;
   currency: string;
   onSaved: () => void;
+  canClosePosition: boolean;
+  onClosePosition: (ticker: string) => void;
+  isClosingPosition: boolean;
+  closePositionMessage: string;
+  closeDate: string;
+  positionClosePrice: string;
+  onCloseDateChange: (date: string) => void;
+  onClosePriceChange: (price: string) => void;
+  onCancelClosePosition: () => void;
+  onConfirmClosePosition: () => void;
 }) {
   const [currentPrice, setCurrentPrice] = useState(priceInputValue(holding.currentPrice));
   const [note, setNote] = useState(holding.note ?? '');
@@ -72,58 +97,106 @@ function HoldingRow({ account, holding, currency, onSaved }: {
   }
 
   return (
-    <tr>
-      <td>
-        <b>{holding.ticker}</b>
-      </td>
-      <td className="r">{holding.shares}</td>
-      <td className="holdings-company" title={holding.company}>{holding.company}</td>
-      <td className="r">{money(holding.avgPrice, currency, 4)}</td>
-      <td className="r">{money(holding.capital, currency)}</td>
-      <td className="r">
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="—"
-          value={currentPrice}
-          onChange={(e) => setCurrentPrice(e.target.value)}
-          onBlur={saveCurrentPrice}
-          disabled={isClosed}
-          className="input-compact"
-        />
-      </td>
-      <td className={`r ${pnlClass(holding.pnl)}`}>
-        {holding.pnl === null ? (
-          '—'
-        ) : (
-          <span className="pnl-stack">
-            <span>{money(holding.pnl, currency)}</span>
-            {holding.pnlPct != null && <span className="pnl-pct">{holding.pnlPct.toFixed(2)}%</span>}
-          </span>
-        )}
-      </td>
-      <td className="r holdings-actions">
-        {isClosed ? (
-          <span className="pnl-stack">
-            <span className="badge b-transferencia">Cerrado</span>
-            <span>{holding.closePrice == null ? '—' : money(holding.closePrice, currency)}</span>
-          </span>
-        ) : (
-          <span className="badge b-inversion">Abierta</span>
-        )}
-      </td>
-      <td>
-        <input
-          type="text"
-          placeholder="Nota"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          onBlur={saveNote}
-          className="input-full"
-        />
-      </td>
-    </tr>
+    <>
+      <tr>
+        <td>
+          <b>{holding.ticker}</b>
+        </td>
+        <td className="r">{holding.shares}</td>
+        <td className="holdings-company" title={holding.company}>{holding.company}</td>
+        <td className="r">{money(holding.avgPrice, currency, 4)}</td>
+        <td className="r">{money(holding.capital, currency)}</td>
+        <td className="r">
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="—"
+            value={currentPrice}
+            onChange={(e) => setCurrentPrice(e.target.value)}
+            onBlur={saveCurrentPrice}
+            disabled={isClosed}
+            className="input-compact"
+          />
+        </td>
+        <td className={`r ${pnlClass(holding.pnl)}`}>
+          {holding.pnl === null ? (
+            '—'
+          ) : (
+            <span className="pnl-stack">
+              <span>{money(holding.pnl, currency)}</span>
+              {holding.pnlPct != null && <span className="pnl-pct">{holding.pnlPct.toFixed(2)}%</span>}
+            </span>
+          )}
+        </td>
+        <td className="r holdings-actions">
+          {isClosed ? (
+            <span className="pnl-stack">
+              <span className="badge b-transferencia">Cerrado</span>
+              <span>{holding.closePrice == null ? '—' : money(holding.closePrice, currency)}</span>
+            </span>
+          ) : (
+            <div className="pnl-stack">
+              <span className="badge b-inversion">Abierta</span>
+              {canClosePosition && (
+                <button
+                  className="btn btn-ghost btn-compact position-close-trigger"
+                  onClick={() => onClosePosition(holding.ticker)}
+                  aria-expanded={isClosingPosition}
+                >
+                  Cerrar
+                </button>
+              )}
+            </div>
+          )}
+        </td>
+        <td>
+          <input
+            type="text"
+            placeholder="Nota"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onBlur={saveNote}
+            className="input-full"
+          />
+        </td>
+      </tr>
+      {isClosingPosition && (
+        <tr className="holding-close-row">
+          <td colSpan={9}>
+            <div className="portfolio-close-panel">
+              <div className="portfolio-close-heading">
+                <div>
+                  <strong>Venta de {holding.ticker}</strong>
+                  <span>{closePositionMessage}</span>
+                </div>
+                <label>
+                  <span>Fecha de venta</span>
+                  <input type="date" value={closeDate} onChange={(e) => onCloseDateChange(e.target.value)} />
+                </label>
+              </div>
+              <div className="portfolio-close-prices">
+                <label>
+                  <span>{`Precio de venta (${currency})`}</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={positionClosePrice}
+                    onChange={(e) => onClosePriceChange(e.target.value)}
+                    aria-label={`Precio de venta ${holding.ticker}`}
+                  />
+                </label>
+              </div>
+              <div className="portfolio-close-actions">
+                <button className="btn btn-ghost btn-compact" onClick={onCancelClosePosition}>Cancelar</button>
+                <button className="btn btn-primary btn-compact" onClick={onConfirmClosePosition}>Confirmar venta</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -137,7 +210,14 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
   const [closing, setClosing] = useState(false);
   const [closeDate, setCloseDate] = useState(localISODate());
   const [closePrices, setClosePrices] = useState<Record<number, string>>({});
+  const [closingTicker, setClosingTicker] = useState<string | null>(null);
+  const [positionClosePrice, setPositionClosePrice] = useState('');
   const showToast = useToast();
+
+  const firstOpenLotByTicker = new Map<string, number>();
+  for (const holding of openHoldings) {
+    if (!firstOpenLotByTicker.has(holding.ticker)) firstOpenLotByTicker.set(holding.ticker, holding.id);
+  }
 
   useEffect(() => {
     setClosePrices(Object.fromEntries(p.holdings.map((holding) => [
@@ -168,6 +248,45 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
     setClosing(false);
     showToast('Cartera cerrada', 'ok');
     onSaved();
+  }
+
+  async function confirmClosePosition() {
+    const ticker = closingTicker;
+    const price = positionClosePrice.trim();
+    if (!ticker) return;
+    if (!closeDate) {
+      showToast('Introduce la fecha de cierre', 'err');
+      return;
+    }
+    if (price === '' || !Number.isFinite(Number(price)) || Number(price) < 0) {
+      showToast('Introduce un precio de cierre válido', 'err');
+      return;
+    }
+    const result = await closePortfolioPosition(account, {
+      portfolio: p.concepto,
+      ticker,
+      closePrice: Number(price),
+      fecha: closeDate,
+    });
+    if (!result.ok) {
+      showToast(result.error || 'Error al cerrar la posición', 'err');
+      return;
+    }
+    setClosingTicker(null);
+    showToast(`Posición ${ticker} cerrada`, 'ok');
+    onSaved();
+  }
+
+  function startClosePosition(ticker: string) {
+    if (closingTicker === ticker) {
+      setClosingTicker(null);
+      return;
+    }
+    const firstLot = openHoldings.find((holding) => holding.ticker === ticker);
+    setCloseDate(localISODate());
+    setPositionClosePrice(firstLot?.currentPrice == null ? '' : priceInputValue(firstLot.currentPrice));
+    setClosingTicker(ticker);
+    setClosing(false);
   }
 
   return (
@@ -212,7 +331,29 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
             </thead>
             <tbody>
               {p.holdings.map((h) => (
-                <HoldingRow key={h.id} account={account} holding={h} currency={currency} onSaved={onSaved} />
+                <HoldingRow
+                  key={h.id}
+                  account={account}
+                  holding={h}
+                  currency={currency}
+                  onSaved={onSaved}
+                  canClosePosition={firstOpenLotByTicker.get(h.ticker) === h.id}
+                  onClosePosition={startClosePosition}
+                  isClosingPosition={firstOpenLotByTicker.get(h.ticker) === h.id && closingTicker === h.ticker}
+                  closePositionMessage={
+                    openHoldings.some((holding) => holding.ticker !== h.ticker)
+                      ? `Se venderán ${openHoldings
+                        .filter((holding) => holding.ticker === h.ticker)
+                        .reduce((total, holding) => total + holding.shares, 0)} acciones. El resto de la cartera seguirá abierto.`
+                      : 'Es la última posición abierta; al venderla, la cartera pasará al historial.'
+                  }
+                  closeDate={closeDate}
+                  positionClosePrice={positionClosePrice}
+                  onCloseDateChange={setCloseDate}
+                  onClosePriceChange={setPositionClosePrice}
+                  onCancelClosePosition={() => setClosingTicker(null)}
+                  onConfirmClosePosition={confirmClosePosition}
+                />
               ))}
             </tbody>
           </table>
@@ -255,6 +396,7 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
           ) : (
             <button className="btn btn-ghost btn-compact portfolio-close-trigger" onClick={() => {
               setCloseDate(localISODate());
+              setClosingTicker(null);
               setClosing(true);
             }}>
               Cerrar cartera
@@ -338,7 +480,7 @@ export function InversionesBody({ account, report, currency, onSaved }: Props) {
             <div>
               <span className="investment-portfolio-eyebrow">Archivo</span>
               <h3>Historial de carteras</h3>
-              <p>Resultados agrupados por cartera, no por lote o ticker.</p>
+              <p>Carteras cerradas y posiciones vendidas en carteras que siguen abiertas.</p>
             </div>
             <span className="investment-portfolio-count">{report.closedPositions.length}</span>
           </header>

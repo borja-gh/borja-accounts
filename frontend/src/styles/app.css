@@ -1282,6 +1282,8 @@
       padding: 6px 8px;
       vertical-align: middle;
     }
+    .holdings-table .holding-close-row > td { padding: 2px 12px 12px; border-top: 0; }
+    .holding-close-row .portfolio-close-panel { margin: 0; }
     .holdings-table col.col-ticker { width: 4.4rem; }
     .holdings-table col.col-shares { width: 5.4rem; }
     .holdings-table col.col-company { width: 16%; }
@@ -1306,6 +1308,11 @@
     }
     .holdings-table .holdings-actions > .btn {
       width: 100%;
+    }
+    .holdings-table .holdings-actions > .position-close-trigger {
+      width: auto;
+      padding: 3px 8px;
+      font-size: 11px;
     }
     .pnl-stack {
       display: flex;

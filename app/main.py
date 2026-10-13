@@ -579,6 +579,19 @@ async def close_portfolio(cuenta: str, request: Request):
     return result
 
 
+@app.post("/api/accounts/{cuenta}/portfolio-holdings/close-position")
+async def close_portfolio_position(cuenta: str, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    result, err = _run(ClosePortfolioUseCase(repository, ledger).execute_position, cuenta, data)
+    if err:
+        return err
+    return result
+
+
 @app.put("/api/accounts/{cuenta}/portfolio-holdings/{holding_id}")
 async def update_portfolio_holding(cuenta: str, holding_id: int, request: Request):
     if cuenta not in _known_account_ids():
