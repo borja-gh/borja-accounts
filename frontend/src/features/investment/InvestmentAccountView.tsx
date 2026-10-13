@@ -40,7 +40,12 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [createHoldingOpen, setCreateHoldingOpen] = useState(false);
   const [refreshingPrices, setRefreshingPrices] = useState(false);
-  const [priceBanner, setPriceBanner] = useState<{ updated: number; total: number; failedTickers: string[] } | null>(null);
+  const [priceBanner, setPriceBanner] = useState<{
+    updated: number;
+    total: number;
+    failedTickers: string[];
+    conversions: Array<{ ticker: string; fromCurrency: string; toCurrency: string; rate: number }>;
+  } | null>(null);
   const showToast = useToast();
   const { kpi, reload: reloadKpis } = useInvestmentKpis(account.id, period);
   const { data, reload: reloadData } = useAccountData(account.id);
@@ -87,7 +92,12 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
         showToast(result.error || 'Error al consultar precios', 'err');
         return;
       }
-      setPriceBanner({ updated: result.updated, total: result.total, failedTickers: result.failedTickers });
+      setPriceBanner({
+        updated: result.updated,
+        total: result.total,
+        failedTickers: result.failedTickers,
+        conversions: result.conversions ?? [],
+      });
       reloadKpis();
       reloadCarterasDetail();
     } catch {
@@ -145,6 +155,9 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
         {priceBanner && (
           <span className={`soft-alert compact ${priceBanner.failedTickers.length ? 'warn' : 'ok'}`}>
             {`${priceBanner.updated}/${priceBanner.total} posiciones actualizadas`}
+            {priceBanner.conversions.map((conversion) =>
+              ` · ${conversion.ticker} ${conversion.fromCurrency}→${conversion.toCurrency} ×${conversion.rate.toLocaleString('es-ES', { minimumFractionDigits: 6, maximumFractionDigits: 6 })}`,
+            )}
             {priceBanner.failedTickers.length > 0 && ` · fallo en ${priceBanner.failedTickers.join(', ')}`}
           </span>
         )}

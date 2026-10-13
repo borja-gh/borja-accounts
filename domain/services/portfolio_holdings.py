@@ -27,6 +27,7 @@ class HoldingView:
     id: int
     ticker: str
     company: str
+    shares: float
     avg_price_usd: float
     capital_usd: float
     close_price_usd: float | None
@@ -98,7 +99,7 @@ def compute_open_portfolios(holdings: list[PortfolioHolding]) -> list[OpenPortfo
                 pnl = _r2(h.shares * price - h.capital_usd)
                 pnl_pct = _r2(pnl / capital * 100) if capital > 0 else None
             holding_views.append(HoldingView(
-                id=h.id, ticker=h.ticker, company=h.company,
+                id=h.id, ticker=h.ticker, company=h.company, shares=h.shares,
                 avg_price_usd=round(h.price_usd, 4), capital_usd=capital,
                 close_price_usd=close_price, current_price_usd=current_price,
                 pnl_usd=pnl, pnl_pct=pnl_pct, note=h.note,

@@ -160,6 +160,7 @@ export interface PortfolioHoldingDetail {
   id: number;
   ticker: string;
   company: string;
+  shares: number;
   avgPrice: number;
   capital: number;
   closePrice: number | null;
@@ -266,6 +267,20 @@ export interface RefreshHoldingPricesResult {
   updated: number;
   total: number;
   failedTickers: string[];
+  conversions: Array<{ ticker: string; fromCurrency: string; toCurrency: string; rate: number }>;
+  error?: string;
+}
+
+export interface ClosePortfolioRequest {
+  portfolio: string;
+  fecha: string;
+  prices: Array<{ holdingId: number; closePrice: number }>;
+}
+
+export interface ClosePortfolioResult {
+  ok: boolean;
+  portfolio?: string;
+  closed?: number;
   error?: string;
 }
 

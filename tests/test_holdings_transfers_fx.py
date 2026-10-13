@@ -8,12 +8,15 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from application.use_cases.add_movement import AddMovementUseCase
+from application.use_cases.close_portfolio import ClosePortfolioUseCase
 from application.use_cases.create_account import CreateAccountUseCase
 from application.use_cases.create_portfolio_holding import CreatePortfolioHoldingUseCase
 from application.use_cases.delete_movement import DeleteMovementUseCase
 from application.use_cases.get_account_kpis import GetAccountKPIsUseCase
 from application.use_cases.get_fx_rate import GetFxRateUseCase
 from application.use_cases.get_investment_kpis import GetInvestmentKPIsUseCase
+from application.use_cases.get_portfolio_report import GetPortfolioReportUseCase
+from application.use_cases.refresh_holding_prices import RefreshHoldingPricesUseCase
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
 from domain.exceptions import FxRateUnavailableError, InsufficientCashError, InvalidAccountError
 from domain.services.ledger import LedgerService
@@ -89,7 +92,7 @@ def test_alta_holding_exige_caja_y_persiste_inversion(repository, ledger):
 
 def test_alta_holding_preserva_precision_del_precio_medio_y_comision(repository, ledger):
     account = CreateAccountUseCase(repository, ledger).execute(
-        {"name": "IBKR", "kind": "INVESTMENT", "currency": "USD", "initialBalance": 1000}
+        {"name": "IBKR", "kind": "INVESTMENT", "currency": "USD", "initialBalance": 1500}
     )
     result = CreatePortfolioHoldingUseCase(repository, ledger).execute(account.id, {
         "portfolio": "GOOGL-UBER", "ticker": "UBER", "shares": 8.7992,
@@ -115,6 +118,9 @@ def test_alta_holding_rechaza_cuenta_cash(repository, ledger):
 
 
 class _FakeFx:
+    def get_quotes(self, tickers):
+        return {}
+
     def get_prices(self, tickers):
         return {}
 
@@ -129,6 +135,69 @@ def test_consulta_fx_yfinance_via_puerto(repository):
     assert use_case.execute("eur", "usd")["rate"] == 1.0875
     with pytest.raises(FxRateUnavailableError):
         use_case.execute("USD", "EUR")
+
+
+def test_refresh_precios_convierte_divisa_nativa_a_divisa_de_cuenta(repository, ledger):
+    account = CreateAccountUseCase(repository, ledger).execute(
+        {"name": "IBKR", "kind": "INVESTMENT", "currency": "USD", "initialBalance": 1500}
+    )
+    holding_id = CreatePortfolioHoldingUseCase(repository, ledger).execute(account.id, {
+        "portfolio": "ANE", "ticker": "ANE.MC", "shares": 48, "price": 24.33, "fecha": "2026-10-13",
+    })["id"]
+
+    class MarketData:
+        def get_quotes(self, tickers):
+            return {"ANE.MC": (21.64, "EUR")}
+
+        def get_fx_rate(self, base, quote):
+            assert (base, quote) == ("EUR", "USD")
+            return 1.119445
+
+    result = RefreshHoldingPricesUseCase(repository, MarketData()).execute(account.id)
+
+    assert result["updated"] == 1
+    assert result["failedTickers"] == []
+    assert result["conversions"] == [{
+        "ticker": "ANE.MC", "fromCurrency": "EUR", "toCurrency": "USD", "rate": 1.119445,
+    }]
+    holding = repository.list_portfolio_holdings(account.id)[0]
+    assert holding.id == holding_id
+    assert holding.current_price_usd == 24.22
+
+
+def test_cerrar_cartera_guarda_todos_los_lotes_y_agrupa_su_historial(repository, ledger):
+    account = CreateAccountUseCase(repository, ledger).execute(
+        {"name": "IBKR", "kind": "INVESTMENT", "currency": "USD", "initialBalance": 5000}
+    )
+    create = CreatePortfolioHoldingUseCase(repository, ledger)
+    first = create.execute(account.id, {
+        "portfolio": "META", "ticker": "META", "shares": 0.868, "price": 661.04,
+        "capital": 573.78, "fecha": "2026-07-14",
+    })
+    second = create.execute(account.id, {
+        "portfolio": "META", "ticker": "META", "shares": 0.7117, "price": 539.03,
+        "capital": 383.63, "fecha": "2026-07-30",
+    })
+
+    result = ClosePortfolioUseCase(repository, ledger).execute(account.id, {
+        "portfolio": "META",
+        "fecha": "2026-10-13",
+        "prices": [
+            {"holdingId": first["id"], "closePrice": 755.00},
+            {"holdingId": second["id"], "closePrice": 755.08},
+        ],
+    })
+    report = GetPortfolioReportUseCase(repository).execute(
+        account.id, "all", None, datetime(2026, 10, 14, tzinfo=timezone.utc)
+    )
+
+    assert result == {"ok": True, "portfolio": "META", "closed": 2}
+    assert [holding.close_price_usd for holding in repository.list_portfolio_holdings(account.id)] == [755.0, 755.08]
+    assert report["closedCount"] == 1
+    assert report["closedPositions"][0]["Concepto"] == "META"
+    assert report["closedPositions"][0]["invertido"] == 957.41
+    assert report["closedPositions"][0]["devuelto"] == 1192.73
+    assert report["closedPositions"][0]["bal"] == 235.32
 
 
 def test_http_create_account_sigue_disponible(tmp_path, monkeypatch):
