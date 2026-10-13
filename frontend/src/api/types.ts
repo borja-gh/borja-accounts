@@ -284,6 +284,22 @@ export interface ClosePortfolioResult {
   error?: string;
 }
 
+export interface ClosePortfolioPositionRequest {
+  portfolio: string;
+  ticker: string;
+  closePrice: number;
+  fecha: string;
+}
+
+export interface ClosePortfolioPositionResult {
+  ok: boolean;
+  portfolio?: string;
+  ticker?: string;
+  closed?: number;
+  shares?: number;
+  error?: string;
+}
+
 export interface SaldoEvolucionReport {
   dates: string[];
   saldos: number[];

@@ -379,9 +379,12 @@ Cada cartera abierta con holdings es una fila expandible: ticker, empresa, preci
 - El **PnL de un ticker** usa el precio de cierre si ya se vendió; si no, el último `current_price_usd`.
 - El **PnL de la cartera** aparece cuando **todos** sus tickers tienen algún precio.
 - **Cerrar** un lote es una **venta**: pide el precio y la **fecha de venta**, guarda `closePrice` y registra `Inversión` (coste, si no existía) + `Inversión_r` (shares × precio) en el ledger. El saldo se mueve por el P&L neto; el lote sale de «En carteras»; el P&L entra en el KPI «P&L cerrado». El mismo endpoint edita `note` y `currentPrice` sin vender.
+- **Cerrar una posición sin cerrar la cartera** cierra todos los lotes abiertos del ticker elegido. Ese ticker pasa al histórico como `cartera · ticker`; los demás tickers permanecen abiertos en su cartera. Si se cierra la cartera entera, el histórico sigue agrupándose por cartera.
 - La **anotación** no entra en ningún cálculo.
 
-Una cartera legado (sin filas en `portfolio_holdings`, flujo `Inversión`/`Inversión_r` en `movements`) se muestra sin composición por ticker. El historial filtrado por fecha de cierre aplica a ese legado; las carteras con holdings se cierran holding a holding, no con el modal de cierre de apuestas.
+`POST /api/accounts/{cuenta}/portfolio-holdings/close-position` recibe `{ "portfolio": "Core", "ticker": "AAPL", "closePrice": 125.50, "fecha": "2026-10-13" }`. `closePrice` se aplica a todos los lotes abiertos de ese ticker en esa cartera; la respuesta informa cuántos lotes y acciones se cerraron.
+
+Una cartera legado (sin filas en `portfolio_holdings`, flujo `Inversión`/`Inversión_r` en `movements`) se muestra sin composición por ticker. El historial filtrado por fecha de cierre aplica a ese legado.
 
 Strip de KPIs de sección: capital invertido (abiertas) + historial cerrado.
 
@@ -444,6 +447,8 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | DELETE | `/api/assistant/saved/{id}` | Elimina una consulta guardada |
 | POST | `/api/accounts/{cuenta}/portfolio-holdings` | Alta de un lote (exige caja ≥ capital) |
 | PUT | `/api/accounts/{cuenta}/portfolio-holdings/{id}` | Edita `closePrice` / `note` / `currentPrice` (venta: `fecha` opcional) |
+| POST | `/api/accounts/{cuenta}/portfolio-holdings/close-position` | Cierra los lotes abiertos de un ticker, dejando abierta la cartera |
+| POST | `/api/accounts/{cuenta}/portfolio-holdings/close-portfolio` | Cierra todos los lotes abiertos de una cartera |
 | GET | `/api/accounts/{cuenta}/mensual-evolucion` | Ingresos/gastos por mes |
 | GET | `/api/accounts/{cuenta}/carteras-ranking` | Ranking de conceptos `Inversión` (media/total) |
 | GET | `/api/accounts/{cuenta}/gastos-ranking` | Ranking de conceptos `Gasto` (media/total) |

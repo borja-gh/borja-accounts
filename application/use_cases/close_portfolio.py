@@ -45,6 +45,50 @@ class ClosePortfolioUseCase:
             raise InvalidAmountError("Introduce la fecha de cierre")
         close_at = parse_fecha(data)
 
+        self._close_holdings(account_id, open_holdings, prices, close_at)
+        return {"ok": True, "portfolio": portfolio, "closed": len(open_holdings)}
+
+    def execute_position(self, account_id: str, data: dict) -> dict:
+        portfolio = data.get("portfolio")
+        ticker = data.get("ticker")
+        if not isinstance(portfolio, str) or not portfolio.strip():
+            raise InvalidAmountError("Introduce la cartera")
+        if not isinstance(ticker, str) or not ticker.strip():
+            raise InvalidAmountError("Introduce el ticker")
+
+        portfolio = portfolio.strip()
+        ticker = ticker.strip()
+        open_holdings = [
+            holding for holding in self.repository.list_portfolio_holdings(account_id)
+            if holding.portfolio == portfolio and holding.ticker == ticker
+            and holding.close_price_usd is None
+        ]
+        if not open_holdings:
+            raise PortfolioHoldingNotFoundError(
+                f"No hay posiciones abiertas de '{ticker}' en la cartera '{portfolio}'"
+            )
+
+        try:
+            close_price = float(data["closePrice"])
+        except (KeyError, TypeError, ValueError):
+            raise InvalidAmountError("Precio de cierre inválido")
+        if not math.isfinite(close_price) or close_price < 0:
+            raise InvalidAmountError("Precio de cierre inválido")
+        if not data.get("fecha"):
+            raise InvalidAmountError("Introduce la fecha de cierre")
+
+        close_at = parse_fecha(data)
+        prices = {holding.id: round(close_price, 2) for holding in open_holdings}
+        self._close_holdings(account_id, open_holdings, prices, close_at)
+        return {
+            "ok": True,
+            "portfolio": portfolio,
+            "ticker": ticker,
+            "closed": len(open_holdings),
+            "shares": round(sum(holding.shares for holding in open_holdings), 8),
+        }
+
+    def _close_holdings(self, account_id: str, open_holdings, prices: dict[int, float], close_at) -> None:
         movements = list(self.repository.load(account_id))
         for holding in open_holdings:
             concept = holding_sale_concept(holding)
@@ -80,4 +124,3 @@ class ClosePortfolioUseCase:
         movements.sort(key=lambda movement: movement.occurred_at)
         movements = self.ledger.recalculate_balances(movements)
         self.repository.save_portfolio_closure(account_id, prices, movements)
-        return {"ok": True, "portfolio": portfolio, "closed": len(open_holdings)}
