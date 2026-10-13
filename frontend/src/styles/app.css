@@ -1108,6 +1108,65 @@
     .open-pos-header { padding:7px 14px 5px; font-size:10px; color:var(--ink); text-transform:uppercase; letter-spacing:.08em; font-weight:600; background:rgba(0,0,0,.03); }
     .closed-pos-header { padding:7px 14px 5px; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600; }
 
+    .investment-portfolio-group {
+      overflow: hidden;
+      margin: 18px 0 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .investment-portfolio-open { border-top: 3px solid var(--accent); }
+    .investment-portfolio-history { border-top: 3px solid var(--ink); }
+    .investment-portfolio-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .investment-portfolio-heading h3 { margin: 2px 0 3px; font-size: 16px; letter-spacing: -.015em; }
+    .investment-portfolio-heading p { margin: 0; color: var(--muted); font-size: 12px; }
+    .investment-portfolio-eyebrow { color: var(--accent); font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    .investment-portfolio-history .investment-portfolio-eyebrow { color: var(--muted); }
+    .investment-portfolio-count {
+      display: grid;
+      flex: 0 0 34px;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 10px;
+      background: var(--surface2);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+    .investment-portfolio-history .investment-portfolio-count { background: var(--ink); color: var(--surface); }
+    .investment-portfolio-group > .portfolio-holding-header { background: var(--surface2); }
+    .investment-portfolio-history .table-scroll { padding: 0 14px 8px; }
+    .portfolio-close-area { padding: 10px 14px 14px; border-top: 1px solid var(--border); }
+    .portfolio-close-panel {
+      padding: 14px;
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+      border-radius: var(--radius-sm);
+      background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+    }
+    .portfolio-close-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+    .portfolio-close-heading > div { display: grid; gap: 3px; }
+    .portfolio-close-heading strong { font-size: 13px; }
+    .portfolio-close-heading span,
+    .portfolio-close-heading label span,
+    .portfolio-close-prices label span { color: var(--muted); font-size: 11px; }
+    .portfolio-close-heading label { display: grid; gap: 4px; min-width: 150px; }
+    .portfolio-close-heading input,
+    .portfolio-close-prices input { min-width: 0; width: 100%; box-sizing: border-box; }
+    .portfolio-close-prices { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .portfolio-close-prices label { display: grid; gap: 4px; min-width: min(150px, 100%); flex: 1 1 150px; }
+    .portfolio-close-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    .portfolio-close-trigger { border-color: var(--accent); color: var(--accent); }
+    .portfolio-close-trigger:hover { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+
     .portfolio-holding-header, .portfolio-holding-summary {
       display: grid;
       grid-template-columns: 1.6fr .9fr 1fr 1.3fr .9fr;
@@ -1224,6 +1283,7 @@
       vertical-align: middle;
     }
     .holdings-table col.col-ticker { width: 4.4rem; }
+    .holdings-table col.col-shares { width: 5.4rem; }
     .holdings-table col.col-company { width: 16%; }
     .holdings-table col.col-num { width: 6.2rem; }
     .holdings-table col.col-pnl { width: 5.8rem; }
@@ -1340,5 +1400,8 @@
       .filter-row { justify-content: flex-start; }
       .portfolio-holding-header,
       .portfolio-holding-summary { min-width: 520px; }
+      .investment-portfolio-heading { padding: 14px; }
+      .portfolio-close-heading { align-items: stretch; flex-direction: column; }
+      .portfolio-close-heading label { width: 100%; }
       .toast { right: 12px; left: 12px; max-width: none; }
     }

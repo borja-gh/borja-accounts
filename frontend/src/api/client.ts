@@ -31,6 +31,8 @@ import type {
   UpdatePortfolioHoldingResult,
   CreateHoldingRequest,
   CreateHoldingResult,
+  ClosePortfolioRequest,
+  ClosePortfolioResult,
   FxRateResult,
   BudgetPeriodType,
   CashBudgetsReport,
@@ -173,6 +175,19 @@ export async function updatePortfolioHolding(
 ): Promise<UpdatePortfolioHoldingResult> {
   const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings/${holdingId}`, {
     method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function closePortfolio(
+  cuenta: string,
+  body: ClosePortfolioRequest,
+): Promise<ClosePortfolioResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings/close-portfolio`, {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });

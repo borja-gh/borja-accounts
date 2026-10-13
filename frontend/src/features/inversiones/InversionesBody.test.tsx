@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PortfolioReport } from '../../api/types';
 import { ToastProvider } from '../../components/ToastContext';
@@ -96,7 +96,7 @@ describe('InversionesBody', () => {
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
   });
 
-  it('cerrar una holding pide confirmar el precio antes de guardar closePrice', async () => {
+  it('cerrar una cartera solicita todos sus precios y los confirma en una petición', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ ok: true, closePrice: 150, currentPrice: null, note: null }),
@@ -107,25 +107,27 @@ describe('InversionesBody', () => {
     const onSaved = vi.fn();
     const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved });
     fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
-
-    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('tbody tr'));
-    const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
-
-    fireEvent.click(within(aaplRow).getByText('Cerrar'));
-    const dateInput = aaplRow.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.click(screen.getByText('Cerrar cartera'));
+    const dateInput = container.querySelector('.portfolio-close-heading input[type="date"]') as HTMLInputElement;
     fireEvent.change(dateInput, { target: { value: '2026-06-15' } });
-    const numberInputs = aaplRow.querySelectorAll('input[type="number"]');
-    const closeInput = numberInputs[numberInputs.length - 1] as HTMLInputElement;
+    const closeInput = screen.getByLabelText('Precio de cierre AAPL');
     fireEvent.change(closeInput, { target: { value: '150' } });
-    fireEvent.click(within(aaplRow).getByText('OK'));
+    fireEvent.click(screen.getByText('Confirmar cierre'));
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/accounts/investment1/portfolio-holdings/1',
-      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ closePrice: 150, fecha: '2026-06-15' }) }),
+      '/api/accounts/investment1/portfolio-holdings/close-portfolio',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          portfolio: 'Cartera Prueba',
+          fecha: '2026-06-15',
+          prices: [{ holdingId: 1, closePrice: 150 }],
+        }),
+      }),
     );
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText('Venta registrada')).toBeInTheDocument();
+    expect(await screen.findByText('Cartera cerrada')).toBeInTheDocument();
   });
 
   it('el precio de mercado se muestra a 2 decimales, sin la basura IEEE de yfinance', () => {
@@ -144,7 +146,7 @@ describe('InversionesBody', () => {
     expect(priceInput.value).toBe('153.53');
     expect(aaplRow.textContent).toContain('358,47$');
     expect(aaplRow.textContent).toContain('31.33%');
-    expect(aaplRow.querySelectorAll('td')).toHaveLength(8);
+    expect(aaplRow.querySelectorAll('td')).toHaveLength(9);
   });
 
   it('muestra el precio medio con cuatro decimales', () => {

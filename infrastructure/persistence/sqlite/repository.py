@@ -18,6 +18,7 @@ from domain.entities import Account, CashBudget, Movement, PortfolioHolding
 from domain.exceptions import (
     AccountNotFoundError,
     CashBudgetNotFoundError,
+    PortfolioHoldingNotFoundError,
     SavedAssistantQueryNotFoundError,
 )
 from domain.value_objects import AccountKind
@@ -69,27 +70,51 @@ class SQLiteMovementRepository:
         with self._connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             try:
-                conn.execute("DELETE FROM movements WHERE account_id = ?", (account_id,))
-                conn.executemany(
-                    "INSERT INTO movements (id, account_id, occurred_at, type, concept, amount, balance, "
-                    "exchange_rate, transfer_link_id, recurrente) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    [
-                        (
-                            str(m.id), m.account_id, m.occurred_at.strftime(_DATE_FORMAT),
-                            m.type, m.concept, m.amount, m.balance, m.exchange_rate,
-                            str(m.transfer_link_id) if m.transfer_link_id else None,
-                            int(m.recurrente),
-                        )
-                        for m in movements
-                    ],
-                )
+                self._replace_movements(conn, account_id, movements)
                 backfill_transfer_links(conn)
             except Exception:
                 conn.execute("ROLLBACK")
                 raise
             else:
                 conn.execute("COMMIT")
+
+    def save_portfolio_closure(self, account_id: str, holding_prices: dict[int, float],
+                               movements: list[Movement]) -> None:
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                for holding_id, close_price in holding_prices.items():
+                    updated = conn.execute(
+                        "UPDATE portfolio_holdings SET close_price_usd = ? "
+                        "WHERE id = ? AND account_id = ? AND close_price_usd IS NULL",
+                        (close_price, holding_id, account_id),
+                    )
+                    if updated.rowcount != 1:
+                        raise PortfolioHoldingNotFoundError(f"La posición {holding_id} ya no está abierta")
+                self._replace_movements(conn, account_id, movements)
+                backfill_transfer_links(conn)
+            except Exception:
+                conn.execute("ROLLBACK")
+                raise
+            else:
+                conn.execute("COMMIT")
+
+    @staticmethod
+    def _replace_movements(conn, account_id: str, movements: list[Movement]) -> None:
+        conn.execute("DELETE FROM movements WHERE account_id = ?", (account_id,))
+        conn.executemany(
+            "INSERT INTO movements (id, account_id, occurred_at, type, concept, amount, balance, "
+            "exchange_rate, transfer_link_id, recurrente) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                (
+                    str(m.id), m.account_id, m.occurred_at.strftime(_DATE_FORMAT),
+                    m.type, m.concept, m.amount, m.balance, m.exchange_rate,
+                    str(m.transfer_link_id) if m.transfer_link_id else None,
+                    int(m.recurrente),
+                )
+                for m in movements
+            ],
+        )
 
     def list_accounts(self) -> list[Account]:
         with self._connect() as conn:

@@ -15,19 +15,24 @@ import yfinance as yf
 
 
 class YFinanceProvider:
-    def get_prices(self, tickers: list[str]) -> dict[str, float]:
+    def get_quotes(self, tickers: list[str]) -> dict[str, tuple[float, str]]:
         if not tickers:
             return {}
         batch = yf.Tickers(" ".join(tickers))
-        prices: dict[str, float] = {}
+        quotes: dict[str, tuple[float, str]] = {}
         for ticker in tickers:
             try:
-                price = batch.tickers[ticker].fast_info["lastPrice"]
+                info = batch.tickers[ticker].fast_info
+                price = info["lastPrice"]
+                currency = info["currency"]
             except Exception:
                 continue
-            if price is not None:
-                prices[ticker] = round(float(price), 2)
-        return prices
+            if price is not None and currency:
+                quotes[ticker] = (float(price), str(currency).upper())
+        return quotes
+
+    def get_prices(self, tickers: list[str]) -> dict[str, float]:
+        return {ticker: round(price, 2) for ticker, (price, _) in self.get_quotes(tickers).items()}
 
     def get_fx_rate(self, base: str, quote: str) -> float | None:
         base = base.upper()

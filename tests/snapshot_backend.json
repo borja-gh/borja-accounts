@@ -1461,7 +1461,7 @@
         "roiH": 33.33
       },
       {
-        "Concepto": "Cartera Prueba · MSFT #2",
+        "Concepto": "Cartera Prueba · cierre parcial",
         "bal": -100.0,
         "balH": 0.0,
         "devuelto": 900.0,
@@ -1499,6 +1499,7 @@
             "note": null,
             "pnl": null,
             "pnlPct": null,
+            "shares": 10.0,
             "ticker": "AAPL"
           },
           {
@@ -1511,6 +1512,7 @@
             "note": "Vendida con pérdida",
             "pnl": -100.0,
             "pnlPct": -10.0,
+            "shares": 5.0,
             "ticker": "MSFT"
           }
         ],
