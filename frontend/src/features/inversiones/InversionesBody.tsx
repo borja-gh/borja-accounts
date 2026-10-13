@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { updatePortfolioHolding } from '../../api/client';
+import { closePortfolio, updatePortfolioHolding } from '../../api/client';
 import type { AccountId, ClosedInvestPosition, OpenInvestPosition, PortfolioHoldingDetail, PortfolioReport } from '../../api/types';
 import { DataTable, type Column } from '../../components/DataTable';
 import { SectionKpis, type SectionKpiItem } from '../../components/SectionKpis';
@@ -34,9 +34,6 @@ function HoldingRow({ account, holding, currency, onSaved }: {
 }) {
   const [currentPrice, setCurrentPrice] = useState(priceInputValue(holding.currentPrice));
   const [note, setNote] = useState(holding.note ?? '');
-  const [closing, setClosing] = useState(false);
-  const [closePriceInput, setClosePriceInput] = useState('');
-  const [closeDate, setCloseDate] = useState(localISODate());
   const showToast = useToast();
   const isClosed = holding.closePrice !== null;
 
@@ -74,38 +71,12 @@ function HoldingRow({ account, holding, currency, onSaved }: {
     onSaved();
   }
 
-  function startClose() {
-    setClosePriceInput(priceInputValue(holding.currentPrice));
-    setCloseDate(localISODate());
-    setClosing(true);
-  }
-
-  async function confirmClose() {
-    const trimmed = closePriceInput.trim();
-    const value = trimmed === '' ? null : Number(trimmed);
-    if (value === null || Number.isNaN(value) || value < 0) {
-      showToast('Precio de cierre inválido', 'err');
-      return;
-    }
-    if (!closeDate) {
-      showToast('Introduce la fecha de venta', 'err');
-      return;
-    }
-    const result = await updatePortfolioHolding(account, holding.id, { closePrice: value, fecha: closeDate });
-    if (!result.ok) {
-      showToast(result.error || 'Error al guardar', 'err');
-      return;
-    }
-    setClosing(false);
-    showToast('Venta registrada', 'ok');
-    onSaved();
-  }
-
   return (
     <tr>
       <td>
         <b>{holding.ticker}</b>
       </td>
+      <td className="r">{holding.shares}</td>
       <td className="holdings-company" title={holding.company}>{holding.company}</td>
       <td className="r">{money(holding.avgPrice, currency, 4)}</td>
       <td className="r">{money(holding.capital, currency)}</td>
@@ -138,38 +109,8 @@ function HoldingRow({ account, holding, currency, onSaved }: {
             <span className="badge b-transferencia">Cerrado</span>
             <span>{holding.closePrice == null ? '—' : money(holding.closePrice, currency)}</span>
           </span>
-        ) : closing ? (
-          <div className="close-row close-row-stack">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              autoFocus
-              value={closePriceInput}
-              onChange={(e) => setClosePriceInput(e.target.value)}
-              className="input-compact"
-              aria-label="Precio de cierre"
-            />
-            <input
-              type="date"
-              className="input-compact date-input"
-              value={closeDate}
-              onChange={(e) => setCloseDate(e.target.value)}
-              aria-label="Fecha de venta"
-            />
-            <div className="close-row">
-              <button className="btn btn-ghost btn-tiny" onClick={() => setClosing(false)}>
-                No
-              </button>
-              <button className="btn btn-ghost btn-tiny" onClick={confirmClose}>
-                OK
-              </button>
-            </div>
-          </div>
         ) : (
-          <button className="btn btn-ghost btn-tiny" onClick={startClose}>
-            Cerrar
-          </button>
+          <span className="badge b-inversion">Abierta</span>
         )}
       </td>
       <td>
@@ -192,6 +133,43 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
   currency: string;
   onSaved: () => void;
 }) {
+  const openHoldings = p.holdings.filter((holding) => holding.closePrice === null);
+  const [closing, setClosing] = useState(false);
+  const [closeDate, setCloseDate] = useState(localISODate());
+  const [closePrices, setClosePrices] = useState<Record<number, string>>({});
+  const showToast = useToast();
+
+  useEffect(() => {
+    setClosePrices(Object.fromEntries(p.holdings.map((holding) => [
+      holding.id,
+      holding.currentPrice == null ? '' : priceInputValue(holding.currentPrice),
+    ])));
+  }, [p.holdings]);
+
+  async function confirmClosePortfolio() {
+    if (!closeDate) {
+      showToast('Introduce la fecha de cierre', 'err');
+      return;
+    }
+    const rawPrices = openHoldings.map((holding) => ({
+      holdingId: holding.id,
+      raw: closePrices[holding.id]?.trim() ?? '',
+    }));
+    if (rawPrices.some(({ raw }) => raw === '' || !Number.isFinite(Number(raw)) || Number(raw) < 0)) {
+      showToast('Completa un precio válido para cada posición abierta', 'err');
+      return;
+    }
+    const prices = rawPrices.map(({ holdingId, raw }) => ({ holdingId, closePrice: Number(raw) }));
+    const result = await closePortfolio(account, { portfolio: p.concepto, fecha: closeDate, prices });
+    if (!result.ok) {
+      showToast(result.error || 'Error al cerrar la cartera', 'err');
+      return;
+    }
+    setClosing(false);
+    showToast('Cartera cerrada', 'ok');
+    onSaved();
+  }
+
   return (
     <details className="portfolio-holding-details">
       <summary className="portfolio-holding-summary">
@@ -210,6 +188,7 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
           <table className="holdings-table">
             <colgroup>
               <col className="col-ticker" />
+              <col className="col-shares" />
               <col className="col-company" />
               <col className="col-num" />
               <col className="col-num" />
@@ -221,12 +200,13 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
             <thead>
               <tr>
                 <th>Ticker</th>
+                <th className="r">Acciones</th>
                 <th>Empresa</th>
                 <th className="r">Medio</th>
                 <th className="r">Capital</th>
                 <th className="r">Actual</th>
                 <th className="r">PnL</th>
-                <th className="r"></th>
+                <th className="r">Estado</th>
                 <th>Nota</th>
               </tr>
             </thead>
@@ -236,6 +216,50 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {openHoldings.length > 0 && (
+        <div className="portfolio-close-area">
+          {closing ? (
+            <div className="portfolio-close-panel">
+              <div className="portfolio-close-heading">
+                <div>
+                  <strong>Cerrar {p.concepto}</strong>
+                  <span>{`Se registrará el cierre de ${openHoldings.length} posición${openHoldings.length === 1 ? '' : 'es'} en una operación.`}</span>
+                </div>
+                <label>
+                  <span>Fecha</span>
+                  <input type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} />
+                </label>
+              </div>
+              <div className="portfolio-close-prices">
+                {openHoldings.map((holding) => (
+                  <label key={holding.id}>
+                    <span>{`${holding.ticker} #${holding.id} · ${holding.shares} acciones · cierre (${currency})`}</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={closePrices[holding.id] ?? ''}
+                      onChange={(e) => setClosePrices((previous) => ({ ...previous, [holding.id]: e.target.value }))}
+                      aria-label={`Precio de cierre ${holding.ticker}`}
+                    />
+                  </label>
+                ))}
+              </div>
+              <div className="portfolio-close-actions">
+                <button className="btn btn-ghost btn-compact" onClick={() => setClosing(false)}>Cancelar</button>
+                <button className="btn btn-primary btn-compact" onClick={confirmClosePortfolio}>Confirmar cierre</button>
+              </div>
+            </div>
+          ) : (
+            <button className="btn btn-ghost btn-compact portfolio-close-trigger" onClick={() => {
+              setCloseDate(localISODate());
+              setClosing(true);
+            }}>
+              Cerrar cartera
+            </button>
+          )}
         </div>
       )}
     </details>
@@ -286,8 +310,15 @@ export function InversionesBody({ account, report, currency, onSaved }: Props) {
       <SectionKpis items={sectionKpis(report, currency)} />
 
       {report.openCount > 0 && (
-        <div className="pos-block">
-          <div className="open-pos-header">{`● Carteras abiertas · ${report.openCount}`}</div>
+        <section className="investment-portfolio-group investment-portfolio-open">
+          <header className="investment-portfolio-heading">
+            <div>
+              <span className="investment-portfolio-eyebrow">En curso</span>
+              <h3>Carteras abiertas</h3>
+              <p>Composición, valoración y cierre de cada cartera.</p>
+            </div>
+            <span className="investment-portfolio-count">{report.openCount}</span>
+          </header>
           <div className="portfolio-holding-header">
             <span>Cartera</span>
             <span>Inicio</span>
@@ -298,14 +329,21 @@ export function InversionesBody({ account, report, currency, onSaved }: Props) {
           {report.openPositions.map((p) => (
             <OpenPortfolioRow key={p.concepto} account={account} p={p} currency={currency} onSaved={onSaved} />
           ))}
-        </div>
+        </section>
       )}
 
       {report.closedPositions.length > 0 && (
-        <div>
-          <div className="closed-pos-header">{`Historial de carteras · ${report.closedPositions.length}`}</div>
+        <section className="investment-portfolio-group investment-portfolio-history">
+          <header className="investment-portfolio-heading">
+            <div>
+              <span className="investment-portfolio-eyebrow">Archivo</span>
+              <h3>Historial de carteras</h3>
+              <p>Resultados agrupados por cartera, no por lote o ticker.</p>
+            </div>
+            <span className="investment-portfolio-count">{report.closedPositions.length}</span>
+          </header>
           <DataTable columns={buildClosedColumns(currency)} rows={report.closedPositions} rowKey={(r, i) => `${r.Concepto}-${i}`} />
-        </div>
+        </section>
       )}
     </>
   );

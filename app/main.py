@@ -26,6 +26,7 @@ from application.use_cases.ask_assistant import AskAssistantUseCase
 from application.ports.query_executor import QueryExecutionError
 from application.use_cases.create_account import CreateAccountUseCase
 from application.use_cases.create_portfolio_holding import CreatePortfolioHoldingUseCase
+from application.use_cases.close_portfolio import ClosePortfolioUseCase
 from application.use_cases.get_fx_rate import GetFxRateUseCase
 from application.use_cases.delete_account import DeleteAccountUseCase
 from application.use_cases.delete_movement import DeleteMovementUseCase
@@ -560,6 +561,19 @@ async def create_portfolio_holding(cuenta: str, request: Request):
     if err:
         return err
     result, err = _run(CreatePortfolioHoldingUseCase(repository, ledger).execute, cuenta, data)
+    if err:
+        return err
+    return result
+
+
+@app.post("/api/accounts/{cuenta}/portfolio-holdings/close-portfolio")
+async def close_portfolio(cuenta: str, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    result, err = _run(ClosePortfolioUseCase(repository, ledger).execute, cuenta, data)
     if err:
         return err
     return result

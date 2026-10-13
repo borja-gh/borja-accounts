@@ -2,6 +2,10 @@ from typing import Protocol
 
 
 class MarketDataProvider(Protocol):
+    def get_quotes(self, tickers: list[str]) -> dict[str, tuple[float, str]]:
+        """Último precio y divisa nativa de mercado por ticker."""
+        ...
+
     def get_prices(self, tickers: list[str]) -> dict[str, float]:
         """Último precio de mercado por ticker. Los tickers que fallen (no
         encontrados, error de red, rate-limit) simplemente no aparecen en
