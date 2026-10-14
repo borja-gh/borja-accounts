@@ -9,7 +9,8 @@ TZ = ZoneInfo("Europe/Madrid")
 REFERENCE = datetime(2026, 10, 15, 12, tzinfo=TZ)
 
 
-def movement(concept: str, date: str, amount: float, recurrente: bool = False) -> Movement:
+def movement(concept: str, date: str, amount: float, recurrente: bool = False,
+             subconcept: str | None = None) -> Movement:
     return Movement(
         account_id="cash",
         occurred_at=datetime.fromisoformat(date).replace(tzinfo=TZ),
@@ -17,6 +18,7 @@ def movement(concept: str, date: str, amount: float, recurrente: bool = False) -
         concept=concept,
         amount=amount,
         recurrente=recurrente,
+        subconcept=subconcept,
     )
 
 
@@ -81,3 +83,32 @@ def test_total_mode_is_unchanged():
     assert [(entry["concepto"], entry["valor"]) for entry in result["entries"]] == [
         ("A", 70.0),
     ]
+
+
+def test_breakdown_groups_subconcepts_without_changing_parent_recurrence_or_average():
+    movements = [
+        movement("Concierto", "2026-04-12", 70, recurrente=True, subconcept="Artista A"),
+        movement("Concierto", "2026-05-12", 20, recurrente=True, subconcept="Artista B"),
+        movement("Concierto", "2026-05-13", 10, recurrente=True),
+    ]
+
+    result = compute_gastos_ranking(movements, "all", None, REFERENCE, "media")
+    entry = result["entries"][0]
+
+    assert entry["valor"] == 14.29
+    assert entry["recurrente"] is True
+    assert entry["mesesEvaluados"] == 7
+    assert entry["desglose"] == [
+        {"subconcepto": None, "valor": 1.43},
+        {"subconcepto": "Artista A", "valor": 10.0},
+        {"subconcepto": "Artista B", "valor": 2.86},
+    ]
+
+
+def test_breakdown_is_omitted_when_only_one_subconcept_value_exists():
+    result = compute_gastos_ranking(
+        [movement("Café", "2026-10-12", 8, subconcept="Desayuno")],
+        "all", None, REFERENCE, "total",
+    )
+
+    assert result["entries"][0]["desglose"] == []

@@ -46,7 +46,7 @@ class SQLiteMovementRepository:
             conn.commit()
             rows = conn.execute(
                 "SELECT id, account_id, occurred_at, type, concept, amount, balance, "
-                "exchange_rate, transfer_link_id, recurrente, rowid "
+                "exchange_rate, transfer_link_id, recurrente, subconcept, rowid "
                 "FROM movements WHERE account_id = ? ORDER BY occurred_at, rowid",
                 (account_id,),
             ).fetchall()
@@ -62,6 +62,7 @@ class SQLiteMovementRepository:
                 exchange_rate=r[7],
                 transfer_link_id=uuid.UUID(r[8]) if r[8] else None,
                 recurrente=bool(r[9]),
+                subconcept=r[10],
             )
             for r in rows
         ]
@@ -104,13 +105,14 @@ class SQLiteMovementRepository:
         conn.execute("DELETE FROM movements WHERE account_id = ?", (account_id,))
         conn.executemany(
             "INSERT INTO movements (id, account_id, occurred_at, type, concept, amount, balance, "
-            "exchange_rate, transfer_link_id, recurrente) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "exchange_rate, transfer_link_id, recurrente, subconcept) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     str(m.id), m.account_id, m.occurred_at.strftime(_DATE_FORMAT),
                     m.type, m.concept, m.amount, m.balance, m.exchange_rate,
                     str(m.transfer_link_id) if m.transfer_link_id else None,
                     int(m.recurrente),
+                    m.subconcept,
                 )
                 for m in movements
             ],

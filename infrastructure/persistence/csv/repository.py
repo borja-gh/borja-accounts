@@ -59,6 +59,8 @@ class CSVMovementRepository:
                 concept=row["Concepto"],
                 amount=float(row["Total"]),
                 balance=float(row["Saldo"]),
+                subconcept=(str(row["Subconcepto"]).strip() or None)
+                if "Subconcepto" in row and pd.notna(row["Subconcepto"]) else None,
             )
             for row in df.to_dict(orient="records")
         ]
@@ -68,6 +70,7 @@ class CSVMovementRepository:
             "Fecha": m.occurred_at,
             "Tipo": m.type,
             "Concepto": m.concept,
+            "Subconcepto": m.subconcept,
             "Total": m.amount,
             "Saldo": m.balance,
         } for m in movements])

@@ -8,6 +8,20 @@ import type { Movement } from '../../api/types';
 
 const noop = () => {};
 
+function addSubconceptColumn(values: string[]): string[] {
+  const result = ['Fecha', 'Tipo', 'Concepto', 'Subconcepto', ...values.slice(3, 5)];
+  let index = 5;
+  while (index < values.length) {
+    result.push(values[index], values[index + 1], values[index + 2], '—');
+    index += 3;
+    while (index < values.length && !/^\d{2}\/\d{2}\/\d{4}$/.test(values[index])) {
+      result.push(values[index]);
+      index += 1;
+    }
+  }
+  return result;
+}
+
 // El vanilla (index.html) ordenaba los empates de misma Fecha por orden de
 // inserción ascendente (sort estable sobre una clave que no incluye hora).
 // searchedMovs() ahora rompe esos empates por _idx descendente -- el
@@ -32,7 +46,7 @@ describe('MovimientosTable', () => {
       <MovimientosTable rows={rows} currency="EUR" onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
     );
     const expected = swapAdjacentRows(expectedValues.cash1_movimientos_default, 'Supermercado', 7);
-    expect(extractVisibleText(container)).toEqual(expected);
+    expect(extractVisibleText(container)).toEqual(addSubconceptColumn(expected));
   });
 
   it('coincide con el golden master para investment1', () => {
@@ -62,6 +76,6 @@ describe('MovimientosTable', () => {
       '10/01/2026', 'Inversión', 'Cartera Tech', '300.00$', '1000.00$', 'Duplicar', 'Editar',
       '01/01/2026', 'Saldo Inicial', 'Apertura de cuenta', '+1000.00$', '1000.00$',
     ];
-    expect(extractVisibleText(container)).toEqual(expected);
+    expect(extractVisibleText(container)).toEqual(addSubconceptColumn(expected));
   });
 });

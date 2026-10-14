@@ -25,6 +25,7 @@ class Movement:
     solo es transferencia entrante si lleva este id; un concepto
     «Desde el trabajo» sin enlace cuenta como ingreso real."""
     recurrente: bool = False
+    subconcept: str | None = None
 
 
 @dataclass

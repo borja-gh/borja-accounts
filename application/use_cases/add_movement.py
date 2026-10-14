@@ -10,7 +10,7 @@ class AddMovementUseCase:
         self.repository = repository
         self.ledger = ledger
 
-    def execute(self, account_id: str, data: dict) -> float:
+    def execute(self, account_id: str, data: dict) -> dict:
         tipo = data.get("tipo", "")
         concepto = (data.get("concepto") or "").strip()
         total = parse_total(data)
@@ -21,6 +21,7 @@ class AddMovementUseCase:
         self.ledger.validate_type_and_concept(account.kind, movements, tipo, concepto)
 
         matching_expenses = [m for m in movements if tipo == "Gasto" and m.type == tipo and m.concept == concepto]
+        concepto_nuevo = tipo == "Gasto" and not matching_expenses
         if matching_expenses:
             recurrente = matching_expenses[0].recurrente
         elif tipo == "Gasto":
@@ -29,12 +30,13 @@ class AddMovementUseCase:
                 raise InvalidExpenseRecurrenceError("El valor recurrente debe ser booleano")
         else:
             recurrente = False
+        subconcept = ((data.get("subconcepto") or "").strip() or None) if tipo == "Gasto" else None
         nuevo = Movement(
             account_id=account_id, occurred_at=fecha, type=tipo, concept=concepto,
-            amount=total, recurrente=recurrente,
+            amount=total, recurrente=recurrente, subconcept=subconcept,
         )
         movements = sorted(movements + [nuevo], key=lambda m: m.occurred_at)
         movements = self.ledger.recalculate_balances(movements)
         self.repository.save(account_id, movements)
 
-        return movements[-1].balance
+        return {"saldo": movements[-1].balance, "conceptoNuevo": concepto_nuevo}

@@ -22,6 +22,7 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
   const row = idx != null ? data.find((r) => r._idx === idx) : undefined;
   const [tipo, setTipo] = useState('');
   const [concepto, setConcepto] = useState('');
+  const [subconcepto, setSubconcepto] = useState('');
   const [total, setTotal] = useState('');
   const [fecha, setFecha] = useState('');
   const showToast = useToast();
@@ -30,6 +31,7 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
     if (row) {
       setTipo(row.Tipo);
       setConcepto(row.Concepto);
+      setSubconcepto(row.Subconcepto ?? '');
       setTotal(Number(row.Total).toFixed(2));
       setFecha(row.Fecha.slice(0, 10));
     }
@@ -63,7 +65,10 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
       return;
     }
     try {
-      const body = await editMovement(account, { idx: idx as number, tipo, concepto: trimmedConcepto, total: totalNum, fecha });
+      const body = await editMovement(account, {
+        idx: idx as number, tipo, concepto: trimmedConcepto, total: totalNum, fecha,
+        subconcepto: tipo === 'Gasto' ? subconcepto.trim() || null : null,
+      });
       if (!body.ok) {
         showToast(body.error || 'Error al editar', 'err');
         return;
@@ -84,6 +89,12 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
           <label>Fecha</label>
           <input type="date" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </div>
+        {tipo === 'Gasto' && (
+          <div className="fg">
+            <label>Subconcepto (opcional)</label>
+            <input value={subconcepto} onChange={(e) => setSubconcepto(e.target.value)} placeholder="Detalle" />
+          </div>
+        )}
         <div className="fg">
           <label>Tipo</label>
           <select value={tipo} onChange={(e) => setTipo(e.target.value)}>

@@ -46,6 +46,10 @@ class EditMovementUseCase:
         objetivo.concept = concepto
         objetivo.amount = total
         objetivo.recurrente = recurrente if tipo == "Gasto" else False
+        if "subconcepto" in data:
+            objetivo.subconcept = ((data.get("subconcepto") or "").strip() or None) if tipo == "Gasto" else None
+        elif tipo != "Gasto":
+            objetivo.subconcept = None
         if data.get("fecha"):
             objetivo.occurred_at = parse_fecha(data)
         movements = sorted(movements, key=lambda m: m.occurred_at)

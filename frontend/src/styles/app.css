@@ -615,6 +615,10 @@
     .gastos-hist-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
     .gastos-hist-head .chart-label { margin-bottom: 0; }
     .gastos-hist-head > span { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .gastos-subconcept-head { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .gastos-subconcept-list { list-style: none; display: grid; gap: 5px; margin: 8px 0 0; padding: 0; }
+    .gastos-subconcept-list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 8px; border-radius: var(--radius-sm); background: var(--surface2); font-size: 12px; }
+    .gastos-subconcept-list strong { white-space: nowrap; }
     .gastos-hist-empty { margin: 8px 0; color: var(--muted); font-size: 12px; }
     .expense-recurrence-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 2px 0; border: 0; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
     .expense-recurrence-toggle-copy { display: grid; gap: 3px; }
@@ -739,11 +743,6 @@
     .fg { display: flex; flex-direction: column; gap: 5px; }
     .fg.full { grid-column: 1 / -1; }
     .new-expense-recurrence { gap: 7px; }
-    .new-expense-recurrence-title { color: var(--muted); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
-    .new-expense-recurrence-options { display: inline-flex; width: fit-content; padding: 3px; gap: 3px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); }
-    .new-expense-recurrence-options label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: calc(var(--radius-sm) - 2px); color: var(--muted); cursor: pointer; font-size: 12px; letter-spacing: normal; text-transform: none; }
-    .new-expense-recurrence-options label.is-selected { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px #00000012; }
-    .new-expense-recurrence-options input { accent-color: var(--accent); margin: 0; }
 
     label {
       font-size: 11px;
