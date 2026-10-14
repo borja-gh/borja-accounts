@@ -7,29 +7,7 @@ from application.ports.assistant import AssistantToolCall, AssistantTurn
 from domain.exceptions import AssistantQueryError
 
 
-SCHEMA_CONTEXT = """
-Tablas disponibles:
-
-accounts(id TEXT PRIMARY KEY, name TEXT, kind TEXT, currency TEXT, theme TEXT,
-         visible_panels TEXT)
-movements(id TEXT PRIMARY KEY, account_id TEXT, occurred_at TEXT, type TEXT,
-          concept TEXT, amount REAL, balance REAL, exchange_rate REAL,
-          transfer_link_id TEXT)
-portfolio_holdings(id INTEGER PRIMARY KEY, account_id TEXT, portfolio TEXT,
-          ticker TEXT, company TEXT, shares REAL, price_usd REAL,
-          capital_usd REAL, fee_usd REAL, contributed_at TEXT,
-          source_file TEXT, close_price_usd REAL, note TEXT,
-          current_price_usd REAL)
-cash_budgets(id INTEGER PRIMARY KEY, account_id TEXT, period_type TEXT,
-          year INTEGER, month INTEGER, amount REAL)
-
-Tipos habituales de movements.type: Saldo Inicial, Gasto, Ingreso, Nómina,
-Devolución, Apuestas, Apuestas_r, Transferencia, Inversión, Inversión_r.
-Las fechas de movements.occurred_at están almacenadas como texto ISO local.
-""".strip()
-
-
-SYSTEM_PROMPT = f"""
+SYSTEM_PROMPT = """
 Eres el asistente financiero de Borja Accounts. Resuelve la petición del usuario
 usando las herramientas disponibles. Puedes solicitar una consulta por turno,
 examinar su resultado y decidir si necesitas otra. No inventes resultados.
@@ -54,8 +32,12 @@ No sugieras DDL, PRAGMA, ATTACH, múltiples sentencias ni subconsultas de escrit
 Cuando tengas evidencia suficiente, responde en español con Markdown claro.
 Separa hechos de estimaciones y explica brevemente el método cuando sea útil.
 Si no se puede resolver, explica qué dato falta o qué límite lo impide.
+""".strip()
 
-{SCHEMA_CONTEXT}
+SCHEMA_GUIDANCE = """
+Los tipos habituales de movements.type incluyen Saldo Inicial, Gasto, Ingreso,
+Nómina, Devolución, Apuestas, Apuestas_r, Transferencia, Inversión e Inversión_r.
+Las fechas de movements.occurred_at están almacenadas como texto ISO local.
 """.strip()
 
 
@@ -98,7 +80,7 @@ class VertexGeminiModel:
             model=os.environ.get("BORJA_ACCOUNTS_LLM_MODEL", "gemini-3.8-flash"),
         )
 
-    def start(self, prompt: str, mode: str, scope: dict):
+    def start(self, prompt: str, mode: str, scope: dict, schema_context: str):
         tools = [_tool_schema("read_sql", "Ejecuta una consulta SQL de solo lectura dentro del scope fijado.")]
         if mode == "write":
             tools.append(_tool_schema("write_sql", "Valida y propone una escritura SQL dentro del scope; requiere confirmación humana."))
@@ -107,11 +89,16 @@ class VertexGeminiModel:
             f"<SCOPE>\n{json.dumps(scope, ensure_ascii=False)}\n</SCOPE>\n\n"
             f"<MODE>\n{mode}\n</MODE>"
         )
-        return VertexGeminiConversation(self, context, tools)
+        return VertexGeminiConversation(self, context, tools, schema_context)
 
-    def _generate_content(self, contents, tools=None):
+    def _generate_content(self, contents, tools=None, schema_context=""):
         try:
-            config = {"system_instruction": SYSTEM_PROMPT}
+            system_instruction = "\n\n".join((
+                SYSTEM_PROMPT,
+                "Esquema actual de SQLite (tablas y columnas permitidas):\n" + schema_context,
+                SCHEMA_GUIDANCE,
+            ))
+            config = {"system_instruction": system_instruction}
             if tools:
                 config["tools"] = [types.Tool(function_declarations=tools)]
             return self.client.models.generate_content(
@@ -124,13 +111,18 @@ class VertexGeminiModel:
 
 
 class VertexGeminiConversation:
-    def __init__(self, model: VertexGeminiModel, context: str, tools: list):
+    def __init__(self, model: VertexGeminiModel, context: str, tools: list, schema_context: str):
         self.model = model
         self.tools = tools
+        self.schema_context = schema_context
         self.contents = [types.Content(role="user", parts=[types.Part.from_text(text=context)])]
 
     def next_turn(self, allow_tools: bool = True) -> AssistantTurn:
-        response = self.model._generate_content(self.contents, self.tools if allow_tools else None)
+        response = self.model._generate_content(
+            self.contents,
+            self.tools if allow_tools else None,
+            self.schema_context,
+        )
         candidate = response.candidates[0] if response.candidates else None
         content = candidate.content if candidate else None
         if content is not None:

@@ -30,7 +30,9 @@ def test_vertex_function_call_feeds_tool_result_back_and_can_finish():
     model = VertexGeminiModel.__new__(VertexGeminiModel)
     model.model = "test-model"
     model.client = SimpleNamespace(models=FakeModels(responses))
-    conversation = model.start("¿Cuántas cuentas?", "read", {"accountIds": ["cash"]})
+    conversation = model.start(
+        "¿Cuántas cuentas?", "read", {"accountIds": ["cash"]}, "movements(id TEXT, subconcept TEXT)"
+    )
 
     first_turn = conversation.next_turn()
     conversation.submit_tool_results([{
@@ -46,6 +48,7 @@ def test_vertex_function_call_feeds_tool_result_back_and_can_finish():
     assert not final_turn.tool_calls
     calls = model.client.models.requests
     assert len(calls) == 2
+    assert "movements(id TEXT, subconcept TEXT)" in calls[0]["config"].system_instruction
     assert len(calls[0]["config"].tools[0].function_declarations) == 1
     assert calls[1]["contents"][-2].role == "tool"
     function_response = calls[1]["contents"][-2].parts[0].function_response
@@ -61,7 +64,9 @@ def test_write_mode_declares_read_and_write_tools():
     model = VertexGeminiModel.__new__(VertexGeminiModel)
     model.model = "test-model"
     model.client = SimpleNamespace(models=FakeModels([response]))
-    conversation = model.start("Cambia el tema", "write", {"accountIds": ["cash"]})
+    conversation = model.start(
+        "Cambia el tema", "write", {"accountIds": ["cash"]}, "accounts(id TEXT, theme TEXT)"
+    )
 
     turn = conversation.next_turn()
 
