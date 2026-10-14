@@ -69,6 +69,16 @@ export function candidatesForTipo(data: Movement[], tipo: string, excludeIdx: nu
   return conceptStats(data.filter((r) => r.Tipo === tipo));
 }
 
+export function candidatesForSubconcept(data: Movement[], concepto: string, excludeIdx: number | null = null): ConceptStat[] {
+  if (!concepto.trim()) return [];
+  return conceptStats(data.filter((movement) =>
+    movement.Tipo === 'Gasto'
+    && movement.Concepto === concepto.trim()
+    && movement.Subconcepto?.trim()
+    && (excludeIdx == null || movement._idx !== excludeIdx),
+  ).map((movement) => ({ ...movement, Concepto: movement.Subconcepto! })));
+}
+
 export function suggestNextApuesta(data: Movement[]): ConceptStat | null {
   const re = /^(.*?)(\d+)\s*$/;
   const bets = data.filter((r) => r.Tipo === 'Apuestas').map((r) => r.Concepto);

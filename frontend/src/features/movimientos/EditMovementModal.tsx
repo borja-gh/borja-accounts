@@ -5,7 +5,7 @@ import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
 import { isValidMovementAmount } from '../../lib/math';
 import { money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
-import { candidatesForTipo, rankConcepts } from './autocomplete';
+import { candidatesForSubconcept, candidatesForTipo, rankConcepts } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
 
 interface Props {
@@ -92,7 +92,12 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
         {tipo === 'Gasto' && (
           <div className="fg">
             <label>Subconcepto (opcional)</label>
-            <input value={subconcepto} onChange={(e) => setSubconcepto(e.target.value)} placeholder="Detalle" />
+            <ConceptAutocomplete
+              value={subconcepto}
+              onChange={setSubconcepto}
+              suggestions={(q) => rankConcepts(candidatesForSubconcept(data, concepto, idx), q)}
+              placeholder="Busca un subconcepto…"
+            />
           </div>
         )}
         <div className="fg">
