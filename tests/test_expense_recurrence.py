@@ -11,6 +11,7 @@ sys.path.insert(0, REPO_ROOT)
 
 from application.use_cases.add_movement import AddMovementUseCase
 from application.use_cases.create_account import CreateAccountUseCase
+from application.use_cases.edit_movement import EditMovementUseCase
 from application.use_cases.manage_expense_recurrence import ManageExpenseRecurrenceUseCase
 from domain.exceptions import InvalidExpenseRecurrenceError
 from domain.services.ledger import LedgerService
@@ -30,8 +31,16 @@ def test_new_expense_concepts_default_to_recurring_and_existing_concepts_inherit
     ledger = LedgerService()
     account = CreateAccountUseCase(repository, ledger).execute({"name": "Cash", "kind": "CASH"})
     add = AddMovementUseCase(repository, ledger)
-    add.execute(account.id, {"fecha": "2026-01-10", "tipo": "Gasto", "concepto": "Luz", "total": 40})
+    result = add.execute(account.id, {
+        "fecha": "2026-01-10", "tipo": "Gasto", "concepto": "Luz", "total": 40,
+        "subconcepto": "Casa",
+    })
+    assert result["conceptoNuevo"] is True
+    assert repository.load(account.id)[0].subconcept == "Casa"
     add.execute(account.id, {"fecha": "2026-02-10", "tipo": "Gasto", "concepto": "Luz", "total": 45})
+    assert add.execute(account.id, {
+        "fecha": "2026-02-12", "tipo": "Gasto", "concepto": "Luz", "total": 5,
+    })["conceptoNuevo"] is False
     add.execute(account.id, {
         "fecha": "2026-02-11", "tipo": "Gasto", "concepto": "Dentista", "total": 80,
         "recurrente": False,
@@ -48,7 +57,7 @@ def test_new_expense_concepts_default_to_recurring_and_existing_concepts_inherit
     add.execute(account.id, {"fecha": "2026-03-10", "tipo": "Gasto", "concepto": "Luz", "total": 50})
 
     movements = repository.load(account.id)
-    assert [movement.recurrente for movement in movements if movement.concept == "Luz"] == [False, False, False]
+    assert [movement.recurrente for movement in movements if movement.concept == "Luz"] == [False, False, False, False]
     assert all(not movement.recurrente for movement in movements if movement.concept == "Dentista")
     assert manager.list(account.id) == [
         {"concepto": "Dentista", "recurrente": False},
@@ -79,6 +88,21 @@ def test_recurrence_requires_existing_expense_and_boolean_value(repository):
         manager.update(account.id, {"concepto": "", "recurrente": True})
     with pytest.raises(InvalidExpenseRecurrenceError):
         manager.update(account.id, {"concepto": "Luz", "recurrente": 1})
+
+
+def test_edit_movement_persists_optional_subconcept(repository):
+    ledger = LedgerService()
+    account = CreateAccountUseCase(repository, ledger).execute({"name": "Cash", "kind": "CASH"})
+    AddMovementUseCase(repository, ledger).execute(account.id, {
+        "fecha": "2026-01-10", "tipo": "Gasto", "concepto": "Concierto", "total": 40,
+    })
+
+    EditMovementUseCase(repository, ledger).execute(account.id, {
+        "idx": 0, "fecha": "2026-01-10", "tipo": "Gasto", "concepto": "Concierto",
+        "subconcepto": "Artista B", "total": 40,
+    })
+
+    assert repository.load(account.id)[0].subconcept == "Artista B"
 
 
 def test_legacy_movements_default_to_non_recurring():
@@ -122,3 +146,17 @@ def test_http_recurring_concepts_list_and_update(repository, monkeypatch):
     assert response.status_code == 200
     assert response.json() == {"ok": True, "concepto": "Luz", "recurrente": False}
     assert client.get(path).json() == {"conceptos": [{"concepto": "Luz", "recurrente": False}]}
+
+    response = client.post(f"/api/movimiento/{account.id}", json={
+        "fecha": "2026-02-10", "tipo": "Gasto", "concepto": "Concierto", "subconcepto": "Artista A", "total": 40,
+    })
+    assert response.status_code == 200
+    assert response.json()["conceptoNuevo"] is True
+    movement = next(item for item in client.get(f"/api/data/{account.id}").json() if item["Concepto"] == "Concierto")
+    assert movement["Subconcepto"] == "Artista A"
+
+    response = client.post(f"/api/movimiento/{account.id}", json={
+        "fecha": "2026-02-11", "tipo": "Gasto", "concepto": "Concierto", "subconcepto": None, "total": 20,
+    })
+    assert response.status_code == 200
+    assert response.json()["conceptoNuevo"] is False

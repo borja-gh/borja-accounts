@@ -39,7 +39,6 @@ export function GastosChart({ ranking }: { ranking: GastosRankingSection }) {
     },
     showlegend: false,
   };
-
   function toggleConcept(concept: string) {
     setOpenConcepts((current) => {
       const next = new Set(current);
@@ -139,6 +138,22 @@ export function GastosChart({ ranking }: { ranking: GastosRankingSection }) {
                   <span>{entry.mesesConGasto} meses con gasto</span>
                 </div>
                 {renderHistogram(entry)}
+                {entry.desglose.length > 1 && (
+                  <>
+                    <div className="gastos-hist-head gastos-subconcept-head">
+                      <div className="chart-label">Desglose por subconcepto</div>
+                      <span>{showMonthlyMetrics ? 'Media por mes' : 'Total del rango'}</span>
+                    </div>
+                    <ul className="gastos-subconcept-list">
+                      {entry.desglose.map((group) => (
+                        <li key={group.subconcepto ?? '__otros__'}>
+                          <span>{group.subconcepto ?? 'Otros'}</span>
+                          <strong>{group.valor.toFixed(2)}{symbol}{showMonthlyMetrics ? '/mes' : ''}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </div>
             )}
           </div>

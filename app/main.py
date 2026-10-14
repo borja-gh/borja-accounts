@@ -368,6 +368,7 @@ def get_data(cuenta: str):
             "Fecha": m.occurred_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(m.occurred_at, "strftime") else str(m.occurred_at),
             "Tipo": m.type,
             "Concepto": m.concept,
+            "Subconcepto": m.subconcept,
             "Total": m.amount,
             "Saldo": m.balance,
             "_idx": idx_by_id.get(m.id),
@@ -632,10 +633,10 @@ async def add_movimiento(cuenta: str, request: Request):
     data, err = await _read_json(request)
     if err:
         return err
-    saldo, err = _run(AddMovementUseCase(repository, ledger).execute, cuenta, data)
+    result, err = _run(AddMovementUseCase(repository, ledger).execute, cuenta, data)
     if err:
         return err
-    return {"ok": True, "saldo": saldo}
+    return {"ok": True, **result}
 
 
 @app.put("/api/movimiento/{cuenta}")

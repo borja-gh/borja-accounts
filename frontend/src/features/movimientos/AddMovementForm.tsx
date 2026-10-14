@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { addMovement } from '../../api/client';
+import { addMovement, updateExpenseRecurrence } from '../../api/client';
 import type { AccountId, AccountKind, Movement } from '../../api/types';
 import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
 import { isValidMovementAmount } from '../../lib/math';
@@ -31,29 +31,21 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
   const [fecha, setFecha] = useState(localISODate());
   const [tipo, setTipo] = useState(tipos[0]);
   const [concepto, setConcepto] = useState('');
-  const [recurrente, setRecurrente] = useState(true);
+  const [subconcepto, setSubconcepto] = useState('');
   const [total, setTotal] = useState('');
+  const [newExpenseConcept, setNewExpenseConcept] = useState<string | null>(null);
+  const [savingRecurrence, setSavingRecurrence] = useState(false);
   const conceptoRef = useRef<HTMLInputElement>(null);
-  const wasNewExpenseConcept = useRef(false);
   const showToast = useToast();
   const trimmedConcepto = concepto.trim();
-  const existingExpenseConcept = tipo === 'Gasto' && data.some(
-    (movement) => movement.Tipo === 'Gasto' && movement.Concepto === trimmedConcepto,
-  );
-  const isNewExpenseConcept = tipo === 'Gasto' && !!trimmedConcepto && !existingExpenseConcept;
-
-  useEffect(() => {
-    if (isNewExpenseConcept && !wasNewExpenseConcept.current) setRecurrente(true);
-    wasNewExpenseConcept.current = isNewExpenseConcept;
-  }, [isNewExpenseConcept]);
 
   useEffect(() => {
     setFecha(localISODate());
     setTipo(TIPOS_POR_KIND[kind][0]);
     setConcepto('');
-    setRecurrente(true);
+    setSubconcepto('');
     setTotal('');
-    wasNewExpenseConcept.current = false;
+    setNewExpenseConcept(null);
   }, [account, kind]);
 
   useImperativeHandle(
@@ -66,6 +58,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
         }
         setTipo(row.Tipo);
         setConcepto(row.Concepto);
+        setSubconcepto(row.Subconcepto ?? '');
         setTotal(Number(row.Total).toFixed(2));
         setFecha(localISODate());
         conceptoRef.current?.focus();
@@ -92,7 +85,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
     try {
       const body = await addMovement(account, {
         fecha, tipo, concepto: trimmedConcepto, total: totalNum,
-        ...(isNewExpenseConcept ? { recurrente } : {}),
+        ...(tipo === 'Gasto' ? { subconcepto: subconcepto.trim() || null } : {}),
       });
       if (!body.ok) {
         showToast(body.error || 'Error al guardar', 'err');
@@ -102,11 +95,31 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
       setFecha(localISODate());
       setTipo(tipos[0]);
       setConcepto('');
-      setRecurrente(true);
+      setSubconcepto('');
       setTotal('');
+      if (body.conceptoNuevo) setNewExpenseConcept(trimmedConcepto);
       onSaved();
     } catch {
       showToast('Error de conexión', 'err');
+    }
+  }
+
+  async function chooseRecurrence(recurrente: boolean) {
+    if (!newExpenseConcept) return;
+    setSavingRecurrence(true);
+    try {
+      const result = await updateExpenseRecurrence(account, newExpenseConcept, recurrente);
+      if (!result.ok) {
+        showToast(result.error || 'No se pudo actualizar la recurrencia', 'err');
+        return;
+      }
+      showToast(recurrente ? 'Concepto marcado como recurrente' : 'Concepto marcado como puntual', 'ok');
+      setNewExpenseConcept(null);
+      onSaved();
+    } catch {
+      showToast('Error de conexión', 'err');
+    } finally {
+      setSavingRecurrence(false);
     }
   }
 
@@ -146,29 +159,10 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
           onEnterWithMeta={handleSubmit}
         />
       </div>
-      {isNewExpenseConcept && (
-        <div className="fg full new-expense-recurrence">
-          <span className="new-expense-recurrence-title">¿Es recurrente?</span>
-          <div className="new-expense-recurrence-options" role="radiogroup" aria-label="¿Es recurrente?">
-            <label className={recurrente ? 'is-selected' : ''}>
-              <input
-                type="radio"
-                name="new-expense-recurrence"
-                checked={recurrente}
-                onChange={() => setRecurrente(true)}
-              />
-              <span>Sí, recurrente</span>
-            </label>
-            <label className={!recurrente ? 'is-selected' : ''}>
-              <input
-                type="radio"
-                name="new-expense-recurrence"
-                checked={!recurrente}
-                onChange={() => setRecurrente(false)}
-              />
-              <span>No, puntual</span>
-            </label>
-          </div>
+      {tipo === 'Gasto' && (
+        <div className="fg full">
+          <label>Subconcepto <span className="muted">(opcional)</span></label>
+          <input value={subconcepto} onChange={(e) => setSubconcepto(e.target.value)} placeholder="Detalle, por ejemplo el artista" />
         </div>
       )}
       <div className="fg full">
@@ -180,6 +174,22 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
           Guardar
         </button>
       </div>
+      {newExpenseConcept && (
+        <div className="overlay on" role="presentation">
+          <section className="modal new-expense-recurrence" role="dialog" aria-modal="true" aria-labelledby="new-expense-recurrence-title">
+            <h3 id="new-expense-recurrence-title">¿Es recurrente “{newExpenseConcept}”?</h3>
+            <p>El concepto se ha guardado como recurrente por defecto. Puedes clasificarlo como puntual.</p>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" type="button" disabled={savingRecurrence} onClick={() => chooseRecurrence(false)}>
+                No, puntual
+              </button>
+              <button className="btn btn-primary" type="button" disabled={savingRecurrence} onClick={() => chooseRecurrence(true)}>
+                Sí, recurrente
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 });

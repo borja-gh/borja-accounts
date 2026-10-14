@@ -90,6 +90,7 @@ export interface Movement {
   Fecha: string;
   Tipo: string;
   Concepto: string;
+  Subconcepto: string | null;
   Total: number;
   Saldo: number;
   _idx: number | null;
@@ -100,6 +101,7 @@ export interface AddMovementRequest {
   tipo: string;
   concepto: string;
   total: number;
+  subconcepto?: string | null;
   recurrente?: boolean;
 }
 
@@ -109,11 +111,13 @@ export interface EditMovementRequest {
   concepto: string;
   total: number;
   fecha: string;
+  subconcepto?: string | null;
 }
 
 export interface MutationResult {
   ok: boolean;
   saldo: number;
+  conceptoNuevo?: boolean;
   error?: string;
 }
 
@@ -331,6 +335,7 @@ export interface GastosRankingEntry extends RankingEntry {
   mesesEvaluados: number;
   desviacion: number;
   mensual: number[];
+  desglose: Array<{ subconcepto: string | null; valor: number }>;
 }
 
 export interface ExpenseRecurrenceConcept {

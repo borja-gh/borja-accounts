@@ -37,8 +37,8 @@ def test_apuestas_r_acepta_cero(repository, ledger):
     )
     add = AddMovementUseCase(repository, ledger)
     add.execute(account.id, {"tipo": "Apuestas", "concepto": "B365 - 1", "total": 50, "fecha": "2026-06-01"})
-    saldo = add.execute(account.id, {"tipo": "Apuestas_r", "concepto": "B365 - 1", "total": 0, "fecha": "2026-06-02"})
-    assert saldo == 50
+    result = add.execute(account.id, {"tipo": "Apuestas_r", "concepto": "B365 - 1", "total": 0, "fecha": "2026-06-02"})
+    assert result == {"saldo": 50, "conceptoNuevo": False}
     with pytest.raises(InvalidAmountError):
         add.execute(account.id, {"tipo": "Gasto", "concepto": "Nada", "total": 0, "fecha": "2026-06-03"})
 
