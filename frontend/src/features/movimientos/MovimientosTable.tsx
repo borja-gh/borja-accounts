@@ -29,6 +29,7 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
           <th>Fecha</th>
           <th>Tipo</th>
           <th>Concepto</th>
+          <th>Subconcepto</th>
           <th className="r">Importe</th>
           <th className="r">Saldo</th>
           <th></th>
@@ -54,6 +55,7 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
                   {r.Concepto}
                 </span>
               </td>
+              <td>{r.Subconcepto ?? '—'}</td>
               <td className={`r nowrap ${isNeutral ? '' : isNeg ? 'num-neg' : 'num-pos'}`}>{`${isNeutral ? '' : isNeg ? '-' : '+'}${r.Total.toFixed(2)}${symbol}`}</td>
               <td className="r nowrap saldo-cell">{`${r.Saldo.toFixed(2)}${symbol}`}</td>
               <td className="r">

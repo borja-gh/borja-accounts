@@ -292,7 +292,9 @@ Barras de ingresos y gastos por mes, con línea de balance neto. Respeta el Rang
 
 #### Gráfico: Gastos por concepto
 
-**Ranking** — barras horizontales con los 20 conceptos `Gasto` mayores. La sección **Recurrencia de gastos**, debajo del ranking, permite clasificar cada concepto de la cuenta como recurrente o puntual; el cambio afecta a todos sus gastos y los nuevos movimientos heredan esa marca. Un concepto nuevo es recurrente por defecto; el formulario permite marcarlo puntual al crearlo. En modo **Media/mes**, los recurrentes dividen el gasto del período por los meses desde su primera aparición hasta el fin del rango. Los puntuales dividen por todos los meses del rango; en `Todo`, desde el primer movimiento registrado en la cuenta hasta el mes actual. Los gastos existentes reciben `recurrente = false` al migrar la base de datos y se pueden clasificar desde esa sección. También hay modo **Total**. No hay donut ni chips «Top del mes».
+**Ranking** — barras horizontales con los 20 conceptos `Gasto` mayores. Cada concepto conserva su identidad propia; el subconcepto es un detalle opcional del movimiento, no una categoría padre común. La sección **Recurrencia de gastos**, debajo del ranking, permite clasificar cada concepto de la cuenta como recurrente o puntual; el cambio afecta a todos sus gastos y los nuevos movimientos heredan esa marca. Un concepto nuevo se guarda como recurrente y, tras guardarlo, un diálogo permite marcarlo puntual. En modo **Media/mes**, los recurrentes dividen el gasto del período por los meses desde su primera aparición hasta el fin del rango. Los puntuales dividen por todos los meses del rango; en `Todo`, desde el primer movimiento registrado en la cuenta hasta el mes actual. Los gastos existentes reciben `recurrente = false` al migrar la base de datos y se pueden clasificar desde esa sección. También hay modo **Total**.
+
+El ranking y sus métricas (media, desviación, recurrencia e histograma mensual) se mantienen agrupados por concepto padre. **Ver detalle** conserva ese histograma y presenta también los importes por subconcepto en el rango activo; las filas del desglose no tienen histograma ni desviación propia. Un subconcepto nulo se etiqueta **Otros**; si solo hay un valor de subconcepto para el concepto en el rango, se omite el desglose. En movimientos, el subconcepto se puede añadir y editar para gastos y se expone en su propia columna.
 
 #### Análisis de apuestas
 
@@ -313,7 +315,7 @@ KPIs de resumen (lifetime, no afectados por el rango) y dos tablas: posiciones a
 
 #### Tabla de movimientos y buscador
 
-Por defecto **los últimos 20 movimientos**. Cada fila (salvo `Saldo Inicial` y las filas sintéticas de holdings, que no tienen `_idx`) tiene **Duplicar** (rellena el formulario con fecha de hoy) y **Editar** (modal: fecha, tipo, concepto y total).
+Por defecto **los últimos 20 movimientos**. Cada fila (salvo `Saldo Inicial` y las filas sintéticas de holdings, que no tienen `_idx`) tiene **Duplicar** (rellena el formulario con fecha de hoy) y **Editar** (modal: fecha, tipo, concepto, subconcepto y total). La columna Subconcepto muestra el detalle opcional guardado en el movimiento.
 
 Encima hay un **buscador** (tipo / concepto / fecha) contra toda la cuenta. Con búsqueda activa se muestran hasta 500 resultados; **Limpiar** vuelve a los últimos 20.
 
@@ -321,7 +323,7 @@ Clic en un concepto de la tabla filtra por ese concepto. **Repetir último** rel
 
 #### Formulario: Añadir movimiento
 
-A la derecha de la tabla. Autocompletado de concepto por frecuencia (prefijo, case-insensitive).
+A la derecha de la tabla. Autocompletado de concepto por frecuencia (prefijo, case-insensitive). En los gastos hay un campo opcional de subconcepto. Si se registra un concepto padre nuevo, el backend lo detecta en la operación de alta; tras guardar, el formulario abre un diálogo para clasificarlo como recurrente o puntual.
 
 **Validaciones del servidor:**
 
@@ -458,8 +460,8 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | GET | `/api/accounts/{cuenta}/carteras` | Holdings abiertas (por ticker) + legado + historial |
 | POST | `/api/accounts/{cuenta}/portfolio-holdings/refresh-prices` | Refresca `current_price_usd` de holdings abiertas (yfinance) |
 | GET | `/api/accounts/{cuenta}/apuestas` | Abiertas + historial cerrado |
-| POST | `/api/movimiento/{cuenta}` | Añade un movimiento y recalcula el saldo |
-| PUT | `/api/movimiento/{cuenta}` | Edita tipo / concepto / total / fecha |
+| POST | `/api/movimiento/{cuenta}` | Añade un movimiento, devuelve el saldo y señala si es el primer gasto del concepto (`conceptoNuevo`) |
+| PUT | `/api/movimiento/{cuenta}` | Edita tipo / concepto / subconcepto / total / fecha |
 | DELETE | `/api/movimiento/{cuenta}` | Borra el último movimiento; si es una pata de transferencia, borra la otra |
 | POST | `/api/transferencia` | Transferencia entre cuentas (`exchangeRate` si las divisas difieren) |
 

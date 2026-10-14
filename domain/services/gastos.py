@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from domain.entities import Movement
 from domain.services.calendar import month_key
 from domain.services.concept_ranking import monthly_concept_details, rank_by_concept
+from domain.services.period_filter import filter_by_field
 
 TZ = ZoneInfo("Europe/Madrid")
 
@@ -63,9 +64,26 @@ def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int
     months, details = monthly_concept_details(
         movements, "Gasto", concepts, range_type, year, reference,
     ) if concepts else ([], {})
+    filtered = filter_by_field(movements, _fecha_str, range_type, year, reference.astimezone(TZ))
+    subgroup_totals: dict[str, dict[str | None, float]] = {concept: {} for concept in concepts}
+    for movement in filtered:
+        if movement.type == "Gasto" and movement.concept in subgroup_totals:
+            groups = subgroup_totals[movement.concept]
+            groups[movement.subconcept] = groups.get(movement.subconcept, 0.0) + movement.amount
+
+    breakdowns = {}
+    for concept, groups in subgroup_totals.items():
+        if len(groups) <= 1:
+            breakdowns[concept] = []
+            continue
+        divisor = details[concept]["mesesEvaluados"] if mode == "media" else 1
+        breakdowns[concept] = [
+            {"subconcepto": subconcept, "valor": _r2(total / divisor)}
+            for subconcept, total in sorted(groups.items(), key=lambda item: (item[0] or "").casefold())
+        ]
     return {
         "entries": [
-            {"concepto": concept, "valor": value, **details[concept]}
+            {"concepto": concept, "valor": value, **details[concept], "desglose": breakdowns[concept]}
             for concept, value in entries
         ],
         "meses": months,
