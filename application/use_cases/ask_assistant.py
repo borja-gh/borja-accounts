@@ -24,7 +24,11 @@ class AskAssistantUseCase:
         except QueryExecutionError as exc:
             raise AssistantQueryError(str(exc)) from exc
 
-        conversation = self.model.start(prompt.strip(), mode, scope)
+        try:
+            schema_context = self.query_executor.get_schema_context()
+        except QueryExecutionError as exc:
+            raise AssistantQueryError(str(exc)) from exc
+        conversation = self.model.start(prompt.strip(), mode, scope, schema_context)
         queries = []
         tool_call_count = 0
 
