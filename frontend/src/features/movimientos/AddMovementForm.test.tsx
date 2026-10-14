@@ -50,7 +50,7 @@ describe('AddMovementForm', () => {
     );
 
     fireEvent.change(screen.getByPlaceholderText('Empieza a escribir…'), { target: { value: 'Luz' } });
-    fireEvent.change(screen.getByPlaceholderText('Detalle, por ejemplo el artista'), { target: { value: 'Artista A' } });
+    fireEvent.change(screen.getByPlaceholderText('Busca un subconcepto…'), { target: { value: 'Artista A' } });
     fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '30' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 

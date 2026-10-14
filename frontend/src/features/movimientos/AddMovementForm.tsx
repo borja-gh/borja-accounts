@@ -5,7 +5,7 @@ import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
 import { isValidMovementAmount } from '../../lib/math';
 import { localISODate, money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
-import { candidatesForTipo, rankConcepts, suggestNextApuesta } from './autocomplete';
+import { candidatesForSubconcept, candidatesForTipo, rankConcepts, suggestNextApuesta } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
 
 export interface AddMovementFormHandle {
@@ -140,7 +140,10 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
       </div>
       <div className="fg">
         <label>Tipo</label>
-        <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+        <select value={tipo} onChange={(e) => {
+          setTipo(e.target.value);
+          if (e.target.value !== 'Gasto') setSubconcepto('');
+        }}>
           {tipos.map((t) => (
             <option key={t} value={t}>
               {displayTipo(t)}
@@ -153,7 +156,10 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
         <ConceptAutocomplete
           ref={conceptoRef}
           value={concepto}
-          onChange={setConcepto}
+          onChange={(value) => {
+            if (value.trim() !== trimmedConcepto) setSubconcepto('');
+            setConcepto(value);
+          }}
           suggestions={conceptSuggestions}
           placeholder="Empieza a escribir…"
           onEnterWithMeta={handleSubmit}
@@ -162,7 +168,12 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
       {tipo === 'Gasto' && (
         <div className="fg full">
           <label>Subconcepto <span className="muted">(opcional)</span></label>
-          <input value={subconcepto} onChange={(e) => setSubconcepto(e.target.value)} placeholder="Detalle, por ejemplo el artista" />
+          <ConceptAutocomplete
+            value={subconcepto}
+            onChange={setSubconcepto}
+            suggestions={(query) => rankConcepts(candidatesForSubconcept(data, trimmedConcepto), query)}
+            placeholder="Busca un subconcepto…"
+          />
         </div>
       )}
       <div className="fg full">
