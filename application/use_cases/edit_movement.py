@@ -21,6 +21,7 @@ class EditMovementUseCase:
 
         tipo = data.get("tipo", "")
         concepto = (data.get("concepto") or "").strip()
+        subconcept = (data.get("subconcepto") or "").strip() or None
         total = parse_total(data)
 
         movements = self.repository.load(account_id)
@@ -33,7 +34,9 @@ class EditMovementUseCase:
         tipo_original = objetivo.type
 
         account = self.repository.get_account(account_id)
-        self.ledger.validate_type_and_concept(account.kind, movements, tipo, concepto, exclude_id=objetivo.id)
+        self.ledger.validate_type_and_concept(
+            account.kind, movements, tipo, concepto, subconcept, exclude_id=objetivo.id,
+        )
 
         recurrente = objetivo.recurrente if tipo == "Gasto" and concepto == objetivo.concept and objetivo.type == "Gasto" else next(
             (
@@ -48,7 +51,7 @@ class EditMovementUseCase:
         objetivo.amount = total
         objetivo.recurrente = recurrente if tipo == "Gasto" else False
         if "subconcepto" in data:
-            objetivo.subconcept = (data.get("subconcepto") or "").strip() or None
+            objetivo.subconcept = subconcept
         elif tipo != tipo_original:
             objetivo.subconcept = None
         if data.get("fecha"):
