@@ -4,7 +4,7 @@ import type { AccountId, ClosedInvestPosition, OpenInvestPosition, PortfolioHold
 import { DataTable, type Column } from '../../components/DataTable';
 import { SectionKpis, type SectionKpiItem } from '../../components/SectionKpis';
 import { useToast } from '../../components/ToastContext';
-import { fd, money, priceInputValue, localISODate } from '../../lib/format';
+import { fd, money, priceInputValue, localISODateTime } from '../../lib/format';
 
 function pnlClass(v: number | null): string {
   if (v === null) return '';
@@ -171,8 +171,8 @@ function HoldingRow({
                   <span>{closePositionMessage}</span>
                 </div>
                 <label>
-                  <span>Fecha de venta</span>
-                  <input type="date" value={closeDate} onChange={(e) => onCloseDateChange(e.target.value)} />
+                  <span>Fecha y hora de venta</span>
+                  <input type="datetime-local" value={closeDate} onChange={(e) => onCloseDateChange(e.target.value)} />
                 </label>
               </div>
               <div className="portfolio-close-prices">
@@ -208,7 +208,7 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
 }) {
   const openHoldings = p.holdings.filter((holding) => holding.closePrice === null);
   const [closing, setClosing] = useState(false);
-  const [closeDate, setCloseDate] = useState(localISODate());
+  const [closeDate, setCloseDate] = useState(localISODateTime());
   const [closePrices, setClosePrices] = useState<Record<number, string>>({});
   const [closingTicker, setClosingTicker] = useState<string | null>(null);
   const [positionClosePrice, setPositionClosePrice] = useState('');
@@ -283,7 +283,7 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
       return;
     }
     const firstLot = openHoldings.find((holding) => holding.ticker === ticker);
-    setCloseDate(localISODate());
+    setCloseDate(localISODateTime());
     setPositionClosePrice(firstLot?.currentPrice == null ? '' : priceInputValue(firstLot.currentPrice));
     setClosingTicker(ticker);
     setClosing(false);
@@ -369,8 +369,8 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
                   <span>{`Se registrará el cierre de ${openHoldings.length} posición${openHoldings.length === 1 ? '' : 'es'} en una operación.`}</span>
                 </div>
                 <label>
-                  <span>Fecha</span>
-                  <input type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} />
+                  <span>Fecha y hora</span>
+                  <input type="datetime-local" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} />
                 </label>
               </div>
               <div className="portfolio-close-prices">
@@ -395,7 +395,7 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
             </div>
           ) : (
             <button className="btn btn-ghost btn-compact portfolio-close-trigger" onClick={() => {
-              setCloseDate(localISODate());
+              setCloseDate(localISODateTime());
               setClosingTicker(null);
               setClosing(true);
             }}>

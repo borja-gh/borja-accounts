@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Movement } from '../../api/types';
-import { candidatesForSubconcept } from './autocomplete';
+import { candidatesForSubconcept, subconceptCandidatesForSearch } from './autocomplete';
 
 const rows: Movement[] = [
   { Fecha: '2026-01-01', Tipo: 'Gasto', Concepto: 'Concierto', Subconcepto: 'Artista A', Total: 10, Saldo: 90, _idx: 0 },
@@ -13,12 +13,20 @@ const rows: Movement[] = [
 
 describe('candidatesForSubconcept', () => {
   it('sugiere subconceptos usados solo dentro del concepto padre seleccionado', () => {
-    expect(candidatesForSubconcept(rows, 'Concierto').map(({ concepto, count }) => [concepto, count]))
+    expect(candidatesForSubconcept(rows, 'Concierto', null, 'Gasto').map(({ concepto, count }) => [concepto, count]))
       .toEqual([['Artista A', 2], ['Artista B', 1]]);
   });
 
   it('excluye el movimiento editado para no sugerir su propio subconcepto', () => {
-    expect(candidatesForSubconcept(rows, 'Concierto', 0).map(({ concepto, count }) => [concepto, count]))
+    expect(candidatesForSubconcept(rows, 'Concierto', 0, 'Gasto').map(({ concepto, count }) => [concepto, count]))
       .toEqual([['Artista A', 1], ['Artista B', 1]]);
+  });
+
+  it('sugiere subconceptos de todos los tipos y puede limitar por tipo', () => {
+    expect(subconceptCandidatesForSearch(rows, '', 'Concierto').map(({ concepto }) => concepto))
+      .toEqual(['Artista A', 'Artista B', 'No gasto']);
+    expect(subconceptCandidatesForSearch(rows, 'Ingreso', 'Concierto').map(({ concepto }) => concepto))
+      .toEqual(['No gasto']);
+    expect(subconceptCandidatesForSearch(rows, '', 'Otro concepto')).toEqual([]);
   });
 });

@@ -52,16 +52,17 @@ class TransferBetweenAccountsUseCase:
         # Prepara ambas listas completas antes de escribir ninguna — es la
         # única propiedad de atomicidad que tiene el adapter CSV.
         link_id = uuid.uuid4()
+        subconcept = (data.get("subconcepto") or "").strip() or None
         movs_o = self.repository.load(origen)
         nuevo_o = Movement(account_id=origen, occurred_at=fecha, type="Transferencia",
                             concept=f"A {destino.upper()}", amount=total, exchange_rate=exchange_rate,
-                            transfer_link_id=link_id)
+                            transfer_link_id=link_id, subconcept=subconcept)
         movs_o = self.ledger.recalculate_balances(sorted(movs_o + [nuevo_o], key=lambda m: m.occurred_at))
 
         movs_d = self.repository.load(destino)
         nuevo_d = Movement(account_id=destino, occurred_at=fecha, type="Ingreso",
                             concept=f"Desde {origen.upper()}", amount=total_destino, exchange_rate=exchange_rate,
-                            transfer_link_id=link_id)
+                            transfer_link_id=link_id, subconcept=subconcept)
         movs_d = self.ledger.recalculate_balances(sorted(movs_d + [nuevo_d], key=lambda m: m.occurred_at))
 
         self.repository.save(origen, movs_o)

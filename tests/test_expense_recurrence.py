@@ -65,6 +65,20 @@ def test_new_expense_concepts_default_to_recurring_and_existing_concepts_inherit
     ]
 
 
+def test_subconcept_is_supported_for_any_movement_type_and_keeps_time(repository):
+    ledger = LedgerService()
+    account = CreateAccountUseCase(repository, ledger).execute({"name": "Cash", "kind": "CASH"})
+
+    AddMovementUseCase(repository, ledger).execute(account.id, {
+        "fecha": "2026-10-14T18:42", "tipo": "Ingreso", "concepto": "Venta", "total": 30,
+        "subconcepto": "Colección",
+    })
+
+    movement = repository.load(account.id)[0]
+    assert movement.subconcept == "Colección"
+    assert movement.occurred_at.strftime("%Y-%m-%d %H:%M") == "2026-10-14 18:42"
+
+
 def test_new_expense_concept_defaults_to_recurring_and_requires_boolean_override(repository):
     account = CreateAccountUseCase(repository, LedgerService()).execute({"name": "Cash", "kind": "CASH"})
     add = AddMovementUseCase(repository, LedgerService())
@@ -103,6 +117,23 @@ def test_edit_movement_persists_optional_subconcept(repository):
     })
 
     assert repository.load(account.id)[0].subconcept == "Artista B"
+
+
+def test_edit_can_assign_subconcept_to_non_expense_movement(repository):
+    ledger = LedgerService()
+    account = CreateAccountUseCase(repository, ledger).execute({"name": "Cash", "kind": "CASH"})
+    AddMovementUseCase(repository, ledger).execute(account.id, {
+        "fecha": "2026-01-10", "tipo": "Ingreso", "concepto": "Venta", "total": 40,
+    })
+
+    EditMovementUseCase(repository, ledger).execute(account.id, {
+        "idx": 0, "fecha": "2026-01-10T13:25", "tipo": "Ingreso", "concepto": "Venta",
+        "subconcepto": "Colección", "total": 40,
+    })
+
+    movement = repository.load(account.id)[0]
+    assert movement.subconcept == "Colección"
+    assert movement.occurred_at.strftime("%Y-%m-%d %H:%M") == "2026-01-10 13:25"
 
 
 def test_legacy_movements_default_to_non_recurring():
