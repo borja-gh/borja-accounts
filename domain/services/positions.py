@@ -17,10 +17,11 @@ def _r2(v: float) -> float:
     return round(v, 2)
 
 
-def _group_by_concept(movements: list[Movement]) -> dict[str, list[Movement]]:
-    groups: dict[str, list[Movement]] = {}
+def _group_by_concept(movements: list[Movement], include_subconcept: bool = False) -> dict[tuple[str, str | None], list[Movement]]:
+    groups: dict[tuple[str, str | None], list[Movement]] = {}
     for m in movements:
-        groups.setdefault(m.concept, []).append(m)
+        key = (m.concept, m.subconcept if include_subconcept else None)
+        groups.setdefault(key, []).append(m)
     return groups
 
 
@@ -45,6 +46,7 @@ class ClosedPosition:
     devuelto: float
     bal: float
     pct: float
+    subconcepto: str | None = None
     bal_h: float = 0.0
     pct_h: float = 0.0
 
@@ -54,13 +56,16 @@ class OpenPosition:
     concepto: str
     fi: str
     monto: float
+    subconcepto: str | None = None
 
 
-def compute_closed_positions(movements: list[Movement], open_type: str, close_type: str) -> list[ClosedPosition]:
+def compute_closed_positions(
+    movements: list[Movement], open_type: str, close_type: str, include_subconcept: bool = False,
+) -> list[ClosedPosition]:
     relevant = [m for m in movements if m.type in (open_type, close_type)]
-    groups = _group_by_concept(relevant)
+    groups = _group_by_concept(relevant, include_subconcept)
     out = []
-    for concepto, rs in groups.items():
+    for (concepto, subconcepto), rs in groups.items():
         abiertos = [m for m in rs if m.type == open_type]
         cierres = [m for m in rs if m.type == close_type]
         if not cierres:
@@ -70,7 +75,7 @@ def compute_closed_positions(movements: list[Movement], open_type: str, close_ty
         bal = _r2(devuelto - invertido)
         pct = _r2(bal / invertido * 100) if invertido > 0 else 0.0
         out.append(ClosedPosition(
-            concepto=concepto, fi=_min_fecha(abiertos), fr=_max_fecha(cierres),
+            concepto=concepto, subconcepto=subconcepto, fi=_min_fecha(abiertos), fr=_max_fecha(cierres),
             invertido=_r2(invertido), devuelto=_r2(devuelto), bal=bal, pct=pct,
         ))
     out.sort(key=lambda r: r.fr)
@@ -84,15 +89,18 @@ def compute_closed_positions(movements: list[Movement], open_type: str, close_ty
     return out
 
 
-def compute_open_positions(movements: list[Movement], open_type: str, close_type: str) -> list[OpenPosition]:
+def compute_open_positions(
+    movements: list[Movement], open_type: str, close_type: str, include_subconcept: bool = False,
+) -> list[OpenPosition]:
     """Sin ordenar -- apuestas e inversiones ordenan sus posiciones abiertas
     con criterios distintos (ver GetBettingReportUseCase/GetPortfolioReportUseCase),
     igual que ya hacían apuestasBody/inversionesBody en index.html."""
     abiertos = [m for m in movements if m.type == open_type]
-    closed_concepts = {m.concept for m in movements if m.type == close_type}
-    open_movs = [m for m in abiertos if m.concept not in closed_concepts]
-    groups = _group_by_concept(open_movs)
+    key = lambda m: (m.concept, m.subconcept if include_subconcept else None)
+    closed_concepts = {key(m) for m in movements if m.type == close_type}
+    open_movs = [m for m in abiertos if key(m) not in closed_concepts]
+    groups = _group_by_concept(open_movs, include_subconcept)
     return [
-        OpenPosition(concepto=c, fi=_min_fecha(rs), monto=_r2(_sum_amount(rs)))
-        for c, rs in groups.items()
+        OpenPosition(concepto=c, subconcepto=s, fi=_min_fecha(rs), monto=_r2(_sum_amount(rs)))
+        for (c, s), rs in groups.items()
     ]

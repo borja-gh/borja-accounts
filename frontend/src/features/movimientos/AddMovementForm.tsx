@@ -5,7 +5,7 @@ import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
 import { isValidMovementAmount } from '../../lib/math';
 import { localISODateTime, money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
-import { candidatesForSubconcept, candidatesForTipo, rankConcepts, suggestNextApuesta } from './autocomplete';
+import { candidatesForSubconcept, candidatesForTipo, rankConcepts, suggestNextApuestaSubconcept } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
 
 export interface AddMovementFormHandle {
@@ -124,9 +124,13 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
   }
 
   function conceptSuggestions(query: string) {
-    const ranked = rankConcepts(candidatesForTipo(data, tipo, null), query);
+    return rankConcepts(candidatesForTipo(data, tipo, null), query);
+  }
+
+  function subconceptSuggestions(query: string) {
+    const ranked = rankConcepts(candidatesForSubconcept(data, trimmedConcepto, null, tipo), query);
     if (tipo === 'Apuestas' && !query.trim()) {
-      const next = suggestNextApuesta(data);
+      const next = suggestNextApuestaSubconcept(data, trimmedConcepto);
       if (next && !ranked.some((r) => r.concepto === next.concepto)) return [next, ...ranked];
     }
     return ranked;
@@ -169,7 +173,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
         <ConceptAutocomplete
           value={subconcepto}
           onChange={setSubconcepto}
-          suggestions={(query) => rankConcepts(candidatesForSubconcept(data, trimmedConcepto, null, tipo), query)}
+          suggestions={subconceptSuggestions}
           placeholder="Busca un subconcepto…"
         />
       </div>

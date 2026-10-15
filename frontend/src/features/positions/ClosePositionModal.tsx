@@ -10,6 +10,7 @@ import { r2 } from '../../lib/math';
 export interface ClosePositionRequest {
   tipo: 'Apuestas';
   concepto: string;
+  subconcepto?: string | null;
   monto: number;
 }
 
@@ -22,14 +23,12 @@ interface Props {
 
 export function ClosePositionModal({ account, request, onClose, onSaved }: Props) {
   const [total, setTotal] = useState('');
-  const [subconcepto, setSubconcepto] = useState('');
   const [fecha, setFecha] = useState(localISODateTime());
   const showToast = useToast();
 
   useEffect(() => {
     if (request) {
       setTotal('');
-      setSubconcepto('');
       setFecha(localISODateTime());
     }
   }, [request]);
@@ -61,7 +60,7 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
     try {
       const body = await addMovement(account, {
         fecha, tipo: 'Apuestas_r', concepto: request.concepto, total: totalNum,
-        subconcepto: subconcepto.trim() || null,
+        subconcepto: request.subconcepto ?? null,
       });
       if (!body.ok) {
         showToast(body.error || 'Error al guardar', 'err');
@@ -93,7 +92,9 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 12, color: 'var(--muted)' }}>Concepto</span>
-            <b style={{ fontSize: 13, textAlign: 'right', maxWidth: 200 }}>{request.concepto}</b>
+            <b style={{ fontSize: 13, textAlign: 'right', maxWidth: 200 }}>
+              {request.subconcepto ? `${request.concepto} · ${request.subconcepto}` : request.concepto}
+            </b>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 12, color: 'var(--muted)' }}>Banca</span>
@@ -114,10 +115,6 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
         <div className="fg" style={{ marginTop: 10 }}>
           <label>Fecha y hora de cierre</label>
           <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-        </div>
-        <div className="fg">
-          <label>Subconcepto <span className="muted">(opcional)</span></label>
-          <input type="text" placeholder="Detalle del cobro" value={subconcepto} onChange={(e) => setSubconcepto(e.target.value)} />
         </div>
         <div className="modal-actions">
           <button className="btn btn-ghost" onClick={onClose}>
