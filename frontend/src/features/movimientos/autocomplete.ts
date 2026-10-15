@@ -53,9 +53,9 @@ export function conceptCandidatesForSearch(data: Movement[], searchTipo: string)
 export function candidatesForTipo(data: Movement[], tipo: string, excludeIdx: number | null): ConceptStat[] {
   if (!tipo) return [];
   if (tipo === 'Apuestas_r') {
-    const casadas = new Set(data.filter((r) => r.Tipo === 'Apuestas_r' && r._idx !== excludeIdx).map((r) => r.Concepto));
-    const abiertas = new Set(data.filter((r) => r.Tipo === 'Apuestas' && !casadas.has(r.Concepto)).map((r) => r.Concepto));
-    return conceptStats(data.filter((r) => r.Tipo === 'Apuestas' && abiertas.has(r.Concepto)));
+    const positionKey = (r: Movement) => `${r.Concepto}\u0000${r.Subconcepto ?? ''}`;
+    const casadas = new Set(data.filter((r) => r.Tipo === 'Apuestas_r' && r._idx !== excludeIdx).map(positionKey));
+    return conceptStats(data.filter((r) => r.Tipo === 'Apuestas' && !casadas.has(positionKey(r))));
   }
   if (tipo === 'Inversión_r') {
     const persisted = data.filter((r) => r._idx != null);
@@ -73,11 +73,16 @@ export function candidatesForSubconcept(
   data: Movement[], concepto: string, excludeIdx: number | null, tipo: string,
 ): ConceptStat[] {
   if (!concepto.trim()) return [];
-  return conceptStats(data.filter((movement) =>
-    movement.Tipo === tipo
-    && movement.Concepto === concepto.trim()
-    && movement.Subconcepto?.trim()
-    && (excludeIdx == null || movement._idx !== excludeIdx),
+  const sourceType = tipo === 'Apuestas_r' ? 'Apuestas' : tipo === 'Devolución' ? 'Gasto' : tipo;
+  let source = data.filter((movement) => movement.Tipo === sourceType && movement.Concepto === concepto.trim());
+  if (tipo === 'Apuestas_r') {
+    const positionKey = (r: Movement) => `${r.Concepto}\u0000${r.Subconcepto ?? ''}`;
+    const casadas = new Set(data.filter((r) => r.Tipo === 'Apuestas_r' && r._idx !== excludeIdx).map(positionKey));
+    source = source.filter((movement) => !casadas.has(positionKey(movement)));
+  }
+  return conceptStats(source.filter((movement) =>
+    movement.Subconcepto?.trim()
+    && (sourceType !== tipo || excludeIdx == null || movement._idx !== excludeIdx),
   ).map((movement) => ({ ...movement, Concepto: movement.Subconcepto! })));
 }
 
@@ -92,28 +97,18 @@ export function subconceptCandidatesForSearch(data: Movement[], searchTipo: stri
   return conceptStats(rows.map((movement) => ({ ...movement, Concepto: movement.Subconcepto! })));
 }
 
-export function suggestNextApuesta(data: Movement[]): ConceptStat | null {
-  const re = /^(.*?)(\d+)\s*$/;
-  const bets = data.filter((r) => r.Tipo === 'Apuestas').map((r) => r.Concepto);
-  const byPrefix = new Map<string, { n: number; digits: number }>();
-  for (const c of bets) {
-    const m = c.match(re);
-    if (!m) continue;
-    const pref = m[1];
-    const n = parseInt(m[2], 10);
-    const prev = byPrefix.get(pref);
-    if (!prev || n > prev.n) byPrefix.set(pref, { n, digits: m[2].length });
-  }
-  let best: ConceptStat | null = null;
-  let bestCount = -1;
-  for (const [pref, info] of byPrefix) {
-    const next = pref + String(info.n + 1).padStart(info.digits, '0');
-    if (bets.includes(next)) continue;
-    const count = bets.filter((c) => c.startsWith(pref)).length;
-    if (count > bestCount) {
-      best = { concepto: next, count, lastFecha: '', suggested: true };
-      bestCount = count;
-    }
-  }
-  return best;
+export function suggestNextApuestaSubconcept(data: Movement[], concepto: string): ConceptStat | null {
+  const numbers = data
+    .filter((r) => r.Tipo === 'Apuestas' && r.Concepto === concepto)
+    .filter((r) => r.Subconcepto?.trim())
+    .map((r) => Number(r.Subconcepto))
+    .filter(Number.isInteger);
+  if (!numbers.length) return null;
+  const next = String(Math.max(...numbers) + 1);
+  return {
+    concepto: next,
+    count: numbers.length,
+    lastFecha: '',
+    suggested: true,
+  };
 }
