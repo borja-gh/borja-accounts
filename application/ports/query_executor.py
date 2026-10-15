@@ -28,6 +28,9 @@ class QueryResult:
 
 
 class QueryExecutor(Protocol):
+    def get_schema_context(self) -> str:
+        ...
+
     def validate_scope(self, scope: dict) -> None:
         ...
 

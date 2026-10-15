@@ -213,6 +213,7 @@ export interface TransferRequest {
   total: number;
   fecha: string;
   exchangeRate?: number;
+  subconcepto?: string | null;
 }
 
 export interface TransferResult {

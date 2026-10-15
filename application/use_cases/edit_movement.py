@@ -30,6 +30,7 @@ class EditMovementUseCase:
         objetivo = movements[idx]
         if objetivo.type == "Saldo Inicial":
             raise ProtectedInitialBalanceError("No se puede editar el saldo inicial")
+        tipo_original = objetivo.type
 
         account = self.repository.get_account(account_id)
         self.ledger.validate_type_and_concept(account.kind, movements, tipo, concepto, exclude_id=objetivo.id)
@@ -47,8 +48,8 @@ class EditMovementUseCase:
         objetivo.amount = total
         objetivo.recurrente = recurrente if tipo == "Gasto" else False
         if "subconcepto" in data:
-            objetivo.subconcept = ((data.get("subconcepto") or "").strip() or None) if tipo == "Gasto" else None
-        elif tipo != "Gasto":
+            objetivo.subconcept = (data.get("subconcepto") or "").strip() or None
+        elif tipo != tipo_original:
             objetivo.subconcept = None
         if data.get("fecha"):
             objetivo.occurred_at = parse_fecha(data)

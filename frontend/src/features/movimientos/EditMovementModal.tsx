@@ -3,9 +3,9 @@ import { editMovement } from '../../api/client';
 import type { AccountId, AccountKind, Movement } from '../../api/types';
 import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
 import { isValidMovementAmount } from '../../lib/math';
-import { money } from '../../lib/format';
+import { localDateTimeInputValue, money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
-import { candidatesForTipo, rankConcepts } from './autocomplete';
+import { candidatesForSubconcept, candidatesForTipo, rankConcepts } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
 
 interface Props {
@@ -33,7 +33,7 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
       setConcepto(row.Concepto);
       setSubconcepto(row.Subconcepto ?? '');
       setTotal(Number(row.Total).toFixed(2));
-      setFecha(row.Fecha.slice(0, 10));
+      setFecha(localDateTimeInputValue(row.Fecha));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row?._idx]);
@@ -67,7 +67,7 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
     try {
       const body = await editMovement(account, {
         idx: idx as number, tipo, concepto: trimmedConcepto, total: totalNum, fecha,
-        subconcepto: tipo === 'Gasto' ? subconcepto.trim() || null : null,
+        subconcepto: subconcepto.trim() || null,
       });
       if (!body.ok) {
         showToast(body.error || 'Error al editar', 'err');
@@ -86,15 +86,9 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
       <div className="modal">
         <h3>Editar movimiento</h3>
         <div className="fg">
-          <label>Fecha</label>
-          <input type="date" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <label>Fecha y hora</label>
+          <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </div>
-        {tipo === 'Gasto' && (
-          <div className="fg">
-            <label>Subconcepto (opcional)</label>
-            <input value={subconcepto} onChange={(e) => setSubconcepto(e.target.value)} placeholder="Detalle" />
-          </div>
-        )}
         <div className="fg">
           <label>Tipo</label>
           <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
@@ -113,6 +107,15 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
             suggestions={(q) => rankConcepts(candidatesForTipo(data, tipo, idx), q)}
             placeholder="Descripción"
             onEnterWithMeta={handleSubmit}
+          />
+        </div>
+        <div className="fg">
+          <label>Subconcepto (opcional)</label>
+          <ConceptAutocomplete
+            value={subconcepto}
+            onChange={setSubconcepto}
+            suggestions={(q) => rankConcepts(candidatesForSubconcept(data, concepto, idx, tipo), q)}
+            placeholder="Busca un subconcepto…"
           />
         </div>
         <div className="fg">

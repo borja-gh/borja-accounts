@@ -37,8 +37,8 @@ class FakeModel:
         self.conversation = FakeConversation(turns)
         self.requests = []
 
-    def start(self, prompt, mode, scope):
-        self.requests.append({"prompt": prompt, "mode": mode, "scope": scope})
+    def start(self, prompt, mode, scope, schema_context):
+        self.requests.append({"prompt": prompt, "mode": mode, "scope": scope, "schema_context": schema_context})
         return self.conversation
 
 
@@ -81,6 +81,16 @@ def test_executor_read_only_devuelve_filas_y_bloquea_escritura(database):
         executor.execute(f"UPDATE accounts SET theme = 'slate' WHERE id = '{account.id}'", "read")
 
 
+def test_executor_expone_esquema_real_de_tablas_permitidas(database):
+    db_path, _, _ = database
+    schema_context = SQLiteQueryExecutor(db_path).get_schema_context()
+
+    assert "movements" in schema_context
+    assert "recurrente INTEGER" in schema_context
+    assert "subconcept TEXT" in schema_context
+    assert "assistant_saved_queries" not in schema_context
+
+
 def test_executor_write_requiere_modo_write_y_persiste(database):
     db_path, repository, account = database
     executor = SQLiteQueryExecutor(db_path)
@@ -107,6 +117,7 @@ def test_assistant_itera_consultas_hasta_responder_y_persiste_cada_una(database)
     assert len({query["id"] for query in result["queries"]}) == 2
     assert "no such column" in model.conversation.tool_results[0]["response"]["error"]
     assert model.conversation.tool_results[1]["response"]["result"]["rows"] == [{"kind": "CASH", "total": 1}]
+    assert "subconcept TEXT" in model.requests[0]["schema_context"]
 
 
 def test_assistant_aplica_limite_de_tools_y_pide_respuesta_final(database):

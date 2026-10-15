@@ -69,6 +69,29 @@ export function candidatesForTipo(data: Movement[], tipo: string, excludeIdx: nu
   return conceptStats(data.filter((r) => r.Tipo === tipo));
 }
 
+export function candidatesForSubconcept(
+  data: Movement[], concepto: string, excludeIdx: number | null, tipo: string,
+): ConceptStat[] {
+  if (!concepto.trim()) return [];
+  return conceptStats(data.filter((movement) =>
+    movement.Tipo === tipo
+    && movement.Concepto === concepto.trim()
+    && movement.Subconcepto?.trim()
+    && (excludeIdx == null || movement._idx !== excludeIdx),
+  ).map((movement) => ({ ...movement, Concepto: movement.Subconcepto! })));
+}
+
+export function subconceptCandidatesForSearch(data: Movement[], searchTipo: string, searchConcepto: string): ConceptStat[] {
+  const parent = searchConcepto.trim().toLocaleLowerCase();
+  if (!parent) return [];
+  const rows = data.filter((movement) =>
+    (!searchTipo || movement.Tipo === searchTipo)
+    && movement.Concepto.toLocaleLowerCase() === parent
+    && movement.Subconcepto?.trim(),
+  );
+  return conceptStats(rows.map((movement) => ({ ...movement, Concepto: movement.Subconcepto! })));
+}
+
 export function suggestNextApuesta(data: Movement[]): ConceptStat | null {
   const re = /^(.*?)(\d+)\s*$/;
   const bets = data.filter((r) => r.Tipo === 'Apuestas').map((r) => r.Concepto);

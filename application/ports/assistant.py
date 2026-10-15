@@ -24,5 +24,5 @@ class AssistantConversation(Protocol):
 
 
 class AssistantModel(Protocol):
-    def start(self, prompt: str, mode: str, scope: dict) -> AssistantConversation:
+    def start(self, prompt: str, mode: str, scope: dict, schema_context: str) -> AssistantConversation:
         ...
