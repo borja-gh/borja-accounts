@@ -130,12 +130,14 @@ export interface DeleteResult {
 
 export interface OpenBetPosition {
   concepto: string;
+  subconcepto?: string | null;
   fi: string;
   banca: number;
 }
 
 export interface ClosedBetPosition {
   Concepto: string;
+  Subconcepto?: string | null;
   fi: string;
   fr: string;
   banca: number;

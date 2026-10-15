@@ -9,10 +9,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from application.use_cases.add_movement import AddMovementUseCase
 from application.use_cases.create_account import CreateAccountUseCase
 from application.use_cases.get_investment_kpis import GetInvestmentKPIsUseCase
+from application.use_cases.get_betting_report import GetBettingReportUseCase
 from application.use_cases.get_saldo_evolucion import GetSaldoEvolucionUseCase
 from application.use_cases.update_portfolio_holding import UpdatePortfolioHoldingUseCase
 from domain.entities import PortfolioHolding
-from domain.exceptions import InvalidAmountError
+from domain.exceptions import AlreadyClosedBetError, InvalidAmountError, MissingSourceMovementError
 from domain.services.ledger import LedgerService
 from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository
 
@@ -41,6 +42,31 @@ def test_apuestas_r_acepta_cero(repository, ledger):
     assert result == {"saldo": 50, "conceptoNuevo": False}
     with pytest.raises(InvalidAmountError):
         add.execute(account.id, {"tipo": "Gasto", "concepto": "Nada", "total": 0, "fecha": "2026-06-03"})
+
+
+def test_apuestas_normalizadas_se_emparejan_por_concepto_y_subconcepto(repository, ledger):
+    account = CreateAccountUseCase(repository, ledger).execute(
+        {"name": "Cash", "kind": "CASH", "currency": "EUR", "initialBalance": 100}
+    )
+    add = AddMovementUseCase(repository, ledger)
+    add.execute(account.id, {"tipo": "Apuestas", "concepto": "B365", "subconcepto": "1", "total": 50, "fecha": "2026-06-01"})
+    add.execute(account.id, {"tipo": "Apuestas", "concepto": "B365", "subconcepto": "2", "total": 50, "fecha": "2026-06-02"})
+    add.execute(account.id, {"tipo": "Apuestas_r", "concepto": "B365", "subconcepto": "1", "total": 80, "fecha": "2026-06-03"})
+    add.execute(account.id, {"tipo": "Apuestas_r", "concepto": "B365", "subconcepto": "2", "total": 30, "fecha": "2026-06-04"})
+
+    from datetime import datetime, timezone
+    report = GetBettingReportUseCase(repository).execute(
+        account.id, "all", None, datetime(2026, 7, 15, tzinfo=timezone.utc),
+    )
+    assert report["closedCount"] == 2
+    assert report["openCount"] == 0
+    assert {(row["Concepto"], row["Subconcepto"]) for row in report["closedPositions"]} == {
+        ("B365", "1"), ("B365", "2"),
+    }
+    with pytest.raises(AlreadyClosedBetError):
+        add.execute(account.id, {"tipo": "Apuestas_r", "concepto": "B365", "subconcepto": "1", "total": 0, "fecha": "2026-06-05"})
+    with pytest.raises(MissingSourceMovementError):
+        add.execute(account.id, {"tipo": "Apuestas_r", "concepto": "B365", "subconcepto": "3", "total": 20, "fecha": "2026-06-05"})
 
 
 def test_saldo_evolucion_investment_recalcula_igual_que_kpi(repository, ledger):

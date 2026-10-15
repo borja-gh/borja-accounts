@@ -17,10 +17,10 @@ class GetBettingReportUseCase:
 
         all_bets = [m for m in movements if m.type == "Apuestas"]
         open_positions = sorted(
-            compute_open_positions(movements, "Apuestas", "Apuestas_r"),
+            compute_open_positions(movements, "Apuestas", "Apuestas_r", include_subconcept=True),
             key=lambda p: p.fi, reverse=True,
         )
-        closed_all = compute_closed_positions(movements, "Apuestas", "Apuestas_r")
+        closed_all = compute_closed_positions(movements, "Apuestas", "Apuestas_r", include_subconcept=True)
         closed_filtered = filter_by_field(closed_all, lambda c: c.fr, range_type, year, reference_local)
 
         total_apostado = round(sum(m.amount for m in all_bets), 2)
@@ -41,12 +41,19 @@ class GetBettingReportUseCase:
             "openCount": len(open_positions),
             "openTotal": open_total,
             "openPositions": [
-                {"concepto": p.concepto, "fi": p.fi, "banca": p.monto}
+                {
+                    "concepto": p.concepto,
+                    **({"subconcepto": p.subconcepto} if p.subconcepto is not None else {}),
+                    "fi": p.fi,
+                    "banca": p.monto,
+                }
                 for p in open_positions
             ],
             "closedPositions": [
                 {
-                    "Concepto": c.concepto, "fi": c.fi, "fr": c.fr,
+                    "Concepto": c.concepto,
+                    **({"Subconcepto": c.subconcepto} if c.subconcepto is not None else {}),
+                    "fi": c.fi, "fr": c.fr,
                     "banca": c.invertido, "devuelto": c.devuelto, "bal": c.bal,
                     "crec": c.pct, "balH": c.bal_h, "crecH": c.pct_h,
                 }

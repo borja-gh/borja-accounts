@@ -33,7 +33,7 @@ function sectionKpis(report: BettingReport): SectionKpiItem[] {
 }
 
 const openColumns = (onClose: (req: ClosePositionRequest) => void): Column<OpenBetPosition>[] => [
-  { header: 'Concepto', render: (p) => <b>{p.concepto}</b> },
+  { header: 'Concepto', render: (p) => <b>{p.subconcepto ? `${p.concepto} · ${p.subconcepto}` : p.concepto}</b> },
   { header: 'Inicio', render: (p) => fd(p.fi), cellClass: () => 'nowrap' },
   { header: 'Banca', headerClass: 'r', render: (p) => eur(p.banca), cellClass: () => 'r' },
   {
@@ -43,7 +43,7 @@ const openColumns = (onClose: (req: ClosePositionRequest) => void): Column<OpenB
     render: (p) => (
       <button
         className="btn btn-ghost btn-tiny"
-        onClick={() => onClose({ tipo: 'Apuestas', concepto: p.concepto, monto: p.banca })}
+        onClick={() => onClose({ tipo: 'Apuestas', concepto: p.concepto, subconcepto: p.subconcepto, monto: p.banca })}
       >
         Cerrar
       </button>
@@ -52,7 +52,7 @@ const openColumns = (onClose: (req: ClosePositionRequest) => void): Column<OpenB
 ];
 
 const closedColumns: Column<ClosedBetPosition>[] = [
-  { header: 'Concepto', render: (r) => r.Concepto, cellClass: () => 'nowrap' },
+  { header: 'Concepto', render: (r) => r.Subconcepto ? `${r.Concepto} · ${r.Subconcepto}` : r.Concepto, cellClass: () => 'nowrap' },
   { header: 'Inicio', render: (r) => fd(r.fi), cellClass: () => 'nowrap' },
   { header: 'Cierre', render: (r) => fd(r.fr), cellClass: () => 'nowrap' },
   { header: 'Banca', headerClass: 'r', render: (r) => eur(r.banca), cellClass: () => 'r' },
@@ -88,7 +88,7 @@ export function ApuestasBody({ report, onClosePosition }: Props) {
       {report.openCount > 0 && (
         <div className="pos-block">
           <div className="open-pos-header">{`● Posiciones abiertas · ${report.openCount}`}</div>
-          <DataTable columns={openColumns(onClosePosition)} rows={report.openPositions} rowKey={(p) => p.concepto} />
+          <DataTable columns={openColumns(onClosePosition)} rows={report.openPositions} rowKey={(p) => `${p.concepto}-${p.subconcepto ?? ''}`} />
         </div>
       )}
 

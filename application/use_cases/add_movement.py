@@ -13,12 +13,13 @@ class AddMovementUseCase:
     def execute(self, account_id: str, data: dict) -> dict:
         tipo = data.get("tipo", "")
         concepto = (data.get("concepto") or "").strip()
+        subconcept = (data.get("subconcepto") or "").strip() or None
         total = parse_total(data)
         fecha = parse_fecha(data)
 
         account = self.repository.get_account(account_id)
         movements = self.repository.load(account_id)
-        self.ledger.validate_type_and_concept(account.kind, movements, tipo, concepto)
+        self.ledger.validate_type_and_concept(account.kind, movements, tipo, concepto, subconcept)
 
         matching_expenses = [m for m in movements if tipo == "Gasto" and m.type == tipo and m.concept == concepto]
         concepto_nuevo = tipo == "Gasto" and not matching_expenses
@@ -30,7 +31,6 @@ class AddMovementUseCase:
                 raise InvalidExpenseRecurrenceError("El valor recurrente debe ser booleano")
         else:
             recurrente = False
-        subconcept = (data.get("subconcepto") or "").strip() or None
         nuevo = Movement(
             account_id=account_id, occurred_at=fecha, type=tipo, concept=concepto,
             amount=total, recurrente=recurrente, subconcept=subconcept,
