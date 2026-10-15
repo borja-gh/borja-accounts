@@ -3,7 +3,7 @@ import { addMovement, updateExpenseRecurrence } from '../../api/client';
 import type { AccountId, AccountKind, Movement } from '../../api/types';
 import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
 import { isValidMovementAmount } from '../../lib/math';
-import { localISODate, money } from '../../lib/format';
+import { localISODateTime, money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
 import { candidatesForSubconcept, candidatesForTipo, rankConcepts, suggestNextApuesta } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
@@ -28,7 +28,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
   ref,
 ) {
   const tipos = TIPOS_POR_KIND[kind];
-  const [fecha, setFecha] = useState(localISODate());
+  const [fecha, setFecha] = useState(localISODateTime());
   const [tipo, setTipo] = useState(tipos[0]);
   const [concepto, setConcepto] = useState('');
   const [subconcepto, setSubconcepto] = useState('');
@@ -40,7 +40,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
   const trimmedConcepto = concepto.trim();
 
   useEffect(() => {
-    setFecha(localISODate());
+    setFecha(localISODateTime());
     setTipo(TIPOS_POR_KIND[kind][0]);
     setConcepto('');
     setSubconcepto('');
@@ -60,7 +60,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
         setConcepto(row.Concepto);
         setSubconcepto(row.Subconcepto ?? '');
         setTotal(Number(row.Total).toFixed(2));
-        setFecha(localISODate());
+        setFecha(localISODateTime());
         conceptoRef.current?.focus();
         return true;
       },
@@ -85,14 +85,14 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
     try {
       const body = await addMovement(account, {
         fecha, tipo, concepto: trimmedConcepto, total: totalNum,
-        ...(tipo === 'Gasto' ? { subconcepto: subconcepto.trim() || null } : {}),
+        subconcepto: subconcepto.trim() || null,
       });
       if (!body.ok) {
         showToast(body.error || 'Error al guardar', 'err');
         return;
       }
       showToast(`Guardado · Saldo: ${money(body.saldo, currency)}`, 'ok');
-      setFecha(localISODate());
+      setFecha(localISODateTime());
       setTipo(tipos[0]);
       setConcepto('');
       setSubconcepto('');
@@ -135,14 +135,13 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
   return (
     <div className="form-body">
       <div className="fg">
-        <label>Fecha</label>
-        <input type="date" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        <label>Fecha y hora</label>
+        <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
       </div>
       <div className="fg">
         <label>Tipo</label>
         <select value={tipo} onChange={(e) => {
           setTipo(e.target.value);
-          if (e.target.value !== 'Gasto') setSubconcepto('');
         }}>
           {tipos.map((t) => (
             <option key={t} value={t}>
@@ -165,17 +164,15 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
           onEnterWithMeta={handleSubmit}
         />
       </div>
-      {tipo === 'Gasto' && (
-        <div className="fg full">
-          <label>Subconcepto <span className="muted">(opcional)</span></label>
-          <ConceptAutocomplete
-            value={subconcepto}
-            onChange={setSubconcepto}
-            suggestions={(query) => rankConcepts(candidatesForSubconcept(data, trimmedConcepto), query)}
-            placeholder="Busca un subconcepto…"
-          />
-        </div>
-      )}
+      <div className="fg full">
+        <label>Subconcepto <span className="muted">(opcional)</span></label>
+        <ConceptAutocomplete
+          value={subconcepto}
+          onChange={setSubconcepto}
+          suggestions={(query) => rankConcepts(candidatesForSubconcept(data, trimmedConcepto, null, tipo), query)}
+          placeholder="Busca un subconcepto…"
+        />
+      </div>
       <div className="fg full">
         <label>Total ({currency})</label>
         <input type="number" placeholder="0.00" step="0.01" min={tipo === 'Apuestas_r' ? '0' : '0.01'} value={total} onChange={(e) => setTotal(e.target.value)} />

@@ -1,6 +1,6 @@
 import type { Movement } from '../../api/types';
 import { badgeClass, displayTipo, TIPOS_NEGATIVOS } from '../../domain/tipos';
-import { CURRENCY_SUFFIX, fd } from '../../lib/format';
+import { CURRENCY_SUFFIX, fdt } from '../../lib/format';
 
 interface Props {
   rows: Movement[];
@@ -45,7 +45,7 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
           return (
             <tr key={r._idx ?? `${r.Fecha}-${r.Concepto}`}>
               <td className="nowrap date-cell">
-                {fd(r.Fecha)}
+                {fdt(r.Fecha)}
               </td>
               <td>
                 <span className={`badge ${badgeClass(r.Tipo)}`}>{displayTipo(r.Tipo)}</span>

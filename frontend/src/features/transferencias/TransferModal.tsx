@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { submitTransfer } from '../../api/client';
 import type { AccountId, AccountSummary } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
-import { money, localISODate } from '../../lib/format';
+import { money, localISODateTime } from '../../lib/format';
 import { ExchangeRateField } from './ExchangeRateField';
 
 interface Props {
@@ -16,8 +16,9 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
   const [origen, setOrigen] = useState<AccountId>('');
   const [destino, setDestino] = useState<AccountId>('');
   const [total, setTotal] = useState('');
+  const [subconcepto, setSubconcepto] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
-  const [fecha, setFecha] = useState(localISODate());
+  const [fecha, setFecha] = useState(localISODateTime());
   const showToast = useToast();
 
   useEffect(() => {
@@ -25,8 +26,9 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
       setOrigen(accounts[0]?.id ?? '');
       setDestino(accounts[1]?.id ?? accounts[0]?.id ?? '');
       setTotal('');
+      setSubconcepto('');
       setExchangeRate('');
-      setFecha(localISODate());
+      setFecha(localISODateTime());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -77,7 +79,10 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
       }
     }
     try {
-      const body = await submitTransfer({ origen, destino, total: totalNum, fecha, exchangeRate: rateNum });
+      const body = await submitTransfer({
+        origen, destino, total: totalNum, fecha, exchangeRate: rateNum,
+        subconcepto: subconcepto.trim() || null,
+      });
       if (!body.ok) {
         showToast(body.error || 'Error', 'err');
         return;
@@ -125,6 +130,10 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
           <label>Importe ({cuentaOrigen?.currency ?? ''})</label>
           <input type="number" placeholder="0.00" step="0.01" min="0.01" value={total} onChange={(e) => setTotal(e.target.value)} />
         </div>
+        <div className="fg">
+          <label>Subconcepto <span className="muted">(opcional)</span></label>
+          <input type="text" placeholder="Detalle compartido en origen y destino" value={subconcepto} onChange={(e) => setSubconcepto(e.target.value)} />
+        </div>
         {needsRate && (
           <>
             <ExchangeRateField
@@ -141,8 +150,8 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
           </>
         )}
         <div className="fg">
-          <label>Fecha</label>
-          <input type="date" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <label>Fecha y hora</label>
+          <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </div>
         <div className="modal-actions">
           <button className="btn btn-ghost" onClick={onClose}>

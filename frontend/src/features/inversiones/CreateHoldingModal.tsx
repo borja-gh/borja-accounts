@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortfolioHolding } from '../../api/client';
 import type { AccountId, Currency } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
-import { localISODate, money } from '../../lib/format';
+import { localISODateTime, money } from '../../lib/format';
 import { ExchangeRateField } from '../transferencias/ExchangeRateField';
 
 interface Props {
@@ -24,7 +24,7 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
   const [fee, setFee] = useState('0');
   const [usdPrice, setUsdPrice] = useState('');
   const [exchangeRate, setExchangeRate] = useState('');
-  const [fecha, setFecha] = useState(localISODate());
+  const [fecha, setFecha] = useState(localISODateTime());
   const showToast = useToast();
   const needsUsdHelper = currency !== 'USD';
 
@@ -38,7 +38,7 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
       setFee('0');
       setUsdPrice('');
       setExchangeRate('');
-      setFecha(localISODate());
+      setFecha(localISODateTime());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -184,8 +184,8 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
           </>
         )}
         <div className="fg">
-          <label>Fecha de compra</label>
-          <input type="date" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <label>Fecha y hora de compra</label>
+          <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </div>
         {capital != null && (
           <span className="hint-total">{`Capital (sin comisión) ${money(capital, currency)}`}</span>
