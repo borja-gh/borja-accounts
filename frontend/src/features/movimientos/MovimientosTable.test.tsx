@@ -5,6 +5,7 @@ import { extractVisibleText } from '../../test/extractVisibleText';
 import { MovimientosTable } from './MovimientosTable';
 import { EMPTY_SEARCH, searchedMovs } from './search';
 import type { Movement } from '../../api/types';
+import { fdt } from '../../lib/format';
 
 const noop = () => {};
 
@@ -20,6 +21,11 @@ function addSubconceptColumn(values: string[]): string[] {
     }
   }
   return result;
+}
+
+function addDisplayedTimes(values: string[], rows: Movement[]): string[] {
+  const labels = new Map(rows.map((row) => [fdt(row.Fecha).slice(0, 10), fdt(row.Fecha)]));
+  return values.map((value) => labels.get(value) ?? value);
 }
 
 // El vanilla (index.html) ordenaba los empates de misma Fecha por orden de
@@ -46,7 +52,7 @@ describe('MovimientosTable', () => {
       <MovimientosTable rows={rows} currency="EUR" onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
     );
     const expected = swapAdjacentRows(expectedValues.cash1_movimientos_default, 'Supermercado', 7);
-    expect(extractVisibleText(container)).toEqual(addSubconceptColumn(expected));
+    expect(extractVisibleText(container)).toEqual(addDisplayedTimes(addSubconceptColumn(expected), rows));
   });
 
   it('coincide con el golden master para investment1', () => {
@@ -76,6 +82,16 @@ describe('MovimientosTable', () => {
       '10/01/2026', 'Inversión', 'Cartera Tech', '300.00$', '1000.00$', 'Duplicar', 'Editar',
       '01/01/2026', 'Saldo Inicial', 'Apertura de cuenta', '+1000.00$', '1000.00$',
     ];
-    expect(extractVisibleText(container)).toEqual(addSubconceptColumn(expected));
+    expect(extractVisibleText(container)).toEqual(addDisplayedTimes(addSubconceptColumn(expected), rows));
+  });
+
+  it('filtra movimientos por subconcepto sin distinguir mayúsculas', () => {
+    const data: Movement[] = [
+      { Fecha: '2026-01-01', Tipo: 'Ingreso', Concepto: 'Venta', Subconcepto: 'Colección', Total: 10, Saldo: 10, _idx: 0 },
+      { Fecha: '2026-01-02', Tipo: 'Gasto', Concepto: 'Ocio', Subconcepto: 'Concierto', Total: 5, Saldo: 5, _idx: 1 },
+    ];
+
+    expect(searchedMovs(data, { ...EMPTY_SEARCH, subconcepto: 'COLECCIÓN' }).map((row) => row.Concepto))
+      .toEqual(['Venta']);
   });
 });

@@ -30,7 +30,7 @@ class AddMovementUseCase:
                 raise InvalidExpenseRecurrenceError("El valor recurrente debe ser booleano")
         else:
             recurrente = False
-        subconcept = ((data.get("subconcepto") or "").strip() or None) if tipo == "Gasto" else None
+        subconcept = (data.get("subconcepto") or "").strip() or None
         nuevo = Movement(
             account_id=account_id, occurred_at=fecha, type=tipo, concept=concepto,
             amount=total, recurrente=recurrente, subconcept=subconcept,

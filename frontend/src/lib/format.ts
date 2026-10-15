@@ -31,9 +31,26 @@ export function fd(s: string | null | undefined): string {
   });
 }
 
+export function fdt(s: string | null | undefined): string {
+  if (!s) return '—';
+  const [date, time] = s.replace('T', ' ').split(' ');
+  const clock = time?.slice(0, 5);
+  return clock && clock !== '00:00' ? `${fd(date)} ${clock}` : fd(date);
+}
+
 export function localISODate(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function localISODateTime(): string {
+  const d = new Date();
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${date}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+export function localDateTimeInputValue(value: string): string {
+  return value.replace(' ', 'T').slice(0, 16);
 }
 
 /** Precio editable: 2 decimales, sin la basura IEEE que trae yfinance. */

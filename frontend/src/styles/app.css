@@ -765,11 +765,13 @@
     }
     /* Firefox: tipografía web en el control rompe popups nativos de select/date */
     select,
-    input[type="date"] {
+    input[type="date"],
+    input[type="datetime-local"] {
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       appearance: auto;
     }
-    input[type="date"] {
+    input[type="date"],
+    input[type="datetime-local"] {
       min-height: 38px;
       position: relative;
       z-index: 2;

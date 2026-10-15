@@ -49,6 +49,20 @@ def test_misma_divisa_no_exige_tipo_de_cambio(repository, accounts):
     assert movs_destino[-1].exchange_rate is None
 
 
+def test_subconcepto_de_transferencia_se_asigna_a_los_dos_movimientos(repository, accounts):
+    eur_account, _, eur_account_2 = accounts
+    use_case = _use_case(repository, {eur_account.id, eur_account_2.id})
+    use_case.execute({
+        "origen": eur_account.id, "destino": eur_account_2.id, "total": 100,
+        "fecha": "2026-12-01T14:25", "subconcepto": "Ahorro viaje",
+    })
+
+    origen = repository.load(eur_account.id)[-1]
+    destino = repository.load(eur_account_2.id)[-1]
+    assert origen.subconcept == destino.subconcept == "Ahorro viaje"
+    assert origen.occurred_at.strftime("%Y-%m-%d %H:%M") == "2026-12-01 14:25"
+
+
 def test_distinta_divisa_sin_tipo_de_cambio_lanza_error(repository, accounts):
     eur_account, usd_account, _ = accounts
     use_case = _use_case(repository, {eur_account.id, usd_account.id})

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { addMovement } from '../../api/client';
 import type { AccountId } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
-import { eur, localISODate } from '../../lib/format';
+import { eur, localISODateTime } from '../../lib/format';
 import { r2 } from '../../lib/math';
 
 // Solo Apuestas -- las carteras de inversión basadas en holdings ya no
@@ -22,13 +22,15 @@ interface Props {
 
 export function ClosePositionModal({ account, request, onClose, onSaved }: Props) {
   const [total, setTotal] = useState('');
-  const [fecha, setFecha] = useState(localISODate());
+  const [subconcepto, setSubconcepto] = useState('');
+  const [fecha, setFecha] = useState(localISODateTime());
   const showToast = useToast();
 
   useEffect(() => {
     if (request) {
       setTotal('');
-      setFecha(localISODate());
+      setSubconcepto('');
+      setFecha(localISODateTime());
     }
   }, [request]);
 
@@ -57,7 +59,10 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
     const capital = request.monto || 0;
     const bal = r2(totalNum - capital);
     try {
-      const body = await addMovement(account, { fecha, tipo: 'Apuestas_r', concepto: request.concepto, total: totalNum });
+      const body = await addMovement(account, {
+        fecha, tipo: 'Apuestas_r', concepto: request.concepto, total: totalNum,
+        subconcepto: subconcepto.trim() || null,
+      });
       if (!body.ok) {
         showToast(body.error || 'Error al guardar', 'err');
         return;
@@ -107,8 +112,12 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
           />
         </div>
         <div className="fg" style={{ marginTop: 10 }}>
-          <label>Fecha de cierre</label>
-          <input type="date" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <label>Fecha y hora de cierre</label>
+          <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        </div>
+        <div className="fg">
+          <label>Subconcepto <span className="muted">(opcional)</span></label>
+          <input type="text" placeholder="Detalle del cobro" value={subconcepto} onChange={(e) => setSubconcepto(e.target.value)} />
         </div>
         <div className="modal-actions">
           <button className="btn btn-ghost" onClick={onClose}>

@@ -9,7 +9,7 @@ from urllib.parse import quote
 from application.ports.query_executor import QueryExecutionError, QueryResult
 
 
-READ_TABLES = {"accounts", "movements", "portfolio_holdings", "cash_budgets"}
+READ_TABLES = ("accounts", "movements", "portfolio_holdings", "cash_budgets")
 WRITE_ACTIONS = {
     sqlite3.SQLITE_DELETE,
     sqlite3.SQLITE_INSERT,
@@ -41,6 +41,37 @@ class SQLiteQueryExecutor:
         connection = self._connect("read")
         try:
             self._resolve_account_ids(connection, normalized_scope)
+        finally:
+            connection.close()
+
+    def get_schema_context(self) -> str:
+        connection = self._connect("read")
+        try:
+            tables = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'table'"
+                )
+            }
+            schema = []
+            for table in READ_TABLES:
+                if table not in tables:
+                    raise QueryExecutionError(f"No existe la tabla permitida '{table}'")
+                columns = connection.execute(f'PRAGMA table_info("{table}")').fetchall()
+                if not columns:
+                    raise QueryExecutionError(f"La tabla permitida '{table}' no tiene columnas")
+                definitions = []
+                for _, name, column_type, not_null, _, primary_key_order in columns:
+                    definition = f"{name} {column_type or 'ANY'}"
+                    if primary_key_order:
+                        definition += " PRIMARY KEY"
+                    if not_null:
+                        definition += " NOT NULL"
+                    definitions.append(definition)
+                schema.append(f"{table}({', '.join(definitions)})")
+            return "\n".join(schema)
+        except sqlite3.Error as exc:
+            raise QueryExecutionError(str(exc)) from exc
         finally:
             connection.close()
 

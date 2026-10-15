@@ -205,7 +205,7 @@ El panel construye el scope con `accountIds` y, cuando se rellenan los filtros, 
 
 El backend valida el scope antes de llamar al LLM. `accountIds` debe contener ids existentes o únicamente `"*"`; `from` y `to` son fechas ISO inclusivas y `from` no puede ser posterior a `to`.
 
-El agente recibe `USERINPUT`, `SCOPE` y `MODE` en una conversación. En lectura dispone de `read_sql`; en modo escritura también puede proponer `write_sql`. Gemini decide si necesita llamar una herramienta, recibe su resultado como respuesta de herramienta y puede iterar antes de redactar la respuesta final. Una petición permite hasta veinte llamadas SQL; el límite es del caso de uso, no un control automático del SDK.
+Antes de cada petición, el backend obtiene las tablas y columnas permitidas directamente de SQLite mediante `PRAGMA table_info` y las añade a las instrucciones del modelo. Así, el asistente usa el esquema que realmente existe en la base local, incluidas columnas añadidas por migraciones. El agente recibe `USERINPUT`, `SCOPE` y `MODE` en una conversación. En lectura dispone de `read_sql`; en modo escritura también puede proponer `write_sql`. Gemini decide si necesita llamar una herramienta, recibe su resultado como respuesta de herramienta y puede iterar antes de redactar la respuesta final. Una petición permite hasta veinte llamadas SQL; el límite es del caso de uso, no un control automático del SDK.
 
 Cada llamada se valida y ejecuta en el backend. El ejecutor limita las tablas permitidas, la duración, el número de filas y el tamaño de cada resultado. Las lecturas contra `main.*` se deniegan; la conexión principal es de solo lectura. El scope se aplica en SQLite antes de exponer filas temporales al SQL. Los presupuestos mensuales se incluyen cuando su mes se solapa con el rango seleccionado. Si una sentencia falla, el error vuelve al agente para que pueda corregirla dentro del presupuesto de llamadas.
 
@@ -294,7 +294,7 @@ Barras de ingresos y gastos por mes, con línea de balance neto. Respeta el Rang
 
 **Ranking** — barras horizontales con los 20 conceptos `Gasto` mayores. Cada concepto conserva su identidad propia; el subconcepto es un detalle opcional del movimiento, no una categoría padre común. La sección **Recurrencia de gastos**, debajo del ranking, permite clasificar cada concepto de la cuenta como recurrente o puntual; el cambio afecta a todos sus gastos y los nuevos movimientos heredan esa marca. Un concepto nuevo se guarda como recurrente y, tras guardarlo, un diálogo permite marcarlo puntual. En modo **Media/mes**, los recurrentes dividen el gasto del período por los meses desde su primera aparición hasta el fin del rango. Los puntuales dividen por todos los meses del rango; en `Todo`, desde el primer movimiento registrado en la cuenta hasta el mes actual. Los gastos existentes reciben `recurrente = false` al migrar la base de datos y se pueden clasificar desde esa sección. También hay modo **Total**.
 
-El ranking y sus métricas (media, desviación, recurrencia e histograma mensual) se mantienen agrupados por concepto padre. **Ver detalle** conserva ese histograma y presenta también los importes por subconcepto en el rango activo; las filas del desglose no tienen histograma ni desviación propia. Un subconcepto nulo se etiqueta **Otros**; si solo hay un valor de subconcepto para el concepto en el rango, se omite el desglose. En movimientos, el subconcepto se puede añadir y editar para gastos y se expone en su propia columna.
+El ranking y sus métricas (media, desviación, recurrencia e histograma mensual) se mantienen agrupados por concepto padre. **Ver detalle** conserva ese histograma y presenta también los importes por subconcepto en el rango activo; las filas del desglose no tienen histograma ni desviación propia. Un subconcepto nulo se etiqueta **Otros**; si solo hay un valor de subconcepto para el concepto en el rango, se omite el desglose. En movimientos, el subconcepto opcional se puede añadir y editar para cualquier tipo y se expone en su propia columna.
 
 #### Análisis de apuestas
 
@@ -315,15 +315,15 @@ KPIs de resumen (lifetime, no afectados por el rango) y dos tablas: posiciones a
 
 #### Tabla de movimientos y buscador
 
-Por defecto **los últimos 20 movimientos**. Cada fila (salvo `Saldo Inicial` y las filas sintéticas de holdings, que no tienen `_idx`) tiene **Duplicar** (rellena el formulario con fecha de hoy) y **Editar** (modal: fecha, tipo, concepto, subconcepto y total). La columna Subconcepto muestra el detalle opcional guardado en el movimiento.
+Por defecto **los últimos 20 movimientos**. Cada fila (salvo `Saldo Inicial` y las filas sintéticas de holdings, que no tienen `_idx`) tiene **Duplicar** (rellena el formulario con la fecha y hora actuales) y **Editar** (modal: fecha y hora, tipo, concepto, subconcepto y total). La columna Subconcepto muestra el detalle opcional guardado en el movimiento.
 
-Encima hay un **buscador** (tipo / concepto / fecha) contra toda la cuenta. Con búsqueda activa se muestran hasta 500 resultados; **Limpiar** vuelve a los últimos 20.
+Encima hay un **buscador** (tipo / concepto / subconcepto / fecha) contra toda la cuenta. El filtro por subconcepto aparece cuando se define un concepto existente y sus sugerencias se limitan a ese concepto. Con búsqueda activa se muestran hasta 500 resultados; **Limpiar** vuelve a los últimos 20.
 
 Clic en un concepto de la tabla filtra por ese concepto. **Repetir último** rellena el formulario con el último movimiento cronológico real.
 
 #### Formulario: Añadir movimiento
 
-A la derecha de la tabla. Autocompletado de concepto por frecuencia (prefijo, case-insensitive). En los gastos hay un campo opcional de subconcepto. Si se registra un concepto padre nuevo, el backend lo detecta en la operación de alta; tras guardar, el formulario abre un diálogo para clasificarlo como recurrente o puntual.
+A la derecha de la tabla. Autocompletado de concepto por frecuencia (prefijo, case-insensitive) y campo opcional de subconcepto para todos los tipos. La fecha y hora se inicializan con la hora local actual y se guardan con precisión de minuto. Si se registra un concepto de gasto nuevo, el backend lo detecta en la operación de alta; tras guardar, el formulario abre un diálogo para clasificarlo como recurrente o puntual.
 
 **Validaciones del servidor:**
 
@@ -400,13 +400,13 @@ No hay sección UI de transferencias de la cuenta. El endpoint `GET /api/account
 
 ### Cerrar apuesta (modal)
 
-El botón **Cerrar** (solo en **Análisis de apuestas**, vista CASH) abre un modal con concepto y banca (solo lectura), importe recibido y fecha. Crea `Cobro apuesta` (`Apuestas_r`). **0 = pérdida total.**
+El botón **Cerrar** (solo en **Análisis de apuestas**, vista CASH) abre un modal con concepto y banca (solo lectura), importe recibido, fecha y hora, y subconcepto opcional. Crea `Cobro apuesta` (`Apuestas_r`). **0 = pérdida total.**
 
 ---
 
 ### Transferencia entre cuentas
 
-El botón "⇄ Transferencia" en el header (visible solo con 2 o más cuentas) abre un modal con origen, destino, importe y fecha. Al confirmar, registra:
+El botón "⇄ Transferencia" en el header (visible solo con 2 o más cuentas) abre un modal con origen, destino, importe, subconcepto opcional compartido por ambas patas y fecha y hora. Al confirmar, registra:
 
 - `Transferencia` (resta) en la cuenta origen, con el importe en su propia divisa
 - `Ingreso` (suma) en la cuenta destino, con el importe convertido a la divisa de esa cuenta
