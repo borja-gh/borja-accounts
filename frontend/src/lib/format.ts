@@ -46,11 +46,11 @@ export function localISODate(): string {
 export function localISODateTime(): string {
   const d = new Date();
   const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  return `${date}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${date}T${String(d.getHours()).padStart(2, '0')}:00`;
 }
 
 export function localDateTimeInputValue(value: string): string {
-  return value.replace(' ', 'T').slice(0, 16);
+  return `${value.replace(' ', 'T').slice(0, 13)}:00`;
 }
 
 /** Precio editable: 2 decimales, sin la basura IEEE que trae yfinance. */
