@@ -7,6 +7,7 @@ import { localDateTimeInputValue, money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
 import { candidatesForSubconcept, candidatesForTipo, rankConcepts } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
+import { DateTimeField } from '../../components/DateTimeField';
 
 interface Props {
   idx: number | null;
@@ -87,7 +88,7 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
         <h3>Editar movimiento</h3>
         <div className="fg">
           <label>Fecha y hora</label>
-          <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <DateTimeField className="date-input" value={fecha} onChange={setFecha} />
         </div>
         <div className="fg">
           <label>Tipo</label>
