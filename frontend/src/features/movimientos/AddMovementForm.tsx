@@ -7,6 +7,7 @@ import { localISODateTime, money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
 import { candidatesForSubconcept, candidatesForTipo, rankConcepts, suggestNextApuestaSubconcept } from './autocomplete';
 import { ConceptAutocomplete } from './ConceptAutocomplete';
+import { DateTimeField } from '../../components/DateTimeField';
 
 export interface AddMovementFormHandle {
   /** Usado por "Repetir último" / "Duplicar" en la tabla. Devuelve false
@@ -140,7 +141,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
     <div className="form-body">
       <div className="fg">
         <label>Fecha y hora</label>
-        <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        <DateTimeField className="date-input" value={fecha} onChange={setFecha} />
       </div>
       <div className="fg">
         <label>Tipo</label>

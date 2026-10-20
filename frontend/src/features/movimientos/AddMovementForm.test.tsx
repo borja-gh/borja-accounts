@@ -68,15 +68,32 @@ describe('AddMovementForm', () => {
       </ToastProvider>,
     );
 
-    fireEvent.change(container.querySelector('input[type="datetime-local"]')!, { target: { value: '2026-10-14T18:42' } });
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'Ingreso' } });
+    fireEvent.change(container.querySelector('input[type="date"]')!, { target: { value: '2026-10-14' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Hora (24 horas)' }), { target: { value: '18' } });
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: 'Ingreso' } });
     fireEvent.change(screen.getByPlaceholderText('Empieza a escribir…'), { target: { value: 'Venta' } });
     fireEvent.change(screen.getByPlaceholderText('Busca un subconcepto…'), { target: { value: 'Colección' } });
     fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '30' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
     await waitFor(() => expect(addMovement).toHaveBeenCalledWith('cash1', expect.objectContaining({
-      fecha: '2026-10-14T18:42', tipo: 'Ingreso', concepto: 'Venta', subconcepto: 'Colección',
+      fecha: '2026-10-14T18:00', tipo: 'Ingreso', concepto: 'Venta', subconcepto: 'Colección',
     })));
+  });
+
+  it('ofrece horas completas en formato 24 h y cierra el selector al pulsar Enter', () => {
+    const { container } = render(
+      <ToastProvider>
+        <AddMovementForm account="cash1" kind="CASH" currency="EUR" data={[]} onSaved={vi.fn()} />
+      </ToastProvider>,
+    );
+    const hour = screen.getByRole('combobox', { name: 'Hora (24 horas)' });
+    expect(hour.querySelectorAll('option')).toHaveLength(24);
+    expect(hour.querySelector('option[value="00"]')).toHaveTextContent('00:00');
+    expect(hour.querySelector('option[value="23"]')).toHaveTextContent('23:00');
+    const blur = vi.spyOn(hour, 'blur');
+    fireEvent.keyDown(hour, { key: 'Enter' });
+    expect(blur).toHaveBeenCalled();
+    expect(container.querySelector('input[type="datetime-local"]')).not.toBeInTheDocument();
   });
 });
