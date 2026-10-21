@@ -12,8 +12,8 @@ interface Props {
   onDataChanged: () => void;
 }
 
-// El filtro de rango se muestra una única vez a nivel de vista (ver
-// CashAccountView) -- ver docs/ARCHITECTURE.md §0, "filtro único global".
+// El filtro de rango se gestiona en CashAccountView y es independiente de
+// los rangos de los demás paneles.
 export function ApuestasSection({ account, filter, onDataChanged }: Props) {
   const { report, reload } = useRangeReport((f) => fetchApuestas(account, f), filter, [account]);
   const [closing, setClosing] = useState<ClosePositionRequest | null>(null);
