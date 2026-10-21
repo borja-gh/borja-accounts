@@ -93,6 +93,7 @@ describe('GastosChart', () => {
     };
     const movements = [
       { date: makeDate(-2), subconcept: 'Artista A', total: 10 },
+      { date: makeDate(-2), subconcept: 'Artista D', total: 15 },
       { date: makeDate(-1), subconcept: 'Artista B', total: 20 },
       { date: makeDate(-1), subconcept: 'Artista C', total: 30 },
       { date: makeDate(-1), subconcept: 'Artista D', total: 15 },
@@ -135,6 +136,10 @@ describe('GastosChart', () => {
     expect(screen.getByText('Artista C').closest('.gastos-subconcept-row')?.querySelector('.gastos-comparison-chip.is-spending-down'))
       .toBeInTheDocument();
     expect(screen.getByText('-30.00€')).toBeInTheDocument();
+    const artistAChips = screen.getByText('Artista A').closest('.gastos-subconcept-row')?.querySelectorAll('.gastos-comparison-chip');
+    expect(artistAChips?.[0]).toHaveClass('is-spending-up');
+    const artistCChips = screen.getByText('Artista C').closest('.gastos-subconcept-row')?.querySelectorAll('.gastos-comparison-chip');
+    expect(artistCChips?.[0]).toHaveClass('is-spending-down');
     expect(screen.getByText('Artista D').closest('.gastos-subconcept-row')?.querySelector('.gastos-comparison-chip.is-spending-up, .gastos-comparison-chip.is-spending-down'))
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: `Ver detalle de ${concept}` })).not.toBeInTheDocument();

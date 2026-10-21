@@ -184,14 +184,20 @@ export function GastosChart({
   }
 
   function comparisonChips(average: number | null, current: number, previous: number) {
-    const difference = Number((current - previous).toFixed(2));
-    const trend = difference > 0 ? 'is-spending-up' : difference < 0 ? 'is-spending-down' : '';
+    const historicalDifference = average === null ? null : Number((current - average).toFixed(2));
+    const previousDifference = Number((current - previous).toFixed(2));
+    const trendClass = (difference: number | null) => difference === null || difference === 0
+      ? ''
+      : difference > 0 ? 'is-spending-up' : 'is-spending-down';
     return (
       <span className="gastos-comparison-chips">
-        <span className="gastos-comparison-chip">Media histórica <strong>{average === null ? '—' : `${average.toFixed(2)}${symbol}/mes`}</strong></span>
-        <span className={`gastos-comparison-chip ${trend}`}>
+        <span className={`gastos-comparison-chip ${trendClass(historicalDifference)}`}>
+          Media histórica <strong>{average === null ? '—' : `${average.toFixed(2)}${symbol}/mes`}</strong>
+          {historicalDifference !== null && historicalDifference !== 0 && <small>{historicalDifference > 0 ? '+' : ''}{historicalDifference.toFixed(2)}{symbol}</small>}
+        </span>
+        <span className={`gastos-comparison-chip ${trendClass(previousDifference)}`}>
           Mes anterior <strong>{previous.toFixed(2)}{symbol}</strong>
-          {difference !== 0 && <small>{difference > 0 ? '+' : ''}{difference.toFixed(2)}{symbol}</small>}
+          {previousDifference !== 0 && <small>{previousDifference > 0 ? '+' : ''}{previousDifference.toFixed(2)}{symbol}</small>}
         </span>
       </span>
     );
