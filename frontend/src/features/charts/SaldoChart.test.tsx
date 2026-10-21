@@ -29,14 +29,15 @@ describe('SaldoChart', () => {
     expect(traces[0].name).toContain('Capital aportado');
   });
 
-  it('CASH: omite a propósito la traza "Media 30d" (limpieza de UI, ver docs/ARCHITECTURE.md §0)', () => {
+  it('CASH: muestra saldo y media móvil diaria de 30 días', () => {
     const report = backendFixture.cash1_saldo_evolucion_all;
     render(<SaldoChart kind="CASH" report={report} currency="EUR" />);
     const [, traces, layout] = newPlot.mock.calls[0];
     const expected = rawFrontendSnapshot.cash1_charts_all['c-saldo'];
-    expect(expected.traces).toHaveLength(2); // el vanilla sí emitía Saldo + Media 30d
-    expect(traces).toHaveLength(1); // React solo emite la traza de Saldo
+    expect(expected.traces).toHaveLength(2);
+    expect(traces).toHaveLength(2);
     expect(traces[0]).toEqual(expected.traces[0]);
+    expect(traces[1].name).toBe('Media móvil 30 días');
     expect(layout).toEqual(withCurrentFont(expected.layout));
   });
 });
