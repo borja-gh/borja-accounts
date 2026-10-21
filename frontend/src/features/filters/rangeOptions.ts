@@ -15,10 +15,7 @@ export interface RangeOption {
   year?: number;
 }
 
-/** Deriva qué botones de rango tiene sentido ofrecer según los datos reales
- * de la cuenta (p.ej. no mostrar "6 meses" si no hay movimientos tan
- * antiguos) -- misma lógica que panelFilterBar() en el vanilla, pero ahora
- * calculada una sola vez para el filtro único de la vista, no por panel. */
+/** Deriva los botones de rango disponibles a partir del histórico de la cuenta. */
 export function rangeOptions(allRows: Movement[]): RangeOption[] {
   const c1m = calendarMonthStart(0);
   const c3m = calendarMonthStart(2);

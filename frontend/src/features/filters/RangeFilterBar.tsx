@@ -7,17 +7,23 @@ interface Props {
   data: Movement[];
   filter: RangeFilter;
   onChange: (filter: RangeFilter) => void;
+  allLabel?: string;
+  oneMonthLabel?: string;
+  historicalAndCurrentMonthOnly?: boolean;
 }
 
-// Antes cada panel (saldo/mensual/gastos/carteras/apuestas/inversiones/
-// transferencias) tenía su propio filtro y su propio panelFilterBar, con
-// defaults distintos (3m para listas de posiciones, all para el resto).
-// La limpieza de UI acordada para el Bloque 5 los unifica en un único
-// filtro por vista -- por eso apuestas/inversiones/transferencias, que
-// antes arrancaban en 3m, ahora arrancan en 'all' como el resto. Es un
-// cambio de comportamiento por defecto intencional, no una regresión.
-export function RangeFilterBar({ data, filter, onChange }: Props) {
-  const options = rangeOptions(data);
+// Cada instancia controla el rango de su propio grupo de paneles.
+export function RangeFilterBar({
+  data,
+  filter,
+  onChange,
+  allLabel = 'Todo',
+  oneMonthLabel = 'Mes',
+  historicalAndCurrentMonthOnly = false,
+}: Props) {
+  const options = historicalAndCurrentMonthOnly
+    ? [{ label: allLabel, type: 'all' as const }, { label: oneMonthLabel, type: '1m' as const }]
+    : rangeOptions(data);
 
   return (
     <div className="filter-bar">
@@ -33,13 +39,15 @@ export function RangeFilterBar({ data, filter, onChange }: Props) {
           </button>
         );
       })}
-      <MonthRangeChip
-        key={filter.type}
-        active={filter.type === 'custom'}
-        fromYm={filter.fromYm}
-        toYm={filter.toYm}
-        onApply={(fromYm, toYm) => onChange({ type: 'custom', fromYm, toYm })}
-      />
+      {!historicalAndCurrentMonthOnly && (
+        <MonthRangeChip
+          key={filter.type}
+          active={filter.type === 'custom'}
+          fromYm={filter.fromYm}
+          toYm={filter.toYm}
+          onApply={(fromYm, toYm) => onChange({ type: 'custom', fromYm, toYm })}
+        />
+      )}
     </div>
   );
 }

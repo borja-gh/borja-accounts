@@ -25,6 +25,30 @@ export function SaldoChart({ kind, report, currency, theme }: Props) {
   const lineColor = chartLineColor(theme, kind);
   const label = kind === 'INVESTMENT' ? 'Capital aportado' : 'Saldo';
   const symbol = CURRENCY_SUFFIX[currency] ?? currency;
+  const dailyClosing = new Map<string, number>();
+  report.dates.forEach((date, index) => dailyClosing.set(date.slice(0, 10), report.saldos[index]));
+  const dailyDates = [...dailyClosing.keys()].sort();
+  const averageDates: string[] = [];
+  const averageValues: number[] = [];
+  if (dailyDates.length) {
+    const [startYear, startMonth, startDay] = dailyDates[0].split('-').map(Number);
+    const [endYear, endMonth, endDay] = dailyDates[dailyDates.length - 1].split('-').map(Number);
+    const cursor = new Date(startYear, startMonth - 1, startDay);
+    const end = new Date(endYear, endMonth - 1, endDay);
+    const trailing: number[] = [];
+    let closing: number | undefined;
+    while (cursor <= end) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+      if (dailyClosing.has(key)) closing = dailyClosing.get(key);
+      if (closing !== undefined) {
+        trailing.push(closing);
+        if (trailing.length > 30) trailing.shift();
+        averageDates.push(key);
+        averageValues.push(trailing.reduce((sum, value) => sum + value, 0) / trailing.length);
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
 
   const traces: Data[] = [
     {
@@ -34,6 +58,15 @@ export function SaldoChart({ kind, report, currency, theme }: Props) {
       mode: 'lines',
       name: `${label} (${money(report.actual, currency)})`,
       line: { color: lineColor, width: 2.5 },
+      hovertemplate: `%{x|%d/%m/%y}: <b>%{y:,.2f}${symbol}</b><extra></extra>`,
+    } as Data,
+    {
+      x: averageDates,
+      y: averageValues,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Media móvil 30 días',
+      line: { color: '#a0a0a0', width: 1.5, dash: 'dot' },
       hovertemplate: `%{x|%d/%m/%y}: <b>%{y:,.2f}${symbol}</b><extra></extra>`,
     } as Data,
   ];

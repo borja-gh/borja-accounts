@@ -37,7 +37,9 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
   { account, onDataChanged }, ref,
 ) {
   const [period, setPeriod] = useState<KpiPeriodFilter>({ type: 'mes' });
-  const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
+  const [desgloseRange, setDesgloseRange] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
+  const [gastosRange, setGastosRange] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
+  const [apuestasRange, setApuestasRange] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
   const [gastosMode, setGastosMode] = useState<RankingMode>('media');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [budgetReloadToken, setBudgetReloadToken] = useState(0);
@@ -46,22 +48,22 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
   const { data, reload: reloadData } = useAccountData(account.id);
   const { report: saldoReport, reload: reloadSaldo } = useRangeReport(
     (f) => fetchSaldoEvolucion(account.id, f),
-    rangeFilter,
+    desgloseRange,
     [account.id],
   );
   const { report: mensualReport, reload: reloadMensual } = useRangeReport(
     (f) => fetchMensualEvolucion(account.id, f),
-    rangeFilter,
+    desgloseRange,
     [account.id],
   );
   const { report: gastosRanking, reload: reloadGastosRanking } = useRangeReport(
-    (f) => fetchGastosRanking(account.id, f, gastosMode),
-    rangeFilter,
+    (f) => fetchGastosRanking(account.id, f, f.type === '1m' ? 'total' : gastosMode),
+    gastosRange,
     [account.id, gastosMode],
   );
   const { report: gastosMesActual, reload: reloadGastosMesActual } = useGastosMesActual(account.id);
   const visiblePanels = new Set(account.visiblePanels ?? defaultVisiblePanels(account.kind));
-  const hasRangePanels = ['cash_balance', 'monthly', 'expenses', 'bets'].some((panel) => visiblePanels.has(panel));
+  const hasBreakdownPanels = ['cash_balance', 'monthly'].some((panel) => visiblePanels.has(panel));
 
   function refreshAll() {
     reloadKpis();
@@ -134,16 +136,10 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
         </>
       )}
 
-      {data && hasRangePanels && (
-        <div className="filter-row">
-          <span className="filter-row-label">Rango de Desglose y Apuestas</span>
-          <RangeFilterBar data={data} filter={rangeFilter} onChange={setRangeFilter} />
-        </div>
-      )}
-
       {(visiblePanels.has('cash_balance') || visiblePanels.has('monthly') || visiblePanels.has('expenses')) && (
         <>
           <SectionHeading title="Desglose" />
+          {data && hasBreakdownPanels && <div className="filter-row"><RangeFilterBar data={data} filter={desgloseRange} onChange={setDesgloseRange} /></div>}
           <div className="charts-grid">
             {visiblePanels.has('cash_balance') && (
               <div className="chart-card">
@@ -163,9 +159,26 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
               <div className="chart-card full">
                 <div className="chart-head">
                   <div className="chart-label">Gastos por concepto</div>
-                  <RankingModeToggle mode={gastosMode} onChange={setGastosMode} btnClass="gastos-mode-btn" />
+                  <div className="chart-head-controls">
+                    {data && <RangeFilterBar
+                      data={data}
+                      filter={gastosRange}
+                      onChange={setGastosRange}
+                      allLabel="Histórico"
+                      oneMonthLabel="Este mes"
+                      historicalAndCurrentMonthOnly
+                    />}
+                    {gastosRange.type === '1m'
+                      ? <span className="gastos-current-total-label">Total del mes</span>
+                      : <RankingModeToggle mode={gastosMode} onChange={setGastosMode} btnClass="gastos-mode-btn" />}
+                  </div>
                 </div>
-                <GastosChart ranking={gastosRanking.ranking} />
+                <GastosChart
+                  ranking={gastosRanking.ranking}
+                  movements={data ?? []}
+                  showDailyDetails={gastosRange.type === 'all'}
+                  showMonthComparison={gastosRange.type === '1m'}
+                />
               </div>
             )}
             {visiblePanels.has('expenses') && (
@@ -184,7 +197,8 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
       {visiblePanels.has('bets') && (
         <>
           <SectionHeading title="Apuestas" />
-          <ApuestasSection account={account.id} filter={rangeFilter} onDataChanged={refreshAll} />
+          {data && <div className="filter-row"><RangeFilterBar data={data} filter={apuestasRange} onChange={setApuestasRange} /></div>}
+          <ApuestasSection account={account.id} filter={apuestasRange} onDataChanged={refreshAll} />
         </>
       )}
 

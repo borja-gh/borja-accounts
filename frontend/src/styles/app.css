@@ -567,6 +567,9 @@
       gap: 10px;
       margin-bottom: 10px;
     }
+    .chart-head-controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    .chart-head-controls .filter-row { margin: 0; }
+    .gastos-current-total-label { color: var(--muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
     .chart-head .chart-label { margin-bottom: 0; }
     .chart-plot { height: 280px; }
     .gastos-ranking-head,
@@ -583,6 +586,8 @@
       letter-spacing: .06em;
       text-transform: uppercase;
     }
+    .gastos-ranking-head.is-total { grid-template-columns: minmax(180px, 1.1fr) minmax(190px, 1.4fr) 112px; }
+    .gastos-ranking-head.is-current-month { grid-template-columns: minmax(150px, 1fr) minmax(190px, 1.4fr) minmax(310px, 1.6fr); }
     .gastos-ranking-head span:nth-child(n+2) { text-align: right; }
     .gastos-ranking-head span:nth-child(2) { text-align: left; }
     .gastos-ranking-row {
@@ -591,6 +596,7 @@
       border-top: 1px solid var(--border);
     }
     .gastos-ranking-row.is-total { grid-template-columns: minmax(180px, 1.1fr) minmax(190px, 1.4fr) 112px; }
+    .gastos-ranking-row.is-current-month { grid-template-columns: minmax(150px, 1fr) minmax(190px, 1.4fr) minmax(310px, 1.6fr); }
     .gastos-ranking-concept { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .gastos-ranking-concept strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .gastos-ranking-recurrence { flex: none; color: var(--muted); font-size: 11px; white-space: nowrap; }
@@ -619,13 +625,24 @@
     .gastos-hist-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
     .gastos-hist-head .chart-label { margin-bottom: 0; }
     .gastos-hist-head > span { color: var(--muted); font-size: 11px; white-space: nowrap; }
-    .gastos-subconcept-detail { display: grid; gap: 7px; margin: 0 12% 12px 48px; padding: 10px 12px 12px 22px; border-left: 2px solid var(--border); }
+    .gastos-subconcept-detail { display: grid; gap: 7px; margin: 0 12% 12px 48px; padding: 10px 12px 12px 36px; border-left: 2px solid var(--border); }
     .gastos-subconcept-row { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(100px, 1.8fr) minmax(90px, auto); align-items: center; gap: 16px; min-height: 32px; font-size: 12px; }
+    .gastos-subconcept-row.is-current-month { grid-template-columns: minmax(120px, .8fr) minmax(100px, 1fr) minmax(90px, auto) minmax(300px, 1.7fr); }
     .gastos-subconcept-name { min-width: 0; overflow-wrap: anywhere; }
     .gastos-subconcept-track { height: 9px; overflow: hidden; border-radius: 5px; background: var(--surface2); }
     .gastos-subconcept-track span { display: block; height: 100%; min-width: 2px; border-radius: inherit; }
     .gastos-subconcept-row strong { text-align: right; white-space: nowrap; }
     .gastos-hist-empty { margin: 8px 0; color: var(--muted); font-size: 12px; }
+    .gastos-comparison-inline { min-width: 0; }
+    .gastos-comparison-chips { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+    .gastos-comparison-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface2); white-space: nowrap; }
+    .gastos-comparison-chip strong { color: var(--text); font-variant-numeric: tabular-nums; }
+    .gastos-comparison-chip.is-spending-up { border-color: color-mix(in srgb, var(--red) 28%, var(--border)); background: color-mix(in srgb, var(--red) 8%, var(--surface)); color: var(--red-bright); }
+    .gastos-comparison-chip.is-spending-down { border-color: color-mix(in srgb, var(--green) 28%, var(--border)); background: color-mix(in srgb, var(--green) 8%, var(--surface)); color: var(--green-bright); }
+    .gastos-comparison-chip.is-spending-up strong,
+    .gastos-comparison-chip.is-spending-down strong { color: inherit; }
+    .gastos-subconcept-comparison { grid-column: 1 / -1; }
+    .gastos-subconcept-row.is-current-month .gastos-subconcept-comparison { grid-column: auto; }
     .expense-recurrence-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 2px 0; border: 0; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
     .expense-recurrence-toggle-copy { display: grid; gap: 3px; }
     .expense-recurrence-toggle-copy strong { font-size: 14px; }
@@ -748,6 +765,7 @@
 
     .fg { display: flex; flex-direction: column; gap: 5px; }
     .fg.full { grid-column: 1 / -1; }
+    .form-body > .date-time-form-field { grid-column: 1 / -1; }
     .new-expense-recurrence { gap: 7px; }
 
     label {
@@ -784,9 +802,14 @@
     }
     .date-time-field {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 108px;
+      grid-template-columns: minmax(0, 1fr) 96px;
       gap: 8px;
+      min-width: 0;
+      width: 100%;
     }
+    .date-time-field input[type="date"],
+    .date-time-field select { min-width: 0; width: 100%; }
+    .date-time-field input[type="date"] { padding-inline: 8px; }
     .date-time-hour {
       min-height: 38px;
     }
@@ -1408,13 +1431,19 @@
       .charts-grid { grid-template-columns: 1fr; }
       .gastos-ranking-head { display: none; }
       .gastos-ranking-row.is-average,
-      .gastos-ranking-row.is-total { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; }
+      .gastos-ranking-row.is-total,
+      .gastos-ranking-row.is-current-month { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; }
       .gastos-ranking-concept { grid-column: 1 / -1; }
       .gastos-ranking-bar { grid-column: 1 / -1; }
       .gastos-ranking-deviation { justify-self: start; }
+      .gastos-comparison-inline { grid-column: 1 / -1; }
+      .chart-head { align-items: flex-start; flex-direction: column; }
+      .chart-head-controls { justify-content: flex-start; width: 100%; }
+      .gastos-comparison-chips { justify-content: flex-start; }
       .gastos-monthly-detail { margin: 0; padding: 12px 6px 14px; }
-      .gastos-subconcept-detail { margin: 0 0 10px 26px; padding: 8px 2px 10px 14px; }
+      .gastos-subconcept-detail { margin: 0 0 10px 26px; padding: 8px 2px 10px 22px; }
       .gastos-subconcept-row { grid-template-columns: minmax(72px, 1fr) minmax(48px, 1fr) auto; gap: 9px; }
+      .gastos-subconcept-row.is-current-month .gastos-subconcept-comparison { grid-column: 1 / -1; }
       .gastos-hist-head { align-items: flex-start; flex-direction: column; gap: 4px; }
       .form-body { grid-template-columns: 1fr; }
       .budget-actions { margin-left: 0; width: 100%; }

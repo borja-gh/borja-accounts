@@ -5,8 +5,8 @@ import type { RangeFilter } from './RangeFilter';
  * cambiar el filtro (o cualquier valor en `extraDeps`, p.ej. gastosMode) y
  * un `reload()` explícito para tras una mutación (p.ej. cerrar una
  * posición). `fetcher` se lee de un ref para que un closure nuevo en cada
- * render del padre no dispare refetchs de más -- solo filter.type/
- * filter.year/extraDeps re-disparan el efecto. */
+ * render del padre no dispare refetchs de más -- solo cambia cuando cambia
+ * el rango o una dependencia adicional. */
 export function useRangeReport<T>(fetcher: (filter: RangeFilter) => Promise<T>, filter: RangeFilter, extraDeps: unknown[] = []) {
   const [report, setReport] = useState<T | null>(null);
   const fetcherRef = useRef(fetcher);
@@ -14,8 +14,7 @@ export function useRangeReport<T>(fetcher: (filter: RangeFilter) => Promise<T>, 
 
   const reload = useCallback(() => {
     fetcherRef.current(filter).then(setReport);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter.type, filter.year, ...extraDeps]);
+  }, [filter.type, filter.year, filter.fromYm, filter.toYm, ...extraDeps]);
 
   useEffect(() => {
     reload();
