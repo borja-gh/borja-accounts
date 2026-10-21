@@ -139,7 +139,7 @@ export const AddMovementForm = forwardRef<AddMovementFormHandle, Props>(function
 
   return (
     <div className="form-body">
-      <div className="fg">
+      <div className="fg date-time-form-field">
         <label>Fecha y hora</label>
         <DateTimeField className="date-input" value={fecha} onChange={setFecha} />
       </div>
