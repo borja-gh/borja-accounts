@@ -3,9 +3,10 @@ import type { Data, Layout } from 'plotly.js-dist-min';
 import type { GastosRankingEntry, GastosRankingSection, Movement } from '../../api/types';
 import { PlotlyChart } from '../../components/PlotlyChart';
 import { baseLayout } from './baseLayout';
+import { expenseAmount } from '../../domain/expenses';
 
 function conceptColor(value: number, maxValue: number) {
-  const intensity = value / maxValue;
+  const intensity = Math.abs(value) / maxValue;
   return `hsl(170 ${35 + 35 * intensity}% ${85 - 52 * intensity}%)`;
 }
 
@@ -22,7 +23,7 @@ function previousMonth(value: string) {
 }
 
 function comparison(movements: Movement[], concept: string, recurrente: boolean, subconcept?: string | null) {
-  const conceptExpenses = movements.filter((movement) => movement.Tipo === 'Gasto' && movement.Concepto === concept);
+  const conceptExpenses = movements.filter((movement) => (movement.Tipo === 'Gasto' || movement.Tipo === 'Devolución') && movement.Concepto === concept);
   const expenses = subconcept === undefined
     ? conceptExpenses
     : conceptExpenses.filter((movement) => movement.Subconcepto === subconcept);
@@ -42,12 +43,12 @@ function comparison(movements: Movement[], concept: string, recurrente: boolean,
   const historicalTotal = startMonth
     ? expenses.reduce((total, movement) => {
       const month = movement.Fecha.slice(0, 7);
-      return month >= startMonth && month <= lastMonth ? total + movement.Total : total;
+      return month >= startMonth && month <= lastMonth ? total + expenseAmount(movement) : total;
     }, 0)
     : 0;
   const totalInMonth = (month: string) => expenses
     .filter((movement) => movement.Fecha.startsWith(month))
-    .reduce((total, movement) => total + movement.Total, 0);
+    .reduce((total, movement) => total + expenseAmount(movement), 0);
   return {
     thisMonth: totalInMonth(currentMonth),
     lastMonth: totalInMonth(lastMonth),
@@ -57,7 +58,7 @@ function comparison(movements: Movement[], concept: string, recurrente: boolean,
 
 function monthlySubconcepts(movements: Movement[], concept: string, recurrente: boolean) {
   const subconcepts = [...new Set(movements
-    .filter((movement) => movement.Tipo === 'Gasto' && movement.Concepto === concept)
+    .filter((movement) => (movement.Tipo === 'Gasto' || movement.Tipo === 'Devolución') && movement.Concepto === concept)
     .map((movement) => movement.Subconcepto))];
   return subconcepts.map((subconcepto) => {
     const metrics = comparison(movements, concept, recurrente, subconcepto);
@@ -73,11 +74,11 @@ function monthlySubconcepts(movements: Movement[], concept: string, recurrente: 
 function dailyExpenses(movements: Movement[], concept: string) {
   const totals = new Map<string, number>();
   for (const movement of movements) {
-    if (movement.Tipo !== 'Gasto' || movement.Concepto !== concept) continue;
+    if (!['Gasto', 'Devolución'].includes(movement.Tipo) || movement.Concepto !== concept) continue;
     const day = movement.Fecha.slice(0, 10);
-    totals.set(day, (totals.get(day) ?? 0) + movement.Total);
+    totals.set(day, (totals.get(day) ?? 0) + expenseAmount(movement));
   }
-  return [...totals.values()].filter((amount) => amount > 0);
+  return [...totals.values()].map((amount) => Number(amount.toFixed(2)));
 }
 
 export function GastosChart({
@@ -97,7 +98,8 @@ export function GastosChart({
     return <PlotlyChart traces={null} layout={{}} height={480} />;
   }
 
-  const maxValue = Math.max(...ranking.entries.map((entry) => entry.valor));
+  const maxValue = Math.max(...ranking.entries.map((entry) => Math.abs(entry.valor))) || 1;
+  const signedBars = ranking.entries.some((entry) => entry.valor < 0);
   const symbol = ranking.hoverSuffix.charAt(0) || '€';
   const showMonthlyMetrics = !showMonthComparison && ranking.hoverSuffix.endsWith('/mes');
   const base = baseLayout();
@@ -111,7 +113,7 @@ export function GastosChart({
       tickangle: -45,
       tickfont: { color: '#57606a', size: 9 },
       automargin: true,
-      title: { text: '<b>Rango del gasto diario</b>' },
+      title: { text: '<b>Rango del gasto neto diario</b>' },
     },
     yaxis: {
       ...base.yaxis,
@@ -119,7 +121,7 @@ export function GastosChart({
       rangemode: 'tozero',
       dtick: 1,
       tickformat: '.0f',
-      title: { text: '<b>Días con gasto</b>' },
+      title: { text: '<b>Días con movimientos</b>' },
     },
     showlegend: false,
   };
@@ -144,14 +146,14 @@ export function GastosChart({
   function renderHistogram(entry: GastosRankingEntry) {
     const dailyExpensesByConcept = dailyExpenses(movements, entry.concepto);
     if (!dailyExpensesByConcept.length) {
-      return <p className="gastos-hist-empty">No hay días con gasto en el histórico.</p>;
+      return <p className="gastos-hist-empty">No hay días con movimientos en el histórico.</p>;
     }
     const binCount = Math.ceil(dailyExpensesByConcept.length / 2);
     const minExpense = Math.min(...dailyExpensesByConcept);
     const maxExpense = Math.max(...dailyExpensesByConcept);
     const expenseRange = maxExpense - minExpense;
-    const binSize = expenseRange > 0 ? expenseRange / binCount : Math.max(maxExpense * 0.05, 0.01);
-    const binStart = expenseRange > 0 ? minExpense : Math.max(0, maxExpense - binSize);
+    const binSize = expenseRange > 0 ? expenseRange / binCount : Math.max(Math.abs(maxExpense) * 0.05, 0.01);
+    const binStart = expenseRange > 0 ? minExpense : maxExpense - binSize;
     const counts = Array.from({ length: binCount }, () => 0);
     for (const expense of dailyExpensesByConcept) {
       const index = Math.min(binCount - 1, Math.max(0, Math.floor((expense - binStart) / binSize)));
@@ -217,11 +219,13 @@ export function GastosChart({
       {ranking.entries.map((entry) => {
         const isOpen = openConcepts.has(entry.concepto);
         const isBreakdownOpen = openBreakdowns.has(entry.concepto);
-        const barWidth = (entry.valor / maxValue) * 100;
+        const barWidth = (Math.abs(entry.valor) / maxValue) * (signedBars ? 50 : 100);
         const currentComparison = comparison(movements, entry.concepto, entry.recurrente);
         const breakdown = showMonthComparison
           ? monthlySubconcepts(movements, entry.concepto, entry.recurrente)
           : entry.desglose;
+        const signedBreakdown = breakdown.some((group) => group.valor < 0);
+        const maxSubgroupValue = Math.max(0, ...breakdown.map((group) => Math.abs(group.valor))) || 1;
         const dailyCount = showDailyDetails ? dailyExpenses(movements, entry.concepto).length : 0;
         return (
           <div className="gastos-ranking-item" key={entry.concepto}>
@@ -251,10 +255,12 @@ export function GastosChart({
                 )}
               </div>
               <div className="gastos-ranking-bar">
-                <div className="gastos-ranking-track" aria-hidden="true">
+                <div className={`gastos-ranking-track ${signedBars ? 'is-signed' : ''}`} aria-hidden="true">
                   <span
                     style={{
                       width: `${barWidth}%`,
+                      marginLeft: signedBars ? `${entry.valor < 0 ? 50 - barWidth : 50}%` : undefined,
+                      minWidth: entry.valor === 0 ? 0 : undefined,
                       backgroundColor: conceptColor(entry.valor, maxValue),
                     }}
                   />
@@ -285,7 +291,7 @@ export function GastosChart({
               <div className="gastos-monthly-detail">
                 <div className="gastos-hist-head">
                   <div className="chart-label">Distribución diaria · {entry.concepto}</div>
-                  <span>{dailyCount} días con gasto</span>
+                  <span>{dailyCount} días con movimientos</span>
                 </div>
                 {renderHistogram(entry)}
               </div>
@@ -293,13 +299,20 @@ export function GastosChart({
             {isBreakdownOpen && (
               <div className="gastos-subconcept-detail" aria-label={`Desglose por subconcepto de ${entry.concepto}`}>
                 {breakdown.map((group, index) => {
-                  const percentage = entry.valor > 0 ? Math.min(100, (group.valor / entry.valor) * 100) : 0;
+                  const percentage = signedBreakdown
+                    ? (Math.abs(group.valor) / maxSubgroupValue) * 50
+                    : entry.valor > 0 ? Math.min(100, (group.valor / entry.valor) * 100) : 0;
                   const subgroupComparison = comparison(movements, entry.concepto, entry.recurrente, group.subconcepto);
                   return (
                     <div className={`gastos-subconcept-row ${showMonthComparison ? 'is-current-month' : ''}`} key={group.subconcepto ?? '__otros__'}>
                       <span className="gastos-subconcept-name">{group.subconcepto ?? 'Otros'}</span>
-                      <div className="gastos-subconcept-track" aria-label={`${percentage.toFixed(0)} %`}>
-                        <span style={{ width: `${percentage}%`, backgroundColor: subconceptColors[index % subconceptColors.length] }} />
+                      <div className={`gastos-subconcept-track ${signedBreakdown ? 'is-signed' : ''}`} aria-label={signedBreakdown ? `${group.valor.toFixed(2)}${symbol}` : `${percentage.toFixed(0)} %`}>
+                        <span style={{
+                          width: `${percentage}%`,
+                          marginLeft: signedBreakdown ? `${group.valor < 0 ? 50 - percentage : 50}%` : undefined,
+                          minWidth: group.valor === 0 ? 0 : undefined,
+                          backgroundColor: subconceptColors[index % subconceptColors.length],
+                        }} />
                       </div>
                       <strong>{group.valor.toFixed(2)}{symbol}{showMonthlyMetrics ? '/mes' : ''}</strong>
                       {showMonthComparison && (

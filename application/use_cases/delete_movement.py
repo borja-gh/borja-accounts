@@ -1,4 +1,5 @@
 from domain.exceptions import ProtectedInitialBalanceError
+from domain.exceptions import MovementNotFoundError
 from domain.services.ledger import LedgerService
 
 
@@ -7,12 +8,15 @@ class DeleteMovementUseCase:
         self.repository = repository
         self.ledger = ledger
 
-    def execute(self, account_id: str) -> tuple[dict, float]:
+    def execute(self, account_id: str, idx: int | None = None) -> tuple[dict, float]:
         movements = self.repository.load(account_id)
-        if len(movements) <= 1:
+        idx = len(movements) - 1 if idx is None else idx
+        if idx < 0 or idx >= len(movements):
+            raise MovementNotFoundError("Movimiento no encontrado")
+        if movements[idx].type == "Saldo Inicial":
             raise ProtectedInitialBalanceError("No se puede borrar el saldo inicial")
 
-        ultimo = movements[-1]
+        ultimo = movements[idx]
         eliminado = {
             "fecha": str(ultimo.occurred_at),
             "tipo": ultimo.type,
@@ -21,7 +25,7 @@ class DeleteMovementUseCase:
         }
         link_id = ultimo.transfer_link_id
 
-        movements = movements[:-1]
+        movements = movements[:idx] + movements[idx + 1:]
         movements = self.ledger.recalculate_balances(movements)
         self.repository.save(account_id, movements)
 

@@ -163,7 +163,7 @@ export function CashBudgetSection({ account, currency, reloadToken }: Props) {
                   : `Restan ${money(status.remaining ?? 0, currency)}`}
               </div>
             </div>
-            <div className="budget-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={status.percentage ?? 0}>
+            <div className="budget-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={status.percentage == null ? undefined : `${status.percentage.toFixed(0)}% consumido`}>
               <span className={status.overBudget ? 'over' : ''} style={{ width: `${progress}%` }} />
             </div>
             <div className="budget-status-foot">

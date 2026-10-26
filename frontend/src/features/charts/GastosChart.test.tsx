@@ -12,6 +12,53 @@ vi.mock('plotly.js-dist-min', () => ({
 describe('GastosChart', () => {
   beforeEach(() => newPlot.mockClear());
 
+  it('descuenta devoluciones en comparativas, subconceptos e histogramas y dibuja negativos', () => {
+    const source = backendFixture.cash1_gastos_ranking_all_media.ranking as GastosRankingSection;
+    const date = (offset: number) => {
+      const value = new Date();
+      value.setMonth(value.getMonth() + offset, 5);
+      return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-05`;
+    };
+    const movements = [
+      { Fecha: date(-1), Tipo: 'Gasto', Total: 100, Subconcepto: 'Cena' },
+      { Fecha: date(-1), Tipo: 'Devolución', Total: 60, Subconcepto: 'Cena' },
+      { Fecha: date(0), Tipo: 'Devolución', Total: 40, Subconcepto: 'Cena' },
+      { Fecha: date(0), Tipo: 'Devolución', Total: 20, Subconcepto: null },
+    ].map((item, _idx) => ({ ...item, Concepto: 'Salida', Saldo: 0, _idx }));
+    const ranking = { ...source, entries: [{ ...source.entries[0], concepto: 'Salida', recurrente: true, valor: -60 }] };
+    const { container } = render(<GastosChart ranking={ranking} movements={movements} showMonthComparison />);
+    const row = container.querySelector('.gastos-ranking-row')!;
+    expect(row.querySelector('.gastos-ranking-bar strong')).toHaveTextContent('-60.00€');
+    expect(row.querySelector('.gastos-ranking-track')).toHaveClass('is-signed');
+    expect(row.querySelector('.gastos-ranking-track span')).toHaveStyle({ width: '50%', marginLeft: '0%' });
+    const chips = row.querySelectorAll('.gastos-comparison-chip');
+    for (const chip of chips) {
+      expect(chip).toHaveClass('is-spending-down');
+      expect(chip).toHaveTextContent('40.00€');
+      expect(chip).toHaveTextContent('-100.00€');
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar desglose de Salida' }));
+    expect(screen.getByText('Cena').closest('.gastos-subconcept-row')?.querySelector('strong')).toHaveTextContent('-40.00€');
+    expect(screen.getByText('Otros').closest('.gastos-subconcept-row')?.querySelector('strong')).toHaveTextContent('-20.00€');
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle de Salida' }));
+    const trace = newPlot.mock.calls.at(-1)?.[1][0];
+    expect(trace.x[0]).toBe('-60.00–40.00€');
+    expect(trace.y).toEqual([2]);
+  });
+
+  it('mantiene el concepto compensado a cero sin barras ficticias ni divisiones por cero', () => {
+    const source = backendFixture.cash1_gastos_ranking_all_media.ranking as GastosRankingSection;
+    const ranking = { ...source, entries: [{ ...source.entries[0], concepto: 'Devuelto', valor: 0, desglose: [] }] };
+    const movements = ['Gasto', 'Devolución'].map((Tipo, _idx) => ({
+      Tipo, _idx, Fecha: '2026-09-05', Concepto: 'Devuelto', Subconcepto: null, Total: 100, Saldo: 0,
+    }));
+    const { container } = render(<GastosChart ranking={ranking} movements={movements} />);
+    expect(container.querySelector('.gastos-ranking-track span')).toHaveStyle({ width: '0%', minWidth: '0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Ver detalle de Devuelto' }));
+    expect(newPlot.mock.calls.at(-1)?.[1][0].y).toEqual([1]);
+    expect(newPlot.mock.calls.at(-1)?.[1][0].x).toEqual(['-0.01–0.00€']);
+  });
+
   it('muestra recurrencia, barra, desviación y desglose solo cuando hay varios subconceptos', () => {
     const source = backendFixture.cash1_gastos_ranking_all_media.ranking as GastosRankingSection;
     const ranking = {

@@ -11,6 +11,7 @@ import type {
   EditMovementRequest,
   GastosMesActualReport,
   GastosRankingReport,
+  GastosEvolucionReport,
   ExpenseRecurrenceList,
   ExpenseRecurrenceUpdateResult,
   InvestmentKpis,
@@ -162,6 +163,12 @@ export async function deleteLastMovement(cuenta: string): Promise<DeleteResult> 
   return { ok: res.ok, ...json };
 }
 
+export async function deleteMovement(cuenta: string, idx: number): Promise<DeleteResult> {
+  const res = await fetch(`/api/movimiento/${cuenta}/${idx}`, { method: 'DELETE' });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
 export function fetchApuestas(cuenta: string, filter: RangeFilter): Promise<BettingReport> {
   return fetchRangeReport(`/api/accounts/${cuenta}/apuestas`, filter);
 }
@@ -256,6 +263,14 @@ export function fetchMensualEvolucion(cuenta: string, filter: RangeFilter): Prom
 
 export function fetchGastosRanking(cuenta: string, filter: RangeFilter, mode: RankingMode): Promise<GastosRankingReport> {
   return fetchRangeReport(`/api/accounts/${cuenta}/gastos-ranking`, filter, { mode });
+}
+
+export async function fetchGastosEvolucion(cuenta: string, filter: RangeFilter): Promise<GastosEvolucionReport> {
+  const report = await fetchRangeReport<GastosEvolucionReport & { error?: string; detail?: string }>(
+    `/api/accounts/${cuenta}/gastos-evolucion`, filter,
+  );
+  if (report.error || report.detail) throw new Error(report.error || report.detail);
+  return report;
 }
 
 export async function fetchExpenseRecurrences(cuenta: string): Promise<ExpenseRecurrenceList> {

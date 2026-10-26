@@ -8,6 +8,7 @@ interface Props {
   onFilterByConcept: (concepto: string) => void;
   onDuplicate?: (idx: number) => void;
   onEdit: (idx: number) => void;
+  onDelete: (idx: number) => void;
 }
 
 // `rows` llega ya ordenado por searchedMovs() -- a diferencia del vanilla
@@ -19,7 +20,7 @@ interface Props {
 // amount convertido al tipo de cambio introducido al registrarla (ver
 // TransferBetweenAccountsUseCase) -- ya no hace falta forzar € en una
 // cuenta USD como antes de que existiera esa conversión.
-export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicate, onEdit }: Props) {
+export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicate, onEdit, onDelete }: Props) {
   if (!rows.length) return <div className="empty">Sin movimientos.</div>;
   const symbol = CURRENCY_SUFFIX[currency] ?? currency;
   return (
@@ -68,6 +69,9 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
                     )}
                     <button className="btn btn-ghost btn-tiny" onClick={() => onEdit(r._idx!)}>
                       Editar
+                    </button>
+                    <button className="btn btn-danger btn-tiny" onClick={() => onDelete(r._idx!)}>
+                      Borrar
                     </button>
                   </div>
                 )}
