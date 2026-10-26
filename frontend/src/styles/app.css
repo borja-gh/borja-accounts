@@ -571,6 +571,10 @@
     .chart-head-controls .filter-row { margin: 0; }
     .gastos-current-total-label { color: var(--muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
     .chart-head .chart-label { margin-bottom: 0; }
+    .expense-evolution-controls { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+    .expense-evolution-controls label { display: grid; gap: 6px; flex: 1 1 180px; max-width: 320px; min-width: 0; color: var(--muted); font-size: 12px; }
+    .expense-evolution-controls select { width: 100%; min-width: 0; }
+    .expense-evolution-copy { color: var(--muted); font-size: 12px; margin: 0 0 16px; }
     .chart-plot { height: 280px; }
     .gastos-ranking-head,
     .gastos-ranking-row {
@@ -607,6 +611,8 @@
     .gastos-ranking-bar { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .gastos-ranking-track { height: 14px; flex: 1; overflow: hidden; border-radius: 7px; background: var(--surface2); }
     .gastos-ranking-track span { display: block; height: 100%; min-width: 2px; border-radius: inherit; background: var(--accent); }
+    .gastos-ranking-track.is-signed, .gastos-subconcept-track.is-signed { position: relative; }
+    .gastos-ranking-track.is-signed::after, .gastos-subconcept-track.is-signed::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); }
     .gastos-ranking-bar strong { min-width: 78px; font-size: 12px; text-align: right; white-space: nowrap; }
     .gastos-ranking-deviation {
       justify-self: end;

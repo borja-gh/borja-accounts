@@ -147,14 +147,16 @@ Cuatro tarjetas. El **PeriodSelector** (esquina del hero: **Mes** / **Trimestre*
 
 - **Saldo actual** — último balance del ledger (siempre el saldo real, **sin filtrar** por período)
 - **Ingresos** — `Nómina` + `Ingreso` en el período, **excluyendo** transferencias entrantes (el `Ingreso` lleva `transfer_link_id`). Un ingreso «Desde el trabajo» cuenta como ingreso.
-- **Gastos** — `Gasto` − `Devolución` en el período, acotado a ≥ 0
+- **Gastos** — `Gasto` − `Devolución` en el período, conservando valores negativos
 - **Balance** — ingresos − gastos (ambos ya netos). No es el cambio bruto de saldo: transferencias, apuestas e inversiones no pesan aquí, para que los tres KPIs de flujo cuadren entre sí
 
 (`domain/services/kpi.py`, `net_flows`.)
 
+Las devoluciones reducen el gasto de su propia fecha, concepto y subconcepto; no se reasignan al mes original. Una devolución sin subconcepto se agrupa en **Otros**. La misma regla se aplica a los KPIs, presupuestos, rankings, comparativas, histogramas y series temporales. Los movimientos conservan su tipo e importe originales. La suma de los netos mensuales coincide con el neto del intervalo completo.
+
 Cada KPI de ingresos/gastos/balance muestra un delta `↑ +X vs ant.` comparando con el período equivalente anterior. Para gastos la lógica se invierte: bajar es positivo.
 
-Si el gasto del mes calendario actual va por encima (o por debajo) de la media de los 3 meses anteriores con datos, aparece un aviso suave bajo los KPIs (`GastoAlert`), en la divisa de la cuenta.
+Si el gasto del mes calendario actual va por encima (o por debajo) de la media de los 3 meses anteriores con datos, aparece un aviso suave bajo los KPIs (`GastoAlert`), en la divisa de la cuenta. La media incluye meses con gastos o devoluciones aunque su neto sea cero o negativo; si la media no es positiva, el aviso muestra importes sin porcentaje.
 
 ### Asistente SQL
 
@@ -243,7 +245,7 @@ La SQL propuesta se revisa y confirma de forma explícita. Activar el modo Escri
 
 ### Total por tipo y concepto
 
-La vista Movimientos incluye un cálculo determinista independiente del asistente. Permite elegir tipo, concepto con autocomplete basado en el histórico y rango Desde/Hasta propio; suma los importes de ese concepto en la cuenta activa. El rango es inclusivo y sus límites vacíos abarcan todo el histórico. La etiqueta de acción depende del tipo (`Gastado`, `Ingresado`, `Devuelto`, `Invertido`, entre otras). No llama al LLM.
+La vista Movimientos incluye un cálculo determinista independiente del asistente. Permite elegir tipo, concepto con autocomplete basado en el histórico y rango Desde/Hasta propio; suma los importes de ese concepto en la cuenta activa. Para `Gasto`, descuenta las devoluciones de la misma ventana y muestra **Gastado neto**; `Devolución` mantiene su total propio. El rango es inclusivo y sus límites vacíos abarcan todo el histórico. La etiqueta de acción depende del tipo (`Gastado`, `Ingresado`, `Devuelto`, `Invertido`, entre otras). No llama al LLM.
 
 #### Uso directo de la API
 
@@ -286,15 +288,23 @@ El selector de KPIs **Trimestre** usa los últimos 3 meses de calendario (no un 
 
 Línea de saldo a lo largo del tiempo, en la divisa de la cuenta. **No hay media móvil** (ni en pantalla ni en el API).
 
+#### Gráfico: Evolución del gasto mensual
+
+Panel CASH situado después de Gastos por concepto y antes de Movimientos. Muestra el gasto neto mensual (`Gasto` − `Devolución`), sin aplicar medias o recurrencia y conservando valores negativos. Permite seleccionar el total, un concepto o uno de sus subconceptos, sin el límite de conceptos del ranking. Los movimientos sin subconcepto aparecen como **Otros (sin subconcepto)**.
+
+Tiene un rango temporal propio: todo el histórico, últimos meses de calendario, año o intervalo personalizado. Incluye meses sin gasto a cero; el histórico empieza en el primer movimiento de la cuenta y termina en el mes actual. Los años en curso terminan en el mes actual; los intervalos personalizados incluyen ambos meses extremos. El mes actual contiene lo registrado hasta el momento. Los selectores conservan el catálogo histórico al cambiar de rango.
+
+El panel usa el tema y la divisa de la cuenta y se refresca al modificar movimientos. Se activa u oculta de forma independiente en **Personalizar vista**, con persistencia por cuenta. Forma parte de la vista predeterminada; las vistas personalizadas existentes conservan su selección y pueden activarlo desde ese diálogo. Los filtros se reinician al cambiar de cuenta, igual que en los demás gráficos.
+
 #### Gráfico: Evolución mensual
 
 Barras de ingresos y gastos por mes, con línea de balance neto. Respeta el RangeFilterBar.
 
 #### Gráfico: Gastos por concepto
 
-**Ranking** — barras horizontales con los 20 conceptos `Gasto` mayores. Cada concepto conserva su identidad propia; el subconcepto es un detalle opcional del movimiento, no una categoría padre común. La sección **Recurrencia de gastos**, debajo del ranking, permite clasificar cada concepto de la cuenta como recurrente o puntual; el cambio afecta a todos sus gastos y los nuevos movimientos heredan esa marca. Un concepto nuevo se guarda como recurrente y, tras guardarlo, un diálogo permite marcarlo puntual. En modo **Media/mes**, los recurrentes dividen el gasto del período por los meses desde su primera aparición hasta el fin del rango. Los puntuales dividen por todos los meses del rango; en `Todo`, desde el primer movimiento registrado en la cuenta hasta el mes actual. Los gastos existentes reciben `recurrente = false` al migrar la base de datos y se pueden clasificar desde esa sección. También hay modo **Total**.
+**Ranking** — barras horizontales con los 20 conceptos de mayor gasto neto en valor absoluto, conservando el signo y los conceptos totalmente compensados a cero. Las barras negativas se dibujan a la izquierda del cero. Cada concepto conserva su identidad propia; el subconcepto es un detalle opcional del movimiento, no una categoría padre común. La sección **Recurrencia de gastos**, debajo del ranking, permite clasificar cada concepto de la cuenta como recurrente o puntual; el cambio afecta a todos sus gastos y los nuevos movimientos heredan esa marca. Un concepto nuevo se guarda como recurrente y, tras guardarlo, un diálogo permite marcarlo puntual. En modo **Media/mes**, los recurrentes dividen el gasto del período por los meses desde su primera aparición hasta el fin del rango. Los puntuales dividen por todos los meses del rango; en `Todo`, desde el primer movimiento registrado en la cuenta hasta el mes actual. Los gastos existentes reciben `recurrente = false` al migrar la base de datos y se pueden clasificar desde esa sección. También hay modo **Total**.
 
-El ranking y sus métricas (media, desviación, recurrencia e histograma mensual) se mantienen agrupados por concepto padre. **Ver detalle** conserva ese histograma y presenta también los importes por subconcepto en el rango activo; las filas del desglose no tienen histograma ni desviación propia. Un subconcepto nulo se etiqueta **Otros**; si solo hay un valor de subconcepto para el concepto en el rango, se omite el desglose. En movimientos, el subconcepto opcional se puede añadir y editar para cualquier tipo y se expone en su propia columna.
+El ranking y sus métricas (media, desviación, recurrencia e histograma diario neto) se mantienen agrupados por concepto padre. **Ver histograma** muestra la distribución de los netos diarios de los días con gastos o devoluciones, incluidos ceros y negativos, y el desglose presenta los importes netos por subconcepto en el rango activo; las filas del desglose no tienen histograma ni desviación propia. Un subconcepto nulo se etiqueta **Otros**; si solo hay un valor de subconcepto para el concepto en el rango, se omite el desglose. En movimientos, el subconcepto opcional se puede añadir y editar para cualquier tipo y se expone en su propia columna.
 
 #### Análisis de apuestas
 
@@ -315,11 +325,15 @@ KPIs de resumen (lifetime, no afectados por el rango) y dos tablas: posiciones a
 
 #### Tabla de movimientos y buscador
 
-Por defecto **los últimos 20 movimientos**. Cada fila (salvo `Saldo Inicial` y las filas sintéticas de holdings, que no tienen `_idx`) tiene **Duplicar** (rellena el formulario con la fecha y hora actuales) y **Editar** (modal: fecha y hora, tipo, concepto, subconcepto y total). La columna Subconcepto muestra el detalle opcional guardado en el movimiento.
+Por defecto **los últimos 20 movimientos**. Cada fila real (salvo `Saldo Inicial`) tiene **Duplicar**, **Editar** (fecha y hora, tipo, concepto, subconcepto e importe) y **Borrar** con confirmación por movimiento. Borrar una pata de transferencia elimina también su contraparte. El saldo inicial y las filas sintéticas de holdings quedan protegidos.
 
 Encima hay un **buscador** (tipo / concepto / subconcepto / fecha) contra toda la cuenta. El filtro por subconcepto aparece cuando se define un concepto existente y sus sugerencias se limitan a ese concepto. Con búsqueda activa se muestran hasta 500 resultados; **Limpiar** vuelve a los últimos 20.
 
-Clic en un concepto de la tabla filtra por ese concepto. **Repetir último** rellena el formulario con el último movimiento cronológico real.
+Clic en un concepto de la tabla filtra por ese concepto.
+
+#### Total por tipo y concepto
+
+Permite sumar un concepto con un subconcepto opcional y un intervalo de fechas. El intervalo inicial es **Siempre** hasta **Hoy**; cada fecha se puede seleccionar de forma independiente. El resultado incluye el intervalo aplicado. Para `Gasto`, se calcula el gasto neto (`Gasto` − `Devolución`) por concepto, subconcepto y fechas; **Otros** agrupa los movimientos sin subconcepto.
 
 #### Formulario: Añadir movimiento
 
@@ -335,10 +349,6 @@ A la derecha de la tabla. Autocompletado de concepto por frecuencia (prefijo, ca
 
 - `Cobro apuesta` → apuestas abiertas
 - `Devolución` → conceptos de gastos registrados
-
-#### Botón: Borrar último movimiento
-
-Diálogo de confirmación con el último registro cronológico real; si se confirma, lo elimina y recalcula el saldo. No se puede borrar el `Saldo Inicial`.
 
 #### Eliminar cuenta
 
@@ -392,7 +402,7 @@ Strip de KPIs de sección: capital invertido (abiertas) + historial cerrado.
 
 #### Movimientos + añadir
 
-Misma potencia que CASH (buscar, editar incluyendo fecha, duplicar, repetir, borrar último, eliminar cuenta).
+Misma potencia que CASH (buscar, editar incluyendo fecha, duplicar, borrar por fila, eliminar cuenta).
 
 No hay sección UI de transferencias de la cuenta. El endpoint `GET /api/accounts/{cuenta}/transferencias` existe y lo ejercita el golden master; ninguna vista lo consume.
 
@@ -454,6 +464,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | GET | `/api/accounts/{cuenta}/mensual-evolucion` | Ingresos/gastos por mes |
 | GET | `/api/accounts/{cuenta}/carteras-ranking` | Ranking de conceptos `Inversión` (media/total) |
 | GET | `/api/accounts/{cuenta}/gastos-ranking` | Ranking de conceptos `Gasto` (media/total) |
+| GET | `/api/accounts/{cuenta}/gastos-evolucion` | Netos mensuales `meses`, `gastos` y `conceptos` con `subconceptos`; acepta `range` y `year` como los demás gráficos |
 | GET | `/api/accounts/{cuenta}/gastos/recurrentes` | Lista conceptos de gasto y su clasificación recurrente/puntual |
 | PUT | `/api/accounts/{cuenta}/gastos/recurrentes` | Actualiza la clasificación de un concepto de gasto para todo su histórico |
 | GET | `/api/accounts/{cuenta}/transferencias` | Recibido / enviado / neto + lista (`transfer_link_id`). **Sin sección UI** |
@@ -463,6 +474,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | POST | `/api/movimiento/{cuenta}` | Añade un movimiento, devuelve el saldo y señala si es el primer gasto del concepto (`conceptoNuevo`) |
 | PUT | `/api/movimiento/{cuenta}` | Edita tipo / concepto / subconcepto / total / fecha |
 | DELETE | `/api/movimiento/{cuenta}` | Borra el último movimiento; si es una pata de transferencia, borra la otra |
+| DELETE | `/api/movimiento/{cuenta}/{idx}` | Borra el movimiento seleccionado; si es una pata de transferencia, borra la otra |
 | POST | `/api/transferencia` | Transferencia entre cuentas (`exchangeRate` si las divisas difieren) |
 
 ---
