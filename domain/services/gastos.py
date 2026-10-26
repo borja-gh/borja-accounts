@@ -11,6 +11,7 @@ from domain.entities import Movement
 from domain.services.calendar import month_key
 from domain.services.concept_ranking import monthly_concept_details, rank_by_concept
 from domain.services.period_filter import filter_by_field
+from domain.services.expenses import expense_amount, net_expense_movements
 
 TZ = ZoneInfo("Europe/Madrid")
 
@@ -24,7 +25,7 @@ def _r2(v: float) -> float:
 
 
 def _gasto_sum_for_month(movements: list[Movement], ym: str) -> float:
-    return _r2(sum(m.amount for m in movements if m.type == "Gasto" and _fecha_str(m)[:7] == ym))
+    return _r2(sum(expense_amount(m) for m in movements if _fecha_str(m)[:7] == ym))
 
 
 @dataclass
@@ -32,7 +33,7 @@ class GastoAlert:
     cur_total: float
     avg: float
     diff: float
-    pct: float
+    pct: float | None
     months_count: int
     is_warning: bool
 
@@ -41,24 +42,24 @@ def compute_gasto_alert(movements: list[Movement], reference: datetime) -> Gasto
     reference_local = reference.astimezone(TZ)
     cur = month_key(reference_local, 0)
     cur_total = _gasto_sum_for_month(movements, cur)
-    prev = [_gasto_sum_for_month(movements, month_key(reference_local, off)) for off in (-1, -2, -3)]
-    with_data = [v for v in prev if v > 0]
-    if not with_data or cur_total <= 0:
+    previous_months = [month_key(reference_local, off) for off in (-1, -2, -3)]
+    active_months = {_fecha_str(m)[:7] for m in movements if m.type in ("Gasto", "Devolución")}
+    with_data = [_gasto_sum_for_month(movements, month) for month in previous_months if month in active_months]
+    if not with_data:
         return None
     avg = _r2(sum(with_data) / len(with_data))
-    if avg <= 0:
-        return None
     diff = _r2(cur_total - avg)
-    pct = _r2((diff / avg) * 100)
+    pct = _r2((diff / avg) * 100) if avg > 0 else None
     return GastoAlert(cur_total=cur_total, avg=avg, diff=diff, pct=pct,
                        months_count=len(with_data), is_warning=diff > 0)
 
 
 def compute_gastos_ranking(movements: list[Movement], range_type: str, year: int | str | None,
                             reference: datetime, mode: str = "media", limit: int = 20) -> dict:
+    movements = net_expense_movements(movements)
     entries, hover_suffix, has_gastos = rank_by_concept(
         movements, "Gasto", range_type, year, reference, mode, limit,
-        average_from_first_occurrence=True,
+        average_from_first_occurrence=True, signed_values=True,
     )
     concepts = [concept for concept, _ in entries]
     months, details = monthly_concept_details(

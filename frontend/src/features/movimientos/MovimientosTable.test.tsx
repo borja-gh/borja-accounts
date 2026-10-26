@@ -1,5 +1,5 @@
-import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { backendFixture, expectedValues } from '../../test/goldenMaster';
 import { extractVisibleText } from '../../test/extractVisibleText';
 import { MovimientosTable } from './MovimientosTable';
@@ -28,6 +28,10 @@ function addDisplayedTimes(values: string[], rows: Movement[]): string[] {
   return values.map((value) => labels.get(value) ?? value);
 }
 
+function addDeleteActions(values: string[]): string[] {
+  return values.flatMap((value) => value === 'Editar' ? [value, 'Borrar'] : [value]);
+}
+
 // El vanilla (index.html) ordenaba los empates de misma Fecha por orden de
 // inserción ascendente (sort estable sobre una clave que no incluye hora).
 // searchedMovs() ahora rompe esos empates por _idx descendente -- el
@@ -49,17 +53,17 @@ describe('MovimientosTable', () => {
     const data: Movement[] = backendFixture.initial_data_cash1;
     const rows = searchedMovs(data, EMPTY_SEARCH);
     const { container } = render(
-      <MovimientosTable rows={rows} currency="EUR" onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
+      <MovimientosTable rows={rows} currency="EUR" onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} onDelete={noop} />,
     );
     const expected = swapAdjacentRows(expectedValues.cash1_movimientos_default, 'Supermercado', 7);
-    expect(extractVisibleText(container)).toEqual(addDisplayedTimes(addSubconceptColumn(expected), rows));
+    expect(extractVisibleText(container)).toEqual(addDeleteActions(addDisplayedTimes(addSubconceptColumn(expected), rows)));
   });
 
   it('coincide con el golden master para investment1', () => {
     const data: Movement[] = backendFixture.initial_data_investment1;
     const rows = searchedMovs(data, EMPTY_SEARCH);
     const { container } = render(
-      <MovimientosTable rows={rows} currency="USD" onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} />,
+      <MovimientosTable rows={rows} currency="USD" onFilterByConcept={noop} onDuplicate={noop} onEdit={noop} onDelete={noop} />,
     );
     // Ya no es una transformación ligera del fixture congelado del vanilla:
     // build_investment_ledger (get_investment_kpis.py) ahora fusiona el
@@ -82,7 +86,7 @@ describe('MovimientosTable', () => {
       '10/01/2026', 'Inversión', 'Cartera Tech', '300.00$', '1000.00$', 'Duplicar', 'Editar',
       '01/01/2026', 'Saldo Inicial', 'Apertura de cuenta', '+1000.00$', '1000.00$',
     ];
-    expect(extractVisibleText(container)).toEqual(addDisplayedTimes(addSubconceptColumn(expected), rows));
+    expect(extractVisibleText(container)).toEqual(addDeleteActions(addDisplayedTimes(addSubconceptColumn(expected), rows)));
   });
 
   it('filtra movimientos por subconcepto sin distinguir mayúsculas', () => {
@@ -93,5 +97,19 @@ describe('MovimientosTable', () => {
 
     expect(searchedMovs(data, { ...EMPTY_SEARCH, subconcepto: 'COLECCIÓN' }).map((row) => row.Concepto))
       .toEqual(['Venta']);
+  });
+
+  it('ofrece borrar por fila para movimientos reales, preservando el saldo inicial y filas sintéticas', () => {
+    const onDelete = vi.fn();
+    const rows: Movement[] = [
+      { Fecha: '2026-01-03', Tipo: 'Ingreso', Concepto: 'Venta', Subconcepto: null, Total: 10, Saldo: 110, _idx: 1 },
+      { Fecha: '2026-01-02', Tipo: 'Ingreso', Concepto: 'Dividendo', Subconcepto: null, Total: 5, Saldo: 100, _idx: null },
+      { Fecha: '2026-01-01', Tipo: 'Saldo Inicial', Concepto: 'Apertura', Subconcepto: null, Total: 100, Saldo: 100, _idx: 0 },
+    ];
+    render(<MovimientosTable rows={rows} currency="EUR" onFilterByConcept={noop} onEdit={noop} onDelete={onDelete} />);
+    const row = screen.getByText('Venta').closest('tr')!;
+    fireEvent.click(within(row).getByRole('button', { name: 'Borrar' }));
+    expect(onDelete).toHaveBeenCalledWith(1);
+    expect(screen.queryAllByRole('button', { name: 'Borrar' })).toHaveLength(1);
   });
 });

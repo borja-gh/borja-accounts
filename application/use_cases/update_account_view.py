@@ -5,7 +5,7 @@ from domain.value_objects import AccountKind
 
 _PANELS_BY_KIND = {
     AccountKind.CASH: {
-        "assistant", "overview", "cash_budget", "cash_balance", "monthly", "expenses", "bets",
+        "assistant", "overview", "cash_budget", "cash_balance", "monthly", "expenses", "expense_evolution", "bets",
         "add_movement", "movement_total",
     },
     AccountKind.INVESTMENT: {

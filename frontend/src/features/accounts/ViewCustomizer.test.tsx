@@ -24,11 +24,12 @@ describe('ViewCustomizer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Personalizar vista' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Gastos por concepto' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Evolución del gasto mensual' }));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/accounts/cash/view', expect.objectContaining({
       method: 'PUT',
-      body: JSON.stringify({ visiblePanels: ['overview'] }),
+      body: JSON.stringify({ visiblePanels: ['overview', 'expense_evolution'] }),
     })));
     expect(onSaved).toHaveBeenCalledOnce();
   });
@@ -47,6 +48,7 @@ describe('ViewCustomizer', () => {
     expect(screen.getByRole('checkbox', { name: 'Resumen general' })).not.toBeChecked();
     fireEvent.click(screen.getByRole('button', { name: 'Restaurar predeterminada' }));
     expect(screen.getByRole('checkbox', { name: 'Resumen general' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Evolución del gasto mensual' })).toBeChecked();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

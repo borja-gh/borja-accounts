@@ -17,6 +17,7 @@ import { useRangeReport } from '../filters/useRangeReport';
 import { SaldoChart } from '../charts/SaldoChart';
 import { MensualChart } from '../charts/MensualChart';
 import { GastosChart } from '../charts/GastosChart';
+import { GastosEvolucionSection } from '../charts/GastosEvolucionSection';
 import { RankingModeToggle } from '../charts/RankingModeToggle';
 import { GastoAlert } from '../gastos/GastoAlert';
 import { useGastosMesActual } from '../gastos/useGastosMesActual';
@@ -44,6 +45,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [budgetReloadToken, setBudgetReloadToken] = useState(0);
   const [recurrenceReloadToken, setRecurrenceReloadToken] = useState(0);
+  const [expenseEvolutionReloadToken, setExpenseEvolutionReloadToken] = useState(0);
   const { kpi, reload: reloadKpis } = useAccountKpis(account.id, period);
   const { data, reload: reloadData } = useAccountData(account.id);
   const { report: saldoReport, reload: reloadSaldo } = useRangeReport(
@@ -72,6 +74,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
     reloadMensual();
     reloadGastosRanking();
     reloadGastosMesActual();
+    setExpenseEvolutionReloadToken((value) => value + 1);
     setBudgetReloadToken((value) => value + 1);
     setRecurrenceReloadToken((value) => value + 1);
     onDataChanged();
@@ -136,7 +139,7 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
         </>
       )}
 
-      {(visiblePanels.has('cash_balance') || visiblePanels.has('monthly') || visiblePanels.has('expenses')) && (
+      {(visiblePanels.has('cash_balance') || visiblePanels.has('monthly') || visiblePanels.has('expenses') || visiblePanels.has('expense_evolution')) && (
         <>
           <SectionHeading title="Desglose" />
           {data && hasBreakdownPanels && <div className="filter-row"><RangeFilterBar data={data} filter={desgloseRange} onChange={setDesgloseRange} /></div>}
@@ -189,6 +192,15 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
                   onUpdated={refreshAll}
                 />
               </div>
+            )}
+            {visiblePanels.has('expense_evolution') && (
+              <GastosEvolucionSection
+                account={account.id}
+                currency={account.currency}
+                theme={account.theme}
+                movements={data ?? []}
+                reloadToken={expenseEvolutionReloadToken}
+              />
             )}
           </div>
         </>

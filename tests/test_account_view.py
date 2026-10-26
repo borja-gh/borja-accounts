@@ -107,12 +107,12 @@ def test_http_account_view_round_trip_and_validation(tmp_path, monkeypatch):
     account_id = account["id"]
 
     saved = client.put(
-        f"/api/accounts/{account_id}/view", json={"visiblePanels": ["overview", "expenses"]}
+        f"/api/accounts/{account_id}/view", json={"visiblePanels": ["overview", "expense_evolution"]}
     )
 
     assert saved.status_code == 200
-    assert saved.json()["visiblePanels"] == ["overview", "expenses"]
-    assert client.get("/api/accounts").json()[0]["visiblePanels"] == ["overview", "expenses"]
+    assert saved.json()["visiblePanels"] == ["overview", "expense_evolution"]
+    assert client.get("/api/accounts").json()[0]["visiblePanels"] == ["overview", "expense_evolution"]
     invalid = client.put(
         f"/api/accounts/{account_id}/view", json={"visiblePanels": ["holdings"]}
     )

@@ -46,6 +46,7 @@ from application.use_cases.get_saldo_evolucion import GetSaldoEvolucionUseCase
 from application.use_cases.get_carteras_ranking import GetCarterasRankingUseCase
 from application.use_cases.get_gastos_mes_actual import GetGastosMesActualUseCase
 from application.use_cases.get_gastos_ranking import GetGastosRankingUseCase
+from application.use_cases.get_gastos_evolucion import GetGastosEvolucionUseCase
 from application.use_cases.manage_expense_recurrence import ManageExpenseRecurrenceUseCase
 from application.use_cases.get_transfers_report import GetTransfersReportUseCase
 from application.use_cases.refresh_holding_prices import RefreshHoldingPricesUseCase
@@ -500,6 +501,18 @@ def get_cash_budget_status(
     return result
 
 
+@app.get("/api/accounts/{cuenta}/gastos-evolucion")
+def get_gastos_evolucion(cuenta: str, range: str = "all", year: str | None = None):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    report, err = _run(
+        GetGastosEvolucionUseCase(repository).execute, cuenta, range, year, _reference_now(),
+    )
+    if err:
+        return err
+    return report
+
+
 @app.get("/api/accounts/{cuenta}/gastos-ranking")
 def get_gastos_ranking(cuenta: str, range: str = "all", year: str | None = None, mode: str = "media"):
     if cuenta not in _known_account_ids():
@@ -657,6 +670,17 @@ def delete_movimiento(cuenta: str):
     if cuenta not in _known_account_ids():
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     result, err = _run(DeleteMovementUseCase(repository, ledger).execute, cuenta)
+    if err:
+        return err
+    eliminado, saldo = result
+    return {"ok": True, "eliminado": eliminado, "saldo": saldo}
+
+
+@app.delete("/api/movimiento/{cuenta}/{idx}")
+def delete_movimiento_por_indice(cuenta: str, idx: int):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    result, err = _run(DeleteMovementUseCase(repository, ledger).execute, cuenta, idx)
     if err:
         return err
     eliminado, saldo = result

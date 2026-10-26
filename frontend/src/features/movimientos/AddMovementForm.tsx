@@ -10,7 +10,7 @@ import { ConceptAutocomplete } from './ConceptAutocomplete';
 import { DateTimeField } from '../../components/DateTimeField';
 
 export interface AddMovementFormHandle {
-  /** Usado por "Repetir último" / "Duplicar" en la tabla. Devuelve false
+  /** Usado por "Duplicar" en la tabla. Devuelve false
    * (con un toast de error) si el tipo del movimiento no existe en esta
    * cuenta -- misma validación que fillFormFromRow en el vanilla. */
   fillFrom: (row: Movement) => boolean;

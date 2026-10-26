@@ -320,6 +320,16 @@ export interface MensualEvolucionReport {
   balance: number[];
 }
 
+export interface GastosEvolucionReport {
+  meses: string[];
+  gastos: number[];
+  conceptos: {
+    concepto: string;
+    gastos: number[];
+    subconceptos: { subconcepto: string | null; gastos: number[] }[];
+  }[];
+}
+
 export interface RankingEntry {
   concepto: string;
   valor: number;
@@ -369,7 +379,7 @@ export interface CarterasRankingReport {
 export interface GastoAlert {
   isWarning: boolean;
   curTotal: number;
-  pct: number;
+  pct: number | null;
   monthsCount: number;
   avg: number;
 }
