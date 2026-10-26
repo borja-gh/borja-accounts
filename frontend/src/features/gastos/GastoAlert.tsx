@@ -3,6 +3,13 @@ import { money } from '../../lib/format';
 
 export function GastoAlert({ alert, currency = 'EUR' }: { alert: GastoAlertData | null; currency?: string }) {
   if (!alert) return null;
+  if (alert.pct === null) {
+    return (
+      <div className={`soft-alert ${alert.isWarning ? 'warn' : 'ok'}`}>
+        {`Gastos este mes ${money(alert.curTotal, currency)} · Media de los ${alert.monthsCount} meses anteriores ${money(alert.avg, currency)}`}
+      </div>
+    );
+  }
   if (!alert.isWarning) {
     return (
       <div className="soft-alert ok">

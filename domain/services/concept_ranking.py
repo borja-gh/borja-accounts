@@ -127,11 +127,12 @@ def rank_by_concept(
     limit: int,
     currency_symbol: str = "€",
     average_from_first_occurrence: bool = False,
+    signed_values: bool = False,
 ) -> tuple[list[tuple[str, float]], str, bool]:
-    """Devuelve (entries, hover_suffix, has_items). entries ya en orden
-    descendente y recortadas a `limit`; has_items indica si había algún
-    movimiento de `tipo` tras aplicar el filtro de rango (independiente de
-    si el ranking resultante quedó vacío por filtrar valores <= 0)."""
+    """Devuelve (entries, hover_suffix, has_items), recortadas a `limit`.
+    signed_values conserva ceros y negativos y ordena por magnitud;
+    el resto ordena los valores positivos de mayor a menor.
+    has_items indica si había movimientos del tipo en el rango."""
     reference_local = reference.astimezone(TZ)
     filtered = filter_by_field(movements, _fecha_str, range_type, year, reference_local)
     items = [m for m in filtered if m.type == tipo and m.amount is not None]
@@ -174,6 +175,7 @@ def rank_by_concept(
     else:
         entries = [(c, _r2(t)) for c, t in by_concepto.items()]
 
-    entries = [(c, v) for c, v in entries if v > 0]
-    entries.sort(key=lambda kv: kv[1], reverse=True)
+    if not signed_values:
+        entries = [(c, v) for c, v in entries if v > 0]
+    entries.sort(key=lambda kv: abs(kv[1]) if signed_values else kv[1], reverse=True)
     return entries[:limit], hover_suffix, True

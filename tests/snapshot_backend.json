@@ -187,24 +187,6 @@
           "valor": 34.29
         },
         {
-          "concepto": "Reparación bici",
-          "desglose": [],
-          "desviacion": 29.74,
-          "mensual": [
-            0.0,
-            85.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0
-          ],
-          "mesesConGasto": 1,
-          "mesesEvaluados": 7,
-          "recurrente": false,
-          "valor": 12.14
-        },
-        {
           "concepto": "Restaurante",
           "desglose": [],
           "desviacion": 15.75,
@@ -221,6 +203,24 @@
           "mesesEvaluados": 7,
           "recurrente": false,
           "valor": 6.43
+        },
+        {
+          "concepto": "Reparación bici",
+          "desglose": [],
+          "desviacion": 45.43,
+          "mensual": [
+            0.0,
+            85.0,
+            -85.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "mesesConGasto": 1,
+          "mesesEvaluados": 7,
+          "recurrente": false,
+          "valor": 0.0
         }
       ],
       "hasGastos": true,

@@ -45,3 +45,5 @@ python tests/generate_snapshot.py
 ```bash
 pytest tests -v
 ```
+
+Los análisis de gasto conservan el neto con signo (`Gasto` − `Devolución`) en la fecha de cada movimiento. `test_net_expenses.py` verifica coherencia entre ventanas, rankings, subconceptos, presupuestos y series, además de la exclusión de transferencias propias de los ingresos.

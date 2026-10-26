@@ -31,6 +31,7 @@ from domain.services.period_filter import (
     shift_ym,
 )
 from domain.services.transfers import is_transfer_in
+from domain.services.expenses import expense_amount
 
 TZ = ZoneInfo("Europe/Madrid")
 
@@ -49,7 +50,6 @@ TZ = ZoneInfo("Europe/Madrid")
 #   igual que no pesan en ingresos/gastos, para que los tres KPIs cuadren
 #   siempre entre sí.
 TIPOS_KPI_ING = {"Nómina", "Ingreso"}
-TIPOS_KPI_GAS = {"Gasto"}
 
 
 def _r2(v: float) -> float:
@@ -67,15 +67,7 @@ def net_flows(movements: list[Movement], in_period) -> dict:
             continue
         if m.type in TIPOS_KPI_ING and not is_transfer_in(m):
             ing += m.amount
-        if m.type in TIPOS_KPI_GAS:
-            gas += m.amount
-        elif m.type == "Devolución":
-            gas -= m.amount
-    # Si la Devolución cae en un período distinto al de su Gasto (p.ej. el
-    # gasto se edita a un mes anterior, o simplemente se devuelve en el mes
-    # siguiente), "gastos" podría salir negativo -- se acota a 0 porque es
-    # un KPI de "cuánto gastaste este período", no un neto con signo.
-    gas = max(0.0, gas)
+        gas += expense_amount(m)
     return {"ingresos": _r2(ing), "gastos": _r2(gas), "balance": _r2(ing - gas)}
 
 

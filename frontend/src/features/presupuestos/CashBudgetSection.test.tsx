@@ -22,6 +22,14 @@ const STATUS = {
 };
 
 describe('CashBudgetSection', () => {
+  it('muestra gasto negativo y restante superior al presupuesto sin progreso negativo', async () => {
+    vi.mocked(fetchCashBudgetStatus).mockResolvedValue({ ...STATUS, spent: -60, remaining: 1060, percentage: -6 });
+    render(<CashBudgetSection account="cash1" currency="EUR" reloadToken={0} />);
+    expect(await screen.findByText('-60,00€')).toBeInTheDocument();
+    expect(screen.getByText('Restan 1060,00€')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '-6% consumido');
+  });
   beforeEach(() => {
     vi.mocked(fetchCashBudgetStatus).mockResolvedValue(STATUS);
     vi.mocked(saveCashBudget).mockResolvedValue({ ok: true });

@@ -13,6 +13,7 @@ export const VIEW_PANELS: Record<AccountKind, ViewPanelOption[]> = {
     { id: 'cash_balance', label: 'Evolución del saldo' },
     { id: 'monthly', label: 'Evolución mensual' },
     { id: 'expenses', label: 'Gastos por concepto' },
+    { id: 'expense_evolution', label: 'Evolución del gasto mensual' },
     { id: 'bets', label: 'Apuestas' },
     { id: 'add_movement', label: 'Añadir movimiento' },
     { id: 'movement_total', label: 'Total por tipo y concepto' },
