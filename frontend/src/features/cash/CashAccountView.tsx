@@ -31,11 +31,12 @@ import type { AccountSummary, KpiPeriodFilter, RankingMode } from '../../api/typ
 
 interface Props {
   account: AccountSummary;
+  assistantEnabled: boolean;
   onDataChanged: () => void;
 }
 
 export const CashAccountView = forwardRef<AccountViewHandle, Props>(function CashAccountView(
-  { account, onDataChanged }, ref,
+  { account, assistantEnabled, onDataChanged }, ref,
 ) {
   const [period, setPeriod] = useState<KpiPeriodFilter>({ type: 'mes' });
   const [desgloseRange, setDesgloseRange] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
@@ -100,12 +101,14 @@ export const CashAccountView = forwardRef<AccountViewHandle, Props>(function Cas
           <p>Día a día · gastos, nómina y apuestas</p>
         </div>
         <div className="account-hero-actions">
-          <AssistantVisibilityToggle
-            accountId={account.id}
-            kind={account.kind}
-            visiblePanels={account.visiblePanels}
-            onSaved={onDataChanged}
-          />
+          {assistantEnabled && (
+            <AssistantVisibilityToggle
+              accountId={account.id}
+              kind={account.kind}
+              visiblePanels={account.visiblePanels}
+              onSaved={onDataChanged}
+            />
+          )}
           <ViewCustomizer
             accountId={account.id}
             kind={account.kind}
