@@ -187,7 +187,7 @@ El asistente es local y trabaja sobre la SQLite de la aplicación. En cada petic
    ./run.sh
    ```
 
-   El script valida ADC antes de arrancar, reconstruye el frontend y ejecuta la API. Si no hay una terminal interactiva o se rechaza el login ADC, omite la autenticación y arranca sin mostrar el asistente de IA (`ACCOUNTS_ASSISTANT_ENABLED=0`). Abre `http://localhost:8001`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente financiero**. En escritorio, el panel comparte el ancho entre la consulta y la biblioteca de consultas guardadas.
+   El script valida ADC antes de arrancar, reconstruye el frontend y ejecuta la API. Si no hay una terminal interactiva o se rechaza el login ADC, omite la autenticación y arranca sin mostrar el asistente de IA ni el botón de mostrar/ocultar agente en ninguna cuenta (`ACCOUNTS_ASSISTANT_ENABLED=0`). Abre `http://localhost:8001`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente financiero**. En escritorio, el panel comparte el ancho entre la consulta y la biblioteca de consultas guardadas.
 
 #### Flujo de lectura
 

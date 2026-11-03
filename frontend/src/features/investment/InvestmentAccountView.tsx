@@ -27,11 +27,12 @@ import type { AccountSummary, KpiPeriod, RankingMode } from '../../api/types';
 
 interface Props {
   account: AccountSummary;
+  assistantEnabled: boolean;
   onDataChanged: () => void;
 }
 
 export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(function InvestmentAccountView(
-  { account, onDataChanged },
+  { account, assistantEnabled, onDataChanged },
   ref,
 ) {
   const [period, setPeriod] = useState<KpiPeriod>('mes');
@@ -120,12 +121,14 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
           <p>Capital y carteras</p>
         </div>
         <div className="account-hero-actions">
-          <AssistantVisibilityToggle
-            accountId={account.id}
-            kind={account.kind}
-            visiblePanels={account.visiblePanels}
-            onSaved={onDataChanged}
-          />
+          {assistantEnabled && (
+            <AssistantVisibilityToggle
+              accountId={account.id}
+              kind={account.kind}
+              visiblePanels={account.visiblePanels}
+              onSaved={onDataChanged}
+            />
+          )}
           <ViewCustomizer
             accountId={account.id}
             kind={account.kind}
