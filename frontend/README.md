@@ -8,7 +8,7 @@ FastAPI sirve el build de producción desde `frontend/dist/` (`GET /` + `/assets
 
 ```bash
 npm install
-npm run dev      # Vite en el puerto por defecto; proxifica /api → http://127.0.0.1:8000
+npm run dev      # Vite en el puerto por defecto; proxifica /api → http://127.0.0.1:8001
 npm run build    # tsc -b && vite build → dist/
 npm run preview  # sirve el dist/ localmente (sin la API)
 npm run lint     # oxlint
