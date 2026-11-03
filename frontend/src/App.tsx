@@ -75,6 +75,7 @@ function App() {
             <CashAccountView
               key={selected.id}
               account={selected}
+              assistantEnabled={assistantEnabled}
               ref={viewRef}
               onDataChanged={refreshAccounts}
             />
@@ -82,6 +83,7 @@ function App() {
             <InvestmentAccountView
               key={selected.id}
               account={selected}
+              assistantEnabled={assistantEnabled}
               ref={viewRef}
               onDataChanged={refreshAccounts}
             />
