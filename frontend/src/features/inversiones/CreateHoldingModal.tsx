@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortfolioHolding } from '../../api/client';
 import type { AccountId, Currency } from '../../api/types';
+import { DateTimeField } from '../../components/DateTimeField';
 import { useToast } from '../../components/ToastContext';
 import { localISODateTime, money } from '../../lib/format';
+import { parseDecimal } from '../../lib/math';
 import { ExchangeRateField } from '../transferencias/ExchangeRateField';
 
 interface Props {
@@ -53,15 +55,15 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
   }, [open, onClose]);
 
   const capital = useMemo(() => {
-    const s = parseFloat(shares);
-    const p = parseFloat(price);
+    const s = parseDecimal(shares);
+    const p = parseDecimal(price);
     if (!(s > 0) || !(p > 0)) return null;
     return Math.round(s * p * 100) / 100;
   }, [shares, price]);
 
   function applyUsdConversion() {
-    const usd = parseFloat(usdPrice);
-    const rate = parseFloat(exchangeRate);
+    const usd = parseDecimal(usdPrice);
+    const rate = parseDecimal(exchangeRate);
     if (!(usd > 0) || !(rate > 0)) {
       showToast('Introduce precio en USD y tipo de cambio', 'err');
       return;
@@ -74,9 +76,9 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
   async function handleSubmit() {
     const trimmedPortfolio = portfolio.trim();
     const trimmedTicker = ticker.trim().toUpperCase();
-    const sharesNum = parseFloat(shares);
-    const priceNum = parseFloat(price);
-    const feeNum = fee.trim() === '' ? 0 : Number(fee);
+    const sharesNum = parseDecimal(shares);
+    const priceNum = parseDecimal(price);
+    const feeNum = fee.trim() === '' ? 0 : parseDecimal(fee);
     if (!trimmedPortfolio) {
       showToast('Introduce el nombre de la cartera', 'err');
       return;
@@ -152,24 +154,23 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
         </div>
         <div className="fg">
           <label>Títulos</label>
-          <input type="number" step="0.0001" min="0" placeholder="0" value={shares} onChange={(e) => setShares(e.target.value)} />
+          <input type="text" inputMode="decimal" placeholder="0" value={shares} onChange={(e) => setShares(e.target.value)} />
         </div>
         <div className="fg">
           <label>{`Precio medio (${currency})`}</label>
-          <input type="number" step="0.0001" min="0" placeholder="0.0000" value={price} onChange={(e) => setPrice(e.target.value)} />
+          <input type="text" inputMode="decimal" placeholder="0.0000" value={price} onChange={(e) => setPrice(e.target.value)} />
         </div>
         <div className="fg">
           <label>{`Comisión (${currency})`}</label>
-          <input type="number" step="0.01" min="0" placeholder="0.00" value={fee} onChange={(e) => setFee(e.target.value)} />
+          <input type="text" inputMode="decimal" placeholder="0.00" value={fee} onChange={(e) => setFee(e.target.value)} />
         </div>
         {needsUsdHelper && (
           <>
             <div className="fg">
               <label>Precio en USD (opcional)</label>
               <input
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={usdPrice}
                 onChange={(e) => setUsdPrice(e.target.value)}
@@ -185,7 +186,7 @@ export function CreateHoldingModal({ open, account, currency, caja, portfolios, 
         )}
         <div className="fg">
           <label>Fecha y hora de compra</label>
-          <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <DateTimeField className="date-input" value={fecha} onChange={setFecha} />
         </div>
         {capital != null && (
           <span className="hint-total">{`Capital (sin comisión) ${money(capital, currency)}`}</span>

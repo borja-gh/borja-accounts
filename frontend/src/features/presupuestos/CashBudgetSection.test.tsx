@@ -36,7 +36,7 @@ describe('CashBudgetSection', () => {
     vi.mocked(deleteCashBudget).mockResolvedValue({ ok: true });
   });
 
-  it('muestra el estado y guarda el presupuesto seleccionado', async () => {
+  it.each(['.', ','])('guarda el presupuesto con separador %s', async (separator) => {
     render(<CashBudgetSection account="cash1" currency="EUR" reloadToken={0} />);
 
     expect(await screen.findByText('250,00€')).toBeInTheDocument();
@@ -44,11 +44,11 @@ describe('CashBudgetSection', () => {
 
     fireEvent.change(screen.getByLabelText('Año'), { target: { value: '2026' } });
     fireEvent.change(screen.getByLabelText('Mes'), { target: { value: '9' } });
-    fireEvent.change(screen.getByLabelText('Presupuesto (EUR)'), { target: { value: '1200' } });
+    fireEvent.change(screen.getByLabelText('Presupuesto (EUR)'), { target: { value: `1200${separator}50` } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar presupuesto' }));
 
     await waitFor(() => expect(saveCashBudget).toHaveBeenCalledWith('cash1', {
-      periodType: 'month', year: 2026, month: 9, amount: 1200,
+      periodType: 'month', year: 2026, month: 9, amount: 1200.50,
     }));
   });
 

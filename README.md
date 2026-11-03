@@ -360,6 +360,8 @@ Botón en el hero. `DELETE /api/accounts/{cuenta}` borra la cuenta y su históri
 
 Vista de cartera de inversión (no cuenta corriente), en la **divisa de esa cuenta** (`accounts.currency`; el ejemplo `investment1` es USD). El acento visual y el monograma se eligen por cuenta (tema por defecto: forest para cuentas nuevas INVESTMENT, editable en el hero).
 
+Los campos de importes, precios, títulos y tipo de cambio aceptan coma o punto como separador decimal, sin separadores de miles. El alta de holdings usa un calendario y un selector de horas de `00:00` a `23:00`.
+
 Botón **Precios actuales** (`POST .../portfolio-holdings/refresh-prices`, yfinance) y banner con cuántas posiciones se actualizaron / qué tickers fallaron. Botón **+ Holding** abre el alta de un lote (`POST .../portfolio-holdings`): cartera, ticker, títulos, precio, fecha. Exige caja suficiente (Saldo − En carteras). Si la cuenta no es USD, se puede convertir un precio en USD con **Consultar ahora** (yfinance).
 
 #### KPIs (cinco tarjetas)

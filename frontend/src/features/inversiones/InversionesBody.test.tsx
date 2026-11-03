@@ -71,7 +71,7 @@ describe('InversionesBody', () => {
   it('editar el precio actual guarda vía la API y recarga el reporte', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ ok: true, closePrice: null, currentPrice: 130, note: null }),
+      json: async () => ({ ok: true, closePrice: null, currentPrice: 130.25, note: null }),
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -82,15 +82,15 @@ describe('InversionesBody', () => {
 
     const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('tbody tr'));
     const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
-    const priceInput = aaplRow.querySelector('input[type="number"]') as HTMLInputElement;
+    const priceInput = aaplRow.querySelector('input[inputmode="decimal"]') as HTMLInputElement;
 
-    fireEvent.change(priceInput, { target: { value: '130' } });
+    fireEvent.change(priceInput, { target: { value: '130,25' } });
     fireEvent.blur(priceInput);
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/accounts/investment1/portfolio-holdings/1',
-      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ currentPrice: 130 }) }),
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ currentPrice: 130.25 }) }),
     );
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
   });
@@ -110,7 +110,7 @@ describe('InversionesBody', () => {
     const dateInput = container.querySelector('.portfolio-close-heading input[type="datetime-local"]') as HTMLInputElement;
     fireEvent.change(dateInput, { target: { value: '2026-06-15T16:30' } });
     const closeInput = screen.getByLabelText('Precio de cierre AAPL');
-    fireEvent.change(closeInput, { target: { value: '150' } });
+    fireEvent.change(closeInput, { target: { value: '150,25' } });
     fireEvent.click(screen.getByText('Confirmar cierre'));
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
@@ -121,7 +121,7 @@ describe('InversionesBody', () => {
         body: JSON.stringify({
           portfolio: 'Cartera Prueba',
           fecha: '2026-06-15T16:30',
-          prices: [{ holdingId: 1, closePrice: 150 }],
+          prices: [{ holdingId: 1, closePrice: 150.25 }],
         }),
       }),
     );
@@ -153,7 +153,7 @@ describe('InversionesBody', () => {
     expect(screen.getAllByText('Cerrar')).toHaveLength(2);
     const dateInput = container.querySelector('.holding-close-row input[type="datetime-local"]') as HTMLInputElement;
     fireEvent.change(dateInput, { target: { value: '2026-10-02T11:45' } });
-    fireEvent.change(screen.getByLabelText('Precio de venta AAPL'), { target: { value: '155.25' } });
+    fireEvent.change(screen.getByLabelText('Precio de venta AAPL'), { target: { value: '155,25' } });
     fireEvent.click(screen.getByText('Confirmar venta'));
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
@@ -180,7 +180,7 @@ describe('InversionesBody', () => {
 
     const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('.holdings-table tbody tr'));
     const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
-    const priceInput = aaplRow.querySelector('input[type="number"]') as HTMLInputElement;
+    const priceInput = aaplRow.querySelector('input[inputmode="decimal"]') as HTMLInputElement;
     expect(priceInput.value).toBe('153.53');
     expect(aaplRow.textContent).toContain('358,47$');
     expect(aaplRow.textContent).toContain('31.33%');
