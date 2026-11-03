@@ -337,7 +337,7 @@ Permite sumar un concepto con un subconcepto opcional y un intervalo de fechas. 
 
 #### Formulario: Añadir movimiento
 
-A la derecha de la tabla. Autocompletado de concepto por frecuencia (prefijo, case-insensitive) y campo opcional de subconcepto para todos los tipos. La fecha y hora se inicializan con la hora local actual y se guardan con precisión de minuto. Si se registra un concepto de gasto nuevo, el backend lo detecta en la operación de alta; tras guardar, el formulario abre un diálogo para clasificarlo como recurrente o puntual.
+A la derecha de la tabla. Autocompletado de concepto por frecuencia (prefijo, case-insensitive) y campo opcional de subconcepto para todos los tipos. Todos los formularios de fecha y hora usan un calendario y un selector de horas completas de `00:00` a `23:00`, sin AM/PM; se inicializan con la hora local actual. Este selector se aplica al alta y edición de movimientos, alta de holdings, transferencias y cierres de posiciones, carteras y apuestas. Si se registra un concepto de gasto nuevo, el backend lo detecta en la operación de alta; tras guardar, el formulario abre un diálogo para clasificarlo como recurrente o puntual.
 
 **Validaciones del servidor:**
 
@@ -360,7 +360,7 @@ Botón en el hero. `DELETE /api/accounts/{cuenta}` borra la cuenta y su históri
 
 Vista de cartera de inversión (no cuenta corriente), en la **divisa de esa cuenta** (`accounts.currency`; el ejemplo `investment1` es USD). El acento visual y el monograma se eligen por cuenta (tema por defecto: forest para cuentas nuevas INVESTMENT, editable en el hero).
 
-Los campos de importes, precios, títulos y tipo de cambio aceptan coma o punto como separador decimal, sin separadores de miles. El alta de holdings usa un calendario y un selector de horas de `00:00` a `23:00`.
+Los campos de importes, precios, títulos y tipo de cambio aceptan coma o punto como separador decimal, sin separadores de miles. El alta de holdings usa el selector de fecha y hora común a toda la app (`00:00` a `23:00`).
 
 Botón **Precios actuales** (`POST .../portfolio-holdings/refresh-prices`, yfinance) y banner con cuántas posiciones se actualizaron / qué tickers fallaron. Botón **+ Holding** abre el alta de un lote (`POST .../portfolio-holdings`): cartera, ticker, títulos, precio, fecha. Exige caja suficiente (Saldo − En carteras). Si la cuenta no es USD, se puede convertir un precio en USD con **Consultar ahora** (yfinance).
 
