@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { closePortfolio, closePortfolioPosition, updatePortfolioHolding } from '../../api/client';
 import type { AccountId, ClosedInvestPosition, OpenInvestPosition, PortfolioHoldingDetail, PortfolioReport } from '../../api/types';
 import { DataTable, type Column } from '../../components/DataTable';
+import { DateTimeField } from '../../components/DateTimeField';
 import { SectionKpis, type SectionKpiItem } from '../../components/SectionKpis';
 import { useToast } from '../../components/ToastContext';
 import { fd, money, priceInputValue, localISODateTime } from '../../lib/format';
@@ -172,7 +173,7 @@ function HoldingRow({
                 </div>
                 <label>
                   <span>Fecha y hora de venta</span>
-                  <input type="datetime-local" value={closeDate} onChange={(e) => onCloseDateChange(e.target.value)} />
+                  <DateTimeField value={closeDate} onChange={onCloseDateChange} />
                 </label>
               </div>
               <div className="portfolio-close-prices">
@@ -369,7 +370,7 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
                 </div>
                 <label>
                   <span>Fecha y hora</span>
-                  <input type="datetime-local" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} />
+                  <DateTimeField value={closeDate} onChange={setCloseDate} />
                 </label>
               </div>
               <div className="portfolio-close-prices">

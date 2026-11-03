@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { addMovement } from '../../api/client';
 import type { AccountId } from '../../api/types';
+import { DateTimeField } from '../../components/DateTimeField';
 import { useToast } from '../../components/ToastContext';
 import { eur, localISODateTime } from '../../lib/format';
 import { r2, parseDecimal } from '../../lib/math';
@@ -113,7 +114,7 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
         </div>
         <div className="fg" style={{ marginTop: 10 }}>
           <label>Fecha y hora de cierre</label>
-          <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <DateTimeField className="date-input" value={fecha} onChange={setFecha} />
         </div>
         <div className="modal-actions">
           <button className="btn btn-ghost" onClick={onClose}>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { submitTransfer } from '../../api/client';
 import type { AccountId, AccountSummary } from '../../api/types';
+import { DateTimeField } from '../../components/DateTimeField';
 import { useToast } from '../../components/ToastContext';
 import { money, localISODateTime } from '../../lib/format';
 import { parseDecimal } from '../../lib/math';
@@ -152,7 +153,7 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
         )}
         <div className="fg">
           <label>Fecha y hora</label>
-          <input type="datetime-local" className="date-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <DateTimeField className="date-input" value={fecha} onChange={setFecha} />
         </div>
         <div className="modal-actions">
           <button className="btn btn-ghost" onClick={onClose}>
