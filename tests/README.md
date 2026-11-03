@@ -4,7 +4,7 @@ Congela el comportamiento financiero del backend (`app/main.py`) contra un
 fixture sintético, para que ningún cambio futuro rompa el cálculo de KPIs,
 saldo, apuestas o carteras sin que alguien lo note y lo revise a propósito.
 Nació para proteger el refactor Flask+vanilla → FastAPI+React
-(bloques 0-5, ya cerrados; los bloques 6-7 no se implementaron — ver `docs/BACKLOG.md`). Hoy es la suite de regresión normal del backend, no
+(bloques 0-5, ya cerrados; los bloques 6-7 no se implementaron — ver `docs/info/BACKLOG.md`). Hoy es la suite de regresión normal del backend, no
 infraestructura temporal.
 
 La mitad que comparaba contra el vanilla (`index.html`, `run_frontend_harness.mjs`,

@@ -1,4 +1,5 @@
 import importlib.util
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,16 @@ from domain.exceptions import MovementNotFoundError, ProtectedInitialBalanceErro
 from domain.services.ledger import LedgerService
 from domain.value_objects import AccountKind
 from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository
+
+
+@pytest.fixture(autouse=True)
+def account_opening_date(monkeypatch):
+    class OpeningDate(datetime):
+        @classmethod
+        def now(cls):
+            return cls(2026, 10, 31, 12)
+
+    monkeypatch.setattr("application.use_cases.create_account.datetime", OpeningDate)
 
 
 @pytest.fixture

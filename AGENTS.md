@@ -1,0 +1,79 @@
+# borja-accounts
+
+Panel financiero personal local de un único usuario. No tiene autenticación ni se expone fuera de `localhost`.
+
+## Fuente de verdad
+
+- `docs/info/BACKLOG.md` recoge el trabajo pendiente.
+- `README.md` documenta el comportamiento de producto, las invariantes financieras y la API.
+- `tests/README.md` describe el golden master del backend y el protocolo para cambios intencionales de comportamiento.
+- Si estos documentos discrepan con el código, comprueba primero la suite de regresión y actualiza la documentación afectada como parte del mismo cambio.
+
+## Stack y layout
+
+- Backend: Python 3.11+, FastAPI y Uvicorn. La aplicación HTTP vive en `app/main.py`.
+- Frontend: React, TypeScript y Vite en `frontend/`; `frontend/dist/` se sirve desde FastAPI.
+- Persistencia activa: SQLite mediante `SQLiteMovementRepository`. Los CSV son import/export y fixtures de pruebas, no el store de runtime.
+- No existe un directorio `backend/` ni un monorepo backend/frontend.
+
+```text
+app/                         HTTP, composición y traducción de errores
+domain/                      Entidades, value objects y servicios puros
+application/use_cases/       Casos de uso
+application/ports/           Contratos de infraestructura
+infrastructure/              SQLite, CSV de import/tests y yfinance
+frontend/                    Cliente React
+tests/                       Golden master y regresión backend
+```
+
+Regla de dependencias: `domain` no importa `application` ni `infrastructure`; `application` usa `domain` y puertos; `infrastructure` implementa puertos; `app/main.py` compone todo.
+
+## Invariantes de negocio relevantes
+
+- Una cuenta tiene `kind` `CASH` o `INVESTMENT`, una única divisa interna (`EUR` o `USD`) y se crea desde la UI.
+- La recurrencia de gastos se persiste por movimiento, pero su edición es por concepto dentro de la cuenta. Todos los movimientos `Gasto` del concepto comparten el booleano; los nuevos gastos heredan su valor y un concepto nuevo es recurrente por defecto. La media mensual usa meses desde la primera aparición si es recurrente y todos los meses del rango si es puntual.
+- `movements.balance` se recalcula completo en cada escritura. El orden estable por fecha usa `mergesort`; no perder microsegundos de `occurred_at` sin validar el efecto.
+- Una transferencia son dos movimientos enlazados por `transfer_link_id`; un `Ingreso` sin ese enlace es ingreso real. Al borrar una pata, se elimina la otra.
+- En cuentas INVESTMENT, `Saldo` se deriva de `build_investment_ledger`. `En carteras` es un desglose a coste, no una cifra que se sume al saldo. `Caja = Saldo - En carteras`.
+- Las holdings abiertas añaden movimientos `Inversión` sintéticos al ledger; no persistir esas filas como si fueran movimientos originales.
+- Los precios y FX de yfinance se consultan bajo demanda y deben ser confirmados por el usuario cuando afecten a una transferencia. No hay refresco automático.
+
+## Fuera de alcance actual
+
+- No hay integración IBKR/Client Portal Gateway, `BrokerGateway`, órdenes ni trading.
+- No hay multiusuario, autenticación, Postgres, colas, cache, CQRS ni event sourcing.
+- El asistente usa `gemini-3.8-flash` con function calling iterativo y un máximo de 20 llamadas por petición. SQLite valida y ejecuta cada SQL dentro del scope; el frontend expone la respuesta Markdown y cada consulta con su propio ID y descripción, sin agruparlas bajo una consulta padre. Las lecturas ejecutadas se guardan individualmente y se reejecutan sin llamada al LLM. Las escrituras requieren confirmación explícita y no se guardan para reejecución. No dar al modelo permisos fuera del modo y scope recibidos.
+- `run.sh` comprueba que Google Cloud CLI esté disponible y que ADC pueda emitir un token. Si no hay sesión y existe una terminal interactiva, pregunta si debe iniciar `gcloud auth application-default login`; al rechazarlo, o si no hay terminal, arranca con el panel del asistente oculto usando `ACCOUNTS_ASSISTANT_ENABLED=0`. El frontend consulta `GET /api/assistant/status` para conocer esta disponibilidad.
+
+## Backlog vigente
+
+Ver `docs/info/BACKLOG.md`.
+
+## Desarrollo y verificación
+
+```bash
+uv sync
+(cd frontend && npm install)
+./run.sh
+
+uv run pytest tests/ -q
+(cd frontend && npx vitest run)
+(cd frontend && npm run build)
+```
+
+- Ejecuta comandos TypeScript, Vitest y build desde `frontend/`; no uses `npx tsc` desde la raíz.
+- El escenario backend usa una copia temporal de fixtures y no toca los CSV ni la base real.
+- Regenera `tests/snapshot_backend.json` únicamente ante un cambio de comportamiento financiero intencional, revisado y documentado.
+- `accounts.db`, backups y CSV de datos reales son locales e ignorados por Git. No los sobrescribas durante diagnósticos o pruebas.
+
+## Cambios
+
+- Mantén la lógica financiera fuera de `app/main.py` y del frontend.
+- Añade pruebas de regresión para toda regla financiera nueva o modificada.
+- No introduzcas abstracciones o infraestructura futura sin un caso de uso vigente.
+- Si cambian contratos HTTP, actualiza `frontend/src/api/client.ts`, `frontend/src/api/types.ts`, pruebas y documentación en el mismo cambio.
+
+
+## Organización de documentación y prompts
+
+La documentación de arquitectura, infraestructura, negocio y pendientes vive en `docs/info/`; los ADR, en `docs/info/adr/`. Los prompts y plantillas de agentes viven en `docs/prompts/` y se cargan desde esa ruta. `AGENTS.md`, `CLAUDE.md` y los `README.md` de cada directorio son puntos de entrada. La carga de recursos se resuelve en adaptadores o composición, sin introducir acceso a archivos en el dominio. Las ejecuciones conservan su trazabilidad en los registros de runtime; los cambios se explican en commits y PRs.

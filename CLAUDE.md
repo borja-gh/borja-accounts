@@ -4,7 +4,7 @@ Panel financiero personal local de un único usuario. No tiene autenticación ni
 
 ## Fuente de verdad
 
-- `docs/BACKLOG.md` recoge el trabajo pendiente.
+- `docs/info/BACKLOG.md` recoge el trabajo pendiente.
 - `README.md` documenta el comportamiento de producto, las invariantes financieras y la API.
 - `tests/README.md` describe el golden master del backend y el protocolo para cambios intencionales de comportamiento.
 - Si estos documentos discrepan con el código, comprueba primero la suite de regresión y actualiza la documentación afectada como parte del mismo cambio.
@@ -47,7 +47,7 @@ Regla de dependencias: `domain` no importa `application` ni `infrastructure`; `a
 
 ## Backlog vigente
 
-Ver `docs/BACKLOG.md`.
+Ver `docs/info/BACKLOG.md`.
 
 ## Desarrollo y verificación
 
@@ -72,3 +72,8 @@ uv run pytest tests/ -q
 - Añade pruebas de regresión para toda regla financiera nueva o modificada.
 - No introduzcas abstracciones o infraestructura futura sin un caso de uso vigente.
 - Si cambian contratos HTTP, actualiza `frontend/src/api/client.ts`, `frontend/src/api/types.ts`, pruebas y documentación en el mismo cambio.
+
+
+## Organización de documentación y prompts
+
+La documentación de arquitectura, infraestructura, negocio y pendientes vive en `docs/info/`; los ADR, en `docs/info/adr/`. Los prompts y plantillas de agentes viven en `docs/prompts/` y se cargan desde esa ruta. `AGENTS.md`, `CLAUDE.md` y los `README.md` de cada directorio son puntos de entrada. La carga de recursos se resuelve en adaptadores o composición, sin introducir acceso a archivos en el dominio. Las ejecuciones conservan su trazabilidad en los registros de runtime; los cambios se explican en commits y PRs.

@@ -36,10 +36,9 @@ export function ExchangeRateField({ from, to, value, onChange }: Props) {
       <label>{`Tipo de cambio (1 ${from} = ? ${to})`}</label>
       <div className="fx-row">
         <input
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder="1.000000"
-          step="0.000001"
-          min="0.000001"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />

@@ -3,6 +3,7 @@ import { submitTransfer } from '../../api/client';
 import type { AccountId, AccountSummary } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
 import { money, localISODateTime } from '../../lib/format';
+import { parseDecimal } from '../../lib/math';
 import { ExchangeRateField } from './ExchangeRateField';
 
 interface Props {
@@ -57,7 +58,7 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
   }
 
   async function handleSubmit() {
-    const totalNum = parseFloat(total);
+    const totalNum = parseDecimal(total);
     if (!totalNum || totalNum <= 0) {
       showToast('Introduce un importe válido', 'err');
       return;
@@ -72,7 +73,7 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
     }
     let rateNum: number | undefined;
     if (needsRate) {
-      rateNum = parseFloat(exchangeRate);
+      rateNum = parseDecimal(exchangeRate);
       if (!rateNum || rateNum <= 0) {
         showToast(`Introduce el tipo de cambio ${cuentaOrigen!.currency}→${cuentaDestino!.currency}`, 'err');
         return;
@@ -98,8 +99,8 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
     }
   }
 
-  const totalNum = parseFloat(total);
-  const rateNum = parseFloat(exchangeRate);
+  const totalNum = parseDecimal(total);
+  const rateNum = parseDecimal(exchangeRate);
   const showPreview = needsRate && totalNum > 0 && rateNum > 0;
 
   return (
@@ -128,7 +129,7 @@ export function TransferModal({ open, accounts, onClose, onSaved }: Props) {
         </div>
         <div className="fg">
           <label>Importe ({cuentaOrigen?.currency ?? ''})</label>
-          <input type="number" placeholder="0.00" step="0.01" min="0.01" value={total} onChange={(e) => setTotal(e.target.value)} />
+          <input type="text" inputMode="decimal" placeholder="0.00" value={total} onChange={(e) => setTotal(e.target.value)} />
         </div>
         <div className="fg">
           <label>Subconcepto <span className="muted">(opcional)</span></label>

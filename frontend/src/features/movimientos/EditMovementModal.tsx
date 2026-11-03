@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { editMovement } from '../../api/client';
 import type { AccountId, AccountKind, Movement } from '../../api/types';
 import { TIPOS_POR_KIND, displayTipo } from '../../domain/tipos';
-import { isValidMovementAmount } from '../../lib/math';
+import { isValidMovementAmount, parseDecimal } from '../../lib/math';
 import { localDateTimeInputValue, money } from '../../lib/format';
 import { useToast } from '../../components/ToastContext';
 import { candidatesForSubconcept, candidatesForTipo, rankConcepts } from './autocomplete';
@@ -56,7 +56,7 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
       showToast('Introduce un concepto', 'err');
       return;
     }
-    const totalNum = parseFloat(total);
+    const totalNum = parseDecimal(total);
     if (!isValidMovementAmount(totalNum, tipo)) {
       showToast('Introduce un importe válido (0 = pérdida total en cobro de apuesta)', 'err');
       return;
@@ -121,7 +121,7 @@ export function EditMovementModal({ idx, account, kind, currency, data, onClose,
         </div>
         <div className="fg">
           <label>Total ({currency})</label>
-          <input type="number" placeholder="0.00" step="0.01" min={tipo === 'Apuestas_r' ? '0' : '0.01'} value={total} onChange={(e) => setTotal(e.target.value)} />
+          <input type="text" inputMode="decimal" placeholder="0.00" value={total} onChange={(e) => setTotal(e.target.value)} />
         </div>
         <div className="modal-actions">
           <button className="btn btn-ghost" onClick={onClose}>

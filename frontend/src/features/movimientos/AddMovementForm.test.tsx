@@ -12,7 +12,7 @@ describe('AddMovementForm', () => {
     vi.mocked(updateExpenseRecurrence).mockResolvedValue({ ok: true });
   });
 
-  it('pregunta la recurrencia tras guardar un concepto nuevo y persiste la elección', async () => {
+  it.each(['.', ','])('acepta importes con %s y persiste la recurrencia del concepto nuevo', async (separator) => {
     render(
       <ToastProvider>
         <AddMovementForm account="cash1" kind="CASH" currency="EUR" data={[]} onSaved={vi.fn()} />
@@ -21,12 +21,12 @@ describe('AddMovementForm', () => {
 
     fireEvent.change(screen.getByPlaceholderText('Empieza a escribir…'), { target: { value: 'Dentista' } });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: '42' } });
+    fireEvent.change(screen.getByPlaceholderText('0.00'), { target: { value: `42${separator}35` } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
     expect(await screen.findByRole('dialog')).toHaveTextContent('Dentista');
     expect(addMovement).toHaveBeenCalledWith('cash1', expect.objectContaining({
-      tipo: 'Gasto', concepto: 'Dentista', total: 42, subconcepto: null,
+      tipo: 'Gasto', concepto: 'Dentista', total: 42.35, subconcepto: null,
     }));
     fireEvent.click(screen.getByRole('button', { name: 'No, puntual' }));
     await waitFor(() => expect(updateExpenseRecurrence).toHaveBeenCalledWith('cash1', 'Dentista', false));
