@@ -107,8 +107,10 @@ describe('InversionesBody', () => {
     const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved });
     fireEvent.click(container.querySelector('details.portfolio-holding-details summary')!);
     fireEvent.click(screen.getByText('Cerrar cartera'));
-    const dateInput = container.querySelector('.portfolio-close-heading input[type="datetime-local"]') as HTMLInputElement;
-    fireEvent.change(dateInput, { target: { value: '2026-06-15T16:30' } });
+    const dateInput = container.querySelector('.portfolio-close-heading input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2026-06-15' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Hora (24 horas)' }), { target: { value: '23' } });
+    expect(container.querySelector('input[type="datetime-local"]')).not.toBeInTheDocument();
     const closeInput = screen.getByLabelText('Precio de cierre AAPL');
     fireEvent.change(closeInput, { target: { value: '150,25' } });
     fireEvent.click(screen.getByText('Confirmar cierre'));
@@ -120,7 +122,7 @@ describe('InversionesBody', () => {
         method: 'POST',
         body: JSON.stringify({
           portfolio: 'Cartera Prueba',
-          fecha: '2026-06-15T16:30',
+          fecha: '2026-06-15T23:00',
           prices: [{ holdingId: 1, closePrice: 150.25 }],
         }),
       }),
@@ -151,8 +153,10 @@ describe('InversionesBody', () => {
     expect(screen.getByText('Venta de AAPL')).toBeInTheDocument();
     expect(screen.getByText('Se venderán 12 acciones. El resto de la cartera seguirá abierto.')).toBeInTheDocument();
     expect(screen.getAllByText('Cerrar')).toHaveLength(2);
-    const dateInput = container.querySelector('.holding-close-row input[type="datetime-local"]') as HTMLInputElement;
-    fireEvent.change(dateInput, { target: { value: '2026-10-02T11:45' } });
+    const dateInput = container.querySelector('.holding-close-row input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2026-10-02' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Hora (24 horas)' }), { target: { value: '00' } });
+    expect(container.querySelector('input[type="datetime-local"]')).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Precio de venta AAPL'), { target: { value: '155,25' } });
     fireEvent.click(screen.getByText('Confirmar venta'));
 
@@ -161,7 +165,7 @@ describe('InversionesBody', () => {
       '/api/accounts/investment1/portfolio-holdings/close-position',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ portfolio: 'Cartera Prueba', ticker: 'AAPL', closePrice: 155.25, fecha: '2026-10-02T11:45' }),
+        body: JSON.stringify({ portfolio: 'Cartera Prueba', ticker: 'AAPL', closePrice: 155.25, fecha: '2026-10-02T00:00' }),
       }),
     );
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
