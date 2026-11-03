@@ -21,13 +21,13 @@ borja-accounts/
 │   └── dist/              ← Build de producción (gitignored, `npm run build`)
 ├── pyproject.toml        ← Dependencias Python (gestionadas con uv)
 ├── uv.lock               ← Lockfile de dependencias
-├── run.sh                ← Arranque (build de frontend + uv run uvicorn, puerto 8000)
+├── run.sh                ← Arranque (build de frontend + uv run uvicorn, puerto 8001)
 ├── accounts.db           ← Base de datos SQLite (en .gitignore, es la que usa la app)
 ├── backups/               ← Backups con timestamp de accounts.db antes de cada migración de datos reales (en .gitignore)
 ├── <id-cuenta>.csv       ← Un CSV por cuenta (import/export, ya no activo; en .gitignore)
 ├── <id-cuenta>.example.csv ← Fixture sintético versionado (mismo formato, sin datos reales)
 ├── scripts/migrate_csv_to_sqlite.py ← Importa movimientos de los CSV a SQLite (una cuenta ya existente)
-├── docs/BACKLOG.md        ← Trabajo pendiente
+├── docs/info/BACKLOG.md        ← Trabajo pendiente
 └── tests/                 ← Suite de regresión del backend (ver tests/README.md)
 ```
 
@@ -45,7 +45,7 @@ uv sync
 ./run.sh
 ```
 
-`run.sh` reconstruye `frontend/dist/` (`npm run build`) y arranca uvicorn en **http://localhost:8000** (abre el navegador cuando el puerto responde). Sin `--reload`: Ctrl+C libera el puerto.
+`run.sh` reconstruye `frontend/dist/` (`npm run build`) y arranca uvicorn en **http://localhost:8001** (abre el navegador cuando el puerto responde). Sin `--reload`: Ctrl+C libera el puerto.
 
 En un clon fresco **no hay `accounts.db`**. La UI muestra un onboarding vacío: crea la primera cuenta con **"+ Cuenta"**. Ese es el arranque. No copies CSVs ni lances el script de migración para ver la app.
 
@@ -187,7 +187,7 @@ El asistente es local y trabaja sobre la SQLite de la aplicación. En cada petic
    ./run.sh
    ```
 
-   El script valida ADC antes de arrancar, reconstruye el frontend y ejecuta la API. Si no hay una terminal interactiva o se rechaza el login ADC, omite la autenticación y arranca sin mostrar el asistente de IA (`ACCOUNTS_ASSISTANT_ENABLED=0`). Abre `http://localhost:8000`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente financiero**. En escritorio, el panel comparte el ancho entre la consulta y la biblioteca de consultas guardadas.
+   El script valida ADC antes de arrancar, reconstruye el frontend y ejecuta la API. Si no hay una terminal interactiva o se rechaza el login ADC, omite la autenticación y arranca sin mostrar el asistente de IA (`ACCOUNTS_ASSISTANT_ENABLED=0`). Abre `http://localhost:8001`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente financiero**. En escritorio, el panel comparte el ancho entre la consulta y la biblioteca de consultas guardadas.
 
 #### Flujo de lectura
 
@@ -252,7 +252,7 @@ La vista Movimientos incluye un cálculo determinista independiente del asistent
 El endpoint también puede invocarse desde otra interfaz local. El cliente debe conservar la misma secuencia de propuesta y confirmación para `write`:
 
 ```bash
-curl -s http://localhost:8000/api/assistant \
+curl -s http://localhost:8001/api/assistant \
   -H 'Content-Type: application/json' \
   -d '{
     "prompt": "¿Cuántas cuentas hay de cada tipo?",
@@ -359,6 +359,8 @@ Botón en el hero. `DELETE /api/accounts/{cuenta}` borra la cuenta y su históri
 ### Vista INVESTMENT
 
 Vista de cartera de inversión (no cuenta corriente), en la **divisa de esa cuenta** (`accounts.currency`; el ejemplo `investment1` es USD). El acento visual y el monograma se eligen por cuenta (tema por defecto: forest para cuentas nuevas INVESTMENT, editable en el hero).
+
+Los campos de importes, precios, títulos y tipo de cambio aceptan coma o punto como separador decimal, sin separadores de miles. El alta de holdings usa un calendario y un selector de horas de `00:00` a `23:00`.
 
 Botón **Precios actuales** (`POST .../portfolio-holdings/refresh-prices`, yfinance) y banner con cuántas posiciones se actualizaron / qué tickers fallaron. Botón **+ Holding** abre el alta de un lote (`POST .../portfolio-holdings`): cartera, ticker, títulos, precio, fecha. Exige caja suficiente (Saldo − En carteras). Si la cuenta no es USD, se puede convertir un precio en USD con **Consultar ahora** (yfinance).
 
@@ -492,7 +494,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 - **Holdings:** alta desde la UI; venta con fecha; caja = Saldo − En carteras.
 - **Fechas** en `%Y-%m-%d %H:%M:%S.%f` para ordenamiento estable con `mergesort`.
 - **Plotly.js** vía npm (`plotly.js-dist-min`), no CDN.
-- Servidor solo en `localhost` (puerto 8000). Sin auth. No exponer a red pública.
+- Servidor solo en `localhost` (puerto 8001). Sin auth. No exponer a red pública.
 
 ---
 

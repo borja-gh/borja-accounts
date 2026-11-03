@@ -3,7 +3,7 @@ import { addMovement } from '../../api/client';
 import type { AccountId } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
 import { eur, localISODateTime } from '../../lib/format';
-import { r2 } from '../../lib/math';
+import { r2, parseDecimal } from '../../lib/math';
 
 // Solo Apuestas -- las carteras de inversión basadas en holdings ya no
 // aceptan "Cerrar posición" (ver InversionesBody.tsx).
@@ -46,7 +46,7 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
 
   async function handleSubmit() {
     if (!request) return;
-    const totalNum = parseFloat(total);
+    const totalNum = parseDecimal(total);
     if (!fecha) {
       showToast('Introduce una fecha de cierre', 'err');
       return;
@@ -104,10 +104,9 @@ export function ClosePositionModal({ account, request, onClose, onSaved }: Props
         <div className="fg">
           <label>Importe recibido (€)</label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             placeholder="0.00 — introduce 0 si es pérdida total"
-            step="0.01"
-            min="0"
             value={total}
             onChange={(e) => setTotal(e.target.value)}
           />

@@ -32,7 +32,7 @@ fi
 # aquí para no arrancar nunca contra un build desactualizado.
 (cd frontend && npm run build)
 
-URL="http://localhost:8000"
+URL="http://localhost:8001"
 # Abre el navegador cuando el servidor ya esté escuchando
 (
   for _ in $(seq 1 30); do
@@ -44,4 +44,4 @@ URL="http://localhost:8000"
   done
 ) &
 
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8001

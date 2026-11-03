@@ -1,3 +1,10 @@
+export function parseDecimal(value: string): number {
+  const normalized = value.trim().replace(',', '.');
+  if (!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(normalized)) return NaN;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
 export function r2(v: number): number {
   return Math.round(v * 100) / 100;
 }
