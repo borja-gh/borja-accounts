@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { parseDecimal } from '../../lib/math';
 import { createAccount } from '../../api/client';
 import type { AccountKind, AccountSummary, Currency } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
@@ -51,7 +52,7 @@ export function CreateAccountModal({ open, onClose, onCreated }: Props) {
       showToast('Introduce un nombre', 'err');
       return;
     }
-    const saldo = initialBalance.trim() === '' ? 0 : parseFloat(initialBalance);
+    const saldo = initialBalance.trim() === '' ? 0 : parseDecimal(initialBalance);
     if (Number.isNaN(saldo)) {
       showToast('Saldo inicial inválido', 'err');
       return;
@@ -99,9 +100,9 @@ export function CreateAccountModal({ open, onClose, onCreated }: Props) {
         <div className="fg">
           <label>Saldo inicial ({currency})</label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             placeholder="0.00"
-            step="0.01"
             value={initialBalance}
             onChange={(e) => setInitialBalance(e.target.value)}
           />

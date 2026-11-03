@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { deleteCashBudget, fetchCashBudgetStatus, saveCashBudget } from '../../api/client';
 import type { BudgetPeriodType, CashBudgetStatus } from '../../api/types';
 import { money } from '../../lib/format';
+import { parseDecimal } from '../../lib/math';
 
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -40,7 +41,7 @@ export function CashBudgetSection({ account, currency, reloadToken }: Props) {
   }, [reload, reloadToken]);
 
   async function save() {
-    const parsed = Number(amount);
+    const parsed = amount.trim() === '' ? 0 : parseDecimal(amount);
     if (!Number.isFinite(parsed) || parsed < 0) {
       setError('El presupuesto debe ser un importe mayor o igual que cero');
       return;
@@ -127,9 +128,8 @@ export function CashBudgetSection({ account, currency, reloadToken }: Props) {
             <label htmlFor={`budget-amount-${account}`}>Presupuesto ({currency})</label>
             <input
               id={`budget-amount-${account}`}
-              type="number"
-              min="0"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               value={amount}
               placeholder="Sin definir"
               onChange={(event) => setAmount(event.target.value)}

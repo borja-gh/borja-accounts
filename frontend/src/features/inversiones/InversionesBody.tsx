@@ -5,6 +5,7 @@ import { DataTable, type Column } from '../../components/DataTable';
 import { SectionKpis, type SectionKpiItem } from '../../components/SectionKpis';
 import { useToast } from '../../components/ToastContext';
 import { fd, money, priceInputValue, localISODateTime } from '../../lib/format';
+import { parseDecimal } from '../../lib/math';
 
 function pnlClass(v: number | null): string {
   if (v === null) return '';
@@ -68,7 +69,7 @@ function HoldingRow({
 
   async function saveCurrentPrice() {
     const trimmed = currentPrice.trim();
-    const value = trimmed === '' ? null : Number(trimmed);
+    const value = trimmed === '' ? null : parseDecimal(trimmed);
     if (value !== null && (Number.isNaN(value) || value < 0)) {
       showToast('Precio actual inválido', 'err');
       setCurrentPrice(priceInputValue(holding.currentPrice));
@@ -108,9 +109,8 @@ function HoldingRow({
         <td className="r">{money(holding.capital, currency)}</td>
         <td className="r">
           <input
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             placeholder="—"
             value={currentPrice}
             onChange={(e) => setCurrentPrice(e.target.value)}
@@ -179,9 +179,8 @@ function HoldingRow({
                 <label>
                   <span>{`Precio de venta (${currency})`}</span>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     value={positionClosePrice}
                     onChange={(e) => onClosePriceChange(e.target.value)}
                     aria-label={`Precio de venta ${holding.ticker}`}
@@ -235,11 +234,11 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
       holdingId: holding.id,
       raw: closePrices[holding.id]?.trim() ?? '',
     }));
-    if (rawPrices.some(({ raw }) => raw === '' || !Number.isFinite(Number(raw)) || Number(raw) < 0)) {
+    if (rawPrices.some(({ raw }) => raw === '' || !Number.isFinite(parseDecimal(raw)) || parseDecimal(raw) < 0)) {
       showToast('Completa un precio válido para cada posición abierta', 'err');
       return;
     }
-    const prices = rawPrices.map(({ holdingId, raw }) => ({ holdingId, closePrice: Number(raw) }));
+    const prices = rawPrices.map(({ holdingId, raw }) => ({ holdingId, closePrice: parseDecimal(raw) }));
     const result = await closePortfolio(account, { portfolio: p.concepto, fecha: closeDate, prices });
     if (!result.ok) {
       showToast(result.error || 'Error al cerrar la cartera', 'err');
@@ -258,14 +257,14 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
       showToast('Introduce la fecha de cierre', 'err');
       return;
     }
-    if (price === '' || !Number.isFinite(Number(price)) || Number(price) < 0) {
+    if (price === '' || !Number.isFinite(parseDecimal(price)) || parseDecimal(price) < 0) {
       showToast('Introduce un precio de cierre válido', 'err');
       return;
     }
     const result = await closePortfolioPosition(account, {
       portfolio: p.concepto,
       ticker,
-      closePrice: Number(price),
+      closePrice: parseDecimal(price),
       fecha: closeDate,
     });
     if (!result.ok) {
@@ -378,9 +377,8 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
                   <label key={holding.id}>
                     <span>{`${holding.ticker} #${holding.id} · ${holding.shares} acciones · cierre (${currency})`}</span>
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0"
+                      type="text"
+                      inputMode="decimal"
                       value={closePrices[holding.id] ?? ''}
                       onChange={(e) => setClosePrices((previous) => ({ ...previous, [holding.id]: e.target.value }))}
                       aria-label={`Precio de cierre ${holding.ticker}`}
