@@ -327,7 +327,7 @@ KPIs de resumen (lifetime, no afectados por el rango) y dos tablas: posiciones a
 
 Por defecto **los últimos 20 movimientos**. Cada fila real (salvo `Saldo Inicial`) tiene **Duplicar**, **Editar** (fecha y hora, tipo, concepto, subconcepto e importe) y **Borrar** con confirmación por movimiento. Borrar una pata de transferencia elimina también su contraparte. El saldo inicial y las filas sintéticas de holdings quedan protegidos.
 
-Encima hay un **buscador** (tipo / concepto / subconcepto / fecha) contra toda la cuenta. El filtro por subconcepto aparece cuando se define un concepto existente y sus sugerencias se limitan a ese concepto. Con búsqueda activa se muestran hasta 500 resultados; **Limpiar** vuelve a los últimos 20.
+Encima hay un **buscador** (tipo / concepto / subconcepto / importe exacto / fecha) contra toda la cuenta. El filtro por subconcepto aparece cuando se define un concepto existente y sus sugerencias se limitan a ese concepto. El importe exacto acepta coma o punto decimal y se combina con los demás filtros. Con búsqueda activa se muestran hasta 500 resultados; **Limpiar** vuelve a los últimos 20.
 
 Clic en un concepto de la tabla filtra por ese concepto.
 
