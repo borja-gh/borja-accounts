@@ -44,6 +44,14 @@ export function MovimientosSearch({ kind, data, search, onChange }: Props) {
         />
       )}
       <input
+        type="text"
+        inputMode="decimal"
+        aria-label="Importe exacto"
+        placeholder="Importe exacto…"
+        value={search.importe}
+        onChange={(e) => onChange({ ...search, importe: e.target.value })}
+      />
+      <input
         type="date"
         className="date-input"
         title="Filtrar por fecha"
