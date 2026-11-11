@@ -19,9 +19,9 @@ No añadas bases de datos, CSV personales, copias de seguridad, credenciales ni 
 ## Validar cambios
 
 ```bash
+(cd frontend && npm run build)
 uv run --frozen pytest tests/ -q
 (cd frontend && npm test)
-(cd frontend && npm run build)
 ```
 
 Los tests deben usar fixtures sintéticos o bases SQLite temporales. No regeneres `tests/snapshot_backend.json` salvo que el cambio financiero sea intencional, esté revisado y se actualice su documentación.

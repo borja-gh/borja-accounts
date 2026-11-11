@@ -39,6 +39,7 @@ def print_environment():
 
 def assert_port_available():
     listener = socket.socket()
+    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
         listener.bind(("127.0.0.1", 8001))
     except OSError as error:
@@ -76,6 +77,7 @@ def process_group_members(group_id):
 
 def assert_port_free():
     listener = socket.socket()
+    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
         listener.bind(("127.0.0.1", 8001))
     except OSError as error:
