@@ -41,13 +41,16 @@ Requisitos: [uv](https://docs.astral.sh/uv/), Bash 3.2 o posterior y Node.js 24.
 
 La matriz de CI es Ubuntu 24.04 x86_64 y macOS 15 arm64; ejecuta pruebas backend con Python 3.11 y 3.13, pruebas y build del frontend con Node.js 24.15.0, y un smoke HTTP del launcher con reinicio y recuperación de SQLite. El launcher usa Python 3.13, instalado por `uv`; la matriz backend no selecciona ni cambia la versión del launcher. La CI usa runners sin escritorio y no sustituye la validación visual de un escritorio Linux ni acredita otras versiones o arquitecturas.
 
-Clona el repositorio y arranca desde su raíz:
+Descarga el archivo `borja-accounts-0.1.0-beta.1.tar.gz` de la [release](https://github.com/borja-gh/borja-accounts/releases/tag/v0.1.0-beta.1), comprueba su suma con `SHA256SUMS` y descomprímelo:
 
 ```bash
-git clone https://github.com/borja-gh/borja-accounts.git
-cd borja-accounts
+shasum -a 256 -c SHA256SUMS
+tar -xzf borja-accounts-0.1.0-beta.1.tar.gz
+cd borja-accounts-0.1.0-beta.1
 ./run.sh
 ```
+
+En Linux, usa `sha256sum -c SHA256SUMS` en lugar de `shasum -a 256 -c SHA256SUMS`.
 
 El launcher instala dependencias desde los lockfiles, compila el frontend y sirve la aplicación en **http://127.0.0.1:8001**. Si no hay navegador o escritorio, abre esa URL manualmente; para no intentar abrir el navegador, ejecuta `ACCOUNTS_OPEN_BROWSER=0 ./run.sh`.
 
@@ -59,16 +62,15 @@ Para parar, pulsa Ctrl+C en la terminal donde está ejecutándose el launcher. A
 
 La base SQLite se guarda por defecto en `accounts.db` en la raíz del repositorio. Puedes usar otra ruta definiendo `BORJA_ACCOUNTS_DB` antes de arrancar; la interfaz no cambia esa ubicación.
 
-Antes de actualizar, para la aplicación y copia el fichero indicado por `BORJA_ACCOUNTS_DB`, o `accounts.db` si la variable no está configurada, a una ubicación segura fuera del repositorio. Actualiza el código desde la raíz y vuelve a arrancar:
+Antes de actualizar, para la aplicación y copia el fichero indicado por `BORJA_ACCOUNTS_DB`, o `accounts.db` si la variable no está configurada, a una ubicación segura fuera del código. Descarga y descomprime la nueva versión en otra carpeta; arráncala indicando la misma ruta absoluta de la base:
 
 ```bash
-git pull --ff-only
-./run.sh
+BORJA_ACCOUNTS_DB="/ruta/absoluta/accounts.db" ./run.sh
 ```
 
 La actualización no modifica intencionadamente la base de datos, pero no crea una copia de seguridad automática. Guarda también los ficheros `-wal` y `-shm` junto a la base si existen. Para recuperar una copia, para la aplicación, guarda aparte la base actual y sus ficheros acompañantes, reemplaza la base por la copia elegida y restaura sus acompañantes; después arranca de nuevo.
 
-La distribución pública por clon está pendiente de resolver material privado presente en el historial Git. No uses este repositorio como descarga de una beta pública hasta que se confirme una vía segura.
+La release distribuye un snapshot de fuentes sin historial Git. El historial del repositorio contiene material privado pendiente de saneamiento; usa el archivo de la release para instalar la beta.
 
 ### Importar un CSV (opcional; no es el arranque)
 
