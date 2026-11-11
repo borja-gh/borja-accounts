@@ -1,10 +1,10 @@
 # Cuentas — Panel de control financiero personal
 
-Interfaz web local para llevar el seguimiento de N cuentas de ahorro (CASH) y M cuentas de inversión (INVESTMENT) -- se dan de alta desde la propia interfaz (pestaña "+ Cuenta" en el selector de cuentas). Permite añadir movimientos, visualizar estadísticas y analizar apuestas/inversiones, con los datos guardados en SQLite. Un CSV por cuenta (nombrado `<id-de-cuenta>.csv`) sigue existiendo como formato de import/export, pero ya no es la base de datos activa (herencia histórica).
+Interfaz web local para llevar cuentas de ahorro (CASH) e inversión (INVESTMENT). Las cuentas se crean desde la interfaz; los movimientos se guardan en una base SQLite local. Los CSV solo se usan para importar o exportar movimientos.
 
-Ejemplo de cuentas: `Personal Account 1` (CASH, EUR) e `Investment Account 1` (INVESTMENT, USD). El id interno (p.ej. `personal-account-1`) sale del slug del nombre al crear la cuenta (`CreateAccountUseCase`), no es un valor que se elija a mano.
+La aplicación está pensada para un único usuario, sin autenticación, y solo escucha en `127.0.0.1`. El uso básico no requiere Google Cloud ni credenciales.
 
-Un usuario, sin autenticación, solo en `localhost`. La UI habla de cuentas por **nombre** y **kind** (CASH / INVESTMENT), no de marcas de banco. Los nombres `Openbank`/`IBKR` aparecen en el fixture de tests (`tests/scenario.py`) a propósito; el detalle está en `tests/README.md`, no aquí.
+Consulta [Contribuir](CONTRIBUTING.md) para preparar el entorno de desarrollo y [LICENSE](LICENSE) para los términos de uso.
 
 ---
 
@@ -23,7 +23,7 @@ borja-accounts/
 ├── uv.lock               ← Lockfile de dependencias
 ├── run.sh                ← Arranque (build de frontend + uv run uvicorn, puerto 8001)
 ├── accounts.db           ← Base de datos SQLite (en .gitignore, es la que usa la app)
-├── backups/               ← Backups con timestamp de accounts.db antes de cada migración de datos reales (en .gitignore)
+├── backups/               ← Copias locales de bases de datos (en .gitignore)
 ├── <id-cuenta>.csv       ← Un CSV por cuenta (import/export, ya no activo; en .gitignore)
 ├── <id-cuenta>.example.csv ← Fixture sintético versionado (mismo formato, sin datos reales)
 ├── scripts/migrate_csv_to_sqlite.py ← Importa movimientos de los CSV a SQLite (una cuenta ya existente)
@@ -35,19 +35,42 @@ No existe un directorio `backend/`. El layout hexagonal vive en la raíz.
 
 ---
 
-## Puesta en marcha
+## Instalar y arrancar
 
-Requiere [uv](https://docs.astral.sh/uv/) (`brew install uv` u otro instalador de su web) y Node.js 20+ (el CI usa Node 20).
+Requisitos: [uv](https://docs.astral.sh/uv/), Bash 3.2 o posterior y Node.js 24.15 o posterior, dentro de la serie 24. `npm` se instala con Node.js; `uv` instala Python 3.13 para la aplicación. No hace falta instalar Google Cloud CLI ni configurar credenciales para el uso básico.
+
+La matriz de CI es Ubuntu 24.04 x86_64 y macOS 15 arm64; ejecuta pruebas backend con Python 3.11 y 3.13, pruebas y build del frontend con Node.js 24.15.0, y un smoke HTTP del launcher con reinicio y recuperación de SQLite. El launcher usa Python 3.13, instalado por `uv`; la matriz backend no selecciona ni cambia la versión del launcher. La CI usa runners sin escritorio y no sustituye la validación visual de un escritorio Linux ni acredita otras versiones o arquitecturas.
+
+Descarga el archivo `borja-accounts-0.1.0-beta.1.tar.gz` de la [release](https://github.com/borja-gh/borja-accounts/releases/tag/v0.1.0-beta.1), comprueba su suma con `SHA256SUMS` y descomprímelo:
 
 ```bash
-uv sync
-(cd frontend && npm install)
+shasum -a 256 -c SHA256SUMS
+tar -xzf borja-accounts-0.1.0-beta.1.tar.gz
+cd borja-accounts-0.1.0-beta.1
 ./run.sh
 ```
 
-`run.sh` reconstruye `frontend/dist/` (`npm run build`) y arranca uvicorn en **http://localhost:8001** (abre el navegador cuando el puerto responde). Sin `--reload`: Ctrl+C libera el puerto.
+En Linux, usa `sha256sum -c SHA256SUMS` en lugar de `shasum -a 256 -c SHA256SUMS`.
 
-En un clon fresco **no hay `accounts.db`**. La UI muestra un onboarding vacío: crea la primera cuenta con **"+ Cuenta"**. Ese es el arranque. No copies CSVs ni lances el script de migración para ver la app.
+El launcher instala dependencias desde los lockfiles, compila el frontend y sirve la aplicación en **http://127.0.0.1:8001**. Si no hay navegador o escritorio, abre esa URL manualmente; para no intentar abrir el navegador, ejecuta `ACCOUNTS_OPEN_BROWSER=0 ./run.sh`.
+
+En una base vacía, pulsa **+ Crear tu primera cuenta**, elige nombre, tipo (Ahorro o Inversión) y divisa (EUR o USD). El saldo inicial es opcional; si es distinto de cero se registra como movimiento de apertura. El tipo y la divisa no se pueden cambiar después. En la cuenta creada, usa **Añadir movimiento** para registrar el primero. No se cargan datos de ejemplo ni personales automáticamente.
+
+Para parar, pulsa Ctrl+C en la terminal donde está ejecutándose el launcher. Al volver a arrancar, las cuentas y movimientos siguen ahí.
+
+### Datos, actualización y recuperación
+
+La base SQLite se guarda por defecto en `accounts.db` en la raíz del repositorio. Puedes usar otra ruta definiendo `BORJA_ACCOUNTS_DB` antes de arrancar; la interfaz no cambia esa ubicación.
+
+Antes de actualizar, para la aplicación y copia el fichero indicado por `BORJA_ACCOUNTS_DB`, o `accounts.db` si la variable no está configurada, a una ubicación segura fuera del código. Descarga y descomprime la nueva versión en otra carpeta; arráncala indicando la misma ruta absoluta de la base:
+
+```bash
+BORJA_ACCOUNTS_DB="/ruta/absoluta/accounts.db" ./run.sh
+```
+
+La actualización no modifica intencionadamente la base de datos, pero no crea una copia de seguridad automática. Guarda también los ficheros `-wal` y `-shm` junto a la base si existen. Para recuperar una copia, para la aplicación, guarda aparte la base actual y sus ficheros acompañantes, reemplaza la base por la copia elegida y restaura sus acompañantes; después arranca de nuevo.
+
+La release distribuye un snapshot de fuentes sin historial Git. El historial del repositorio contiene material privado pendiente de saneamiento; usa el archivo de la release para instalar la beta.
 
 ### Importar un CSV (opcional; no es el arranque)
 
@@ -77,7 +100,7 @@ Cada CSV (uno por cuenta) tiene las mismas cinco columnas. Es el formato que ent
 | Total    | float    | Importe en la divisa de la cuenta (siempre positivo) |
 | Saldo    | float    | Saldo acumulado calculado automáticamente |
 
-> La divisa no es una columna del CSV: vive en `accounts.currency` (p.ej. la cuenta de ejemplo `investment1` es USD, las CASH de ejemplo son EUR). El importe del CSV está siempre en la divisa nativa de esa cuenta -- incluidas las transferencias entrantes desde una cuenta en otra divisa, que se convierten al tipo de cambio introducido al registrar la transferencia (ver "Transferencia entre cuentas" más abajo). Antes de que existiera esa conversión, esas filas se guardaban con el importe crudo de origen sin convertir; el histórico real se corrigió retroactivamente con las tasas BCE de cada fecha -- ver `scripts/backfill_exchange_rates.py`.
+> La divisa no es una columna del CSV: vive en `accounts.currency`. El importe está en la divisa nativa de la cuenta, incluidas las transferencias entre cuentas de distinta divisa, que se convierten al tipo de cambio confirmado por el usuario al registrarlas.
 
 ---
 
@@ -160,34 +183,21 @@ Si el gasto del mes calendario actual va por encima (o por debajo) de la media d
 
 ### Asistente SQL
 
-El asistente es local y trabaja sobre la SQLite de la aplicación. En cada petición el usuario elige el modo, el scope y el texto de consulta; no existe una sesión de contexto implícita entre peticiones.
+El asistente consulta la SQLite de la aplicación mediante Vertex AI. En cada petición el usuario elige el modo, el scope y el texto de consulta; no existe una sesión de contexto implícita entre peticiones.
 
-#### Puesta en marcha
+#### Activación explícita
 
-1. Instala las dependencias del backend y del frontend:
+El asistente está desactivado por defecto. Para activarlo, instala Google Cloud CLI, configura ADC y define el proyecto de Vertex AI antes de arrancar:
 
-   ```bash
-   uv sync
-   (cd frontend && npm install)
-   ```
+```bash
+gcloud auth application-default login
+export GOOGLE_CLOUD_PROJECT=tu-proyecto
+ACCOUNTS_ASSISTANT_ENABLED=1 ./run.sh
+```
 
-2. Configura ADC de Google Cloud y el proyecto de Vertex AI. `run.sh` comprueba si puede obtener un token ADC; si no hay sesión activa, pregunta si quieres iniciar sesión. Si respondes que no, la aplicación arranca sin mostrar el asistente de IA. La ubicación puede ser `global`, `us` o `eu` según la disponibilidad del modelo:
+El launcher comprueba ADC sin iniciar sesión automáticamente. Si no puede validarlo, arranca la aplicación básica con el asistente desactivado. El modelo permanece en `gemini-3.8-flash`.
 
-   ```bash
-   gcloud auth application-default login
-   export GOOGLE_CLOUD_PROJECT=tu-proyecto
-   export GOOGLE_CLOUD_LOCATION=global
-   ```
-
-   El modelo por defecto es `gemini-3.8-flash`. Se puede sustituir con `BORJA_ACCOUNTS_LLM_MODEL` sin cambiar el flujo ni el contrato HTTP.
-
-3. Arranca la aplicación:
-
-   ```bash
-   ./run.sh
-   ```
-
-   El script valida ADC antes de arrancar, reconstruye el frontend y ejecuta la API. Si no hay una terminal interactiva o se rechaza el login ADC, omite la autenticación y arranca sin mostrar el asistente de IA ni el botón de mostrar/ocultar agente en ninguna cuenta (`ACCOUNTS_ASSISTANT_ENABLED=0`). Abre `http://localhost:8001`, crea una cuenta si la base de datos está vacía y usa el panel **Asistente financiero**. En escritorio, el panel comparte el ancho entre la consulta y la biblioteca de consultas guardadas.
+`GET /api/assistant/status` informa si el asistente está habilitado. Si está desactivado, `POST /api/assistant` responde `503` en JSON y no contacta con el proveedor.
 
 #### Flujo de lectura
 
@@ -215,7 +225,7 @@ La respuesta se representa como Markdown. Cada llamada SQL recibe un ID independ
 
 Ejecutar una consulta guardada vuelve a ejecutar exactamente la SQL almacenada en modo solo lectura, usando también el scope persistido. No invoca el LLM; la UI presenta las filas actuales de SQLite en una tabla.
 
-La base de datos no se envía al modelo: solo el resultado acotado de la consulta. Las respuestas nuevas vacían el campo de petición al enviarse. Las sugerencias de concepto muestran el casing exacto guardado en SQLite.
+Al usar el asistente, hacia Vertex AI (Google) se envían el texto de la petición, el scope elegido, el esquema de las tablas permitidas y el resultado acotado de cada consulta SQL ejecutada. Los movimientos que devuelva una consulta forman parte de ese resultado. No se envía la base de datos completa. Sin habilitar el asistente, estas funciones no envían datos a Vertex AI. La cabecera consulta el tipo de cambio a yfinance al mostrar la estimación agregada de cuentas EUR y USD. Las consultas de precios de holdings y del tipo de cambio de una transferencia se solicitan desde sus controles; el usuario confirma el cambio usado en una transferencia.
 
 #### Flujo de escritura
 
@@ -358,7 +368,7 @@ Botón en el hero. `DELETE /api/accounts/{cuenta}` borra la cuenta y su históri
 
 ### Vista INVESTMENT
 
-Vista de cartera de inversión (no cuenta corriente), en la **divisa de esa cuenta** (`accounts.currency`; el ejemplo `investment1` es USD). El acento visual y el monograma se eligen por cuenta (tema por defecto: forest para cuentas nuevas INVESTMENT, editable en el hero).
+Vista de cartera de inversión (no cuenta corriente), en la **divisa de esa cuenta** (`accounts.currency`). El acento visual y el monograma se eligen por cuenta (tema por defecto: forest para cuentas nuevas INVESTMENT, editable en el hero).
 
 Los campos de importes, precios, títulos y tipo de cambio aceptan coma o punto como separador decimal, sin separadores de miles. El alta de holdings usa el selector de fecha y hora común a toda la app (`00:00` a `23:00`).
 

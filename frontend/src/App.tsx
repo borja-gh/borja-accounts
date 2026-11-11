@@ -23,11 +23,16 @@ function App() {
   const [createAccountModalOpen, setCreateAccountModalOpen] = useState(false);
   const viewRef = useRef<AccountViewHandle>(null);
 
+  const [loadError, setLoadError] = useState(false);
+
   const refreshAccounts = useCallback(() => {
-    fetchAccounts().then((list) => {
-      setAccounts(list);
-      setAccount((current) => (current && list.some((a) => a.id === current) ? current : (list[0]?.id ?? null)));
-    });
+    fetchAccounts()
+      .then((list) => {
+        setLoadError(false);
+        setAccounts(list);
+        setAccount((current) => (current && list.some((a) => a.id === current) ? current : (list[0]?.id ?? null)));
+      })
+      .catch(() => setLoadError(true));
   }, []);
 
   useEffect(() => {
@@ -61,6 +66,28 @@ function App() {
         />
       )}
       <main className="content">
+        {!accounts && !loadError && (
+          <div className="loading" role="status">
+            Cargando cuentas…
+          </div>
+        )}
+        {!accounts && loadError && (
+          <div className="empty" role="alert">
+            <p>
+              No se pudo conectar con el servidor local. Comprueba que la terminal desde la que arrancaste la
+              aplicación sigue en marcha y vuelve a intentarlo.
+            </p>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setLoadError(false);
+                refreshAccounts();
+              }}
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
         {accounts && assistantEnabled && assistantVisible && (
           <AssistantPanel
             accounts={accounts}
