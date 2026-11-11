@@ -1,8 +1,8 @@
 [project]
 name = "borja-accounts"
-version = "0.1.0"
+version = "0.1.0b1"
 description = "Panel de control financiero personal — cuentas y cartera de inversión"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "fastapi>=0.141.1",
     "google-genai>=2.24.0",

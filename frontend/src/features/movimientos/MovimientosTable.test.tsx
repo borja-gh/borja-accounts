@@ -9,6 +9,15 @@ import { fdt } from '../../lib/format';
 
 const noop = () => {};
 
+describe('MovimientosTable vacío', () => {
+  it('indica que no hay movimientos visibles e invita a añadir uno', () => {
+    render(<MovimientosTable rows={[]} currency="EUR" onFilterByConcept={noop} onEdit={noop} onDelete={noop} />);
+
+    expect(screen.getByText(/Sin movimientos visibles/)).toBeInTheDocument();
+    expect(screen.getByText(/registra uno con «Añadir\s+movimiento»/)).toBeInTheDocument();
+  });
+});
+
 function addSubconceptColumn(values: string[]): string[] {
   const result = ['Fecha', 'Tipo', 'Concepto', 'Subconcepto', ...values.slice(3, 5)];
   let index = 5;

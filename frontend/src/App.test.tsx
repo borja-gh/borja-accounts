@@ -88,4 +88,27 @@ describe('App', () => {
     await screen.findByRole('heading', { name: ACCOUNT.name });
     expect(screen.queryByRole('button', { name: /(?:Ocultar|Mostrar) agente/ })).not.toBeInTheDocument();
   });
+
+  it('muestra un estado de carga mientras llegan las cuentas', async () => {
+    vi.mocked(fetchAccounts).mockReturnValue(new Promise(() => {}));
+    vi.mocked(fetchAssistantStatus).mockResolvedValue(false);
+    render(<App />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando cuentas');
+    expect(screen.queryByText('Aún no tienes ninguna cuenta')).not.toBeInTheDocument();
+  });
+
+  it('si falla la carga muestra un error accionable y permite reintentar', async () => {
+    vi.mocked(fetchAccounts).mockRejectedValueOnce(new Error('Connection failed'));
+    vi.mocked(fetchAccounts).mockResolvedValue([ACCOUNT]);
+    vi.mocked(fetchAssistantStatus).mockResolvedValue(false);
+    render(<App />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo conectar con el servidor local');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    await screen.findByRole('heading', { name: ACCOUNT.name });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
 });
