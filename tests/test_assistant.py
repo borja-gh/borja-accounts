@@ -203,7 +203,8 @@ def test_asistente_valida_scope_antes_de_llamar_al_modelo(database):
     assert model.requests == []
 
 
-def test_http_assistant_status_refleja_la_configuracion_de_arranque(monkeypatch):
+def test_http_assistant_status_refleja_la_configuracion_de_arranque(monkeypatch, tmp_path):
+    monkeypatch.setenv("BORJA_ACCOUNTS_DB", str(tmp_path / "assistant.db"))
     monkeypatch.setenv("ACCOUNTS_ASSISTANT_ENABLED", "0")
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     spec = importlib.util.spec_from_file_location("app_http_assistant_status_test", os.path.join(repo_root, "app", "main.py"))
@@ -218,7 +219,34 @@ def test_http_assistant_status_refleja_la_configuracion_de_arranque(monkeypatch)
     assert client.get("/api/assistant/status").json() == {"enabled": True}
 
 
+@pytest.mark.parametrize("enabled", [None, "0", "true"])
+def test_disabled_assistant_never_constructs_provider(monkeypatch, tmp_path, enabled):
+    monkeypatch.setenv("BORJA_ACCOUNTS_DB", str(tmp_path / "assistant.db"))
+    if enabled is None:
+        monkeypatch.delenv("ACCOUNTS_ASSISTANT_ENABLED", raising=False)
+    else:
+        monkeypatch.setenv("ACCOUNTS_ASSISTANT_ENABLED", enabled)
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    spec = importlib.util.spec_from_file_location("app_http_disabled_assistant_test", os.path.join(repo_root, "app", "main.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    def unexpected_provider():
+        pytest.fail("Disabled assistant constructed a provider")
+
+    monkeypatch.setattr(module, "_assistant_use_case", unexpected_provider)
+    from fastapi.testclient import TestClient
+
+    client = TestClient(module.app)
+    assert client.get("/api/assistant/status").json() == {"enabled": False}
+    response = client.post("/api/assistant", json={"prompt": "Synthetic test"})
+    assert response.status_code == 503
+    assert "desactivado" in response.json()["error"]
+    assert client.get("/api/accounts").json() == []
+
+
 def test_http_assistant_devuelve_respuesta_y_consultas(database, monkeypatch):
+    monkeypatch.setenv("ACCOUNTS_ASSISTANT_ENABLED", "1")
     db_path, repository, account = database
     monkeypatch.setenv("BORJA_ACCOUNTS_DB", db_path)
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -250,6 +278,7 @@ def test_http_assistant_devuelve_respuesta_y_consultas(database, monkeypatch):
 
 
 def test_http_write_confirmation_executes_only_the_pending_query(database, monkeypatch):
+    monkeypatch.setenv("ACCOUNTS_ASSISTANT_ENABLED", "1")
     db_path, repository, account = database
     monkeypatch.setenv("BORJA_ACCOUNTS_DB", db_path)
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

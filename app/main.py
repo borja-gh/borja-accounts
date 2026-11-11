@@ -147,6 +147,11 @@ async def _read_json(request: Request):
 
 @app.post("/api/assistant")
 async def ask_assistant(request: Request):
+    if not assistant_status()["enabled"]:
+        return JSONResponse(
+            {"error": "El asistente está desactivado. Actívalo con ACCOUNTS_ASSISTANT_ENABLED=1 al arrancar."},
+            status_code=503,
+        )
     data, err = await _read_json(request)
     if err:
         return err
@@ -169,7 +174,7 @@ async def ask_assistant(request: Request):
 
 @app.get("/api/assistant/status")
 def assistant_status():
-    return {"enabled": os.environ.get("ACCOUNTS_ASSISTANT_ENABLED", "1") != "0"}
+    return {"enabled": os.environ.get("ACCOUNTS_ASSISTANT_ENABLED", "0") == "1"}
 
 
 @app.post("/api/assistant/saved")

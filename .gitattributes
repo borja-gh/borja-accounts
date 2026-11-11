@@ -1,0 +1,10 @@
+AGENTS.md export-ignore
+CLAUDE.md export-ignore
+CLAUDE.local.md export-ignore
+.claude/ export-ignore
+.codex/ export-ignore
+.mcp.json export-ignore
+.openrig/ export-ignore
+openrig/ export-ignore
+docs/info/OPENRIG.md export-ignore
+docs/prompts/openrig/ export-ignore
