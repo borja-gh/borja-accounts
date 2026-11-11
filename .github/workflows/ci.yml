@@ -16,12 +16,14 @@ jobs:
         os: [ubuntu-24.04, macos-15]
         python-version: ["3.11", "3.13"]
     env:
-      UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/borja-accounts-venv
-      BORJA_ACCOUNTS_DB: ${{ runner.temp }}/borja-accounts-tests/accounts.db
       ACCOUNTS_ASSISTANT_ENABLED: "0"
       ACCOUNTS_OPEN_BROWSER: "0"
     steps:
       - uses: actions/checkout@v4
+      - name: Configure temporary state
+        run: |
+          echo "UV_PROJECT_ENVIRONMENT=$RUNNER_TEMP/borja-accounts-venv" >> "$GITHUB_ENV"
+          echo "BORJA_ACCOUNTS_DB=$RUNNER_TEMP/borja-accounts-tests/accounts.db" >> "$GITHUB_ENV"
       - name: Check runner architecture
         run: |
           case "$RUNNER_OS/$RUNNER_ARCH" in
