@@ -223,7 +223,7 @@ La respuesta se representa como Markdown. Cada llamada SQL recibe un ID independ
 
 Ejecutar una consulta guardada vuelve a ejecutar exactamente la SQL almacenada en modo solo lectura, usando también el scope persistido. No invoca el LLM; la UI presenta las filas actuales de SQLite en una tabla.
 
-Al usar el asistente, hacia Vertex AI (Google) se envían el texto de la petición, el scope elegido, el esquema de las tablas permitidas y el resultado acotado de cada consulta SQL ejecutada. Los movimientos que devuelva una consulta forman parte de ese resultado. No se envía la base de datos completa. Sin habilitar el asistente, estas funciones no envían datos a Vertex AI. Los precios y tipos de cambio de yfinance solo se consultan cuando el usuario los solicita desde la interfaz.
+Al usar el asistente, hacia Vertex AI (Google) se envían el texto de la petición, el scope elegido, el esquema de las tablas permitidas y el resultado acotado de cada consulta SQL ejecutada. Los movimientos que devuelva una consulta forman parte de ese resultado. No se envía la base de datos completa. Sin habilitar el asistente, estas funciones no envían datos a Vertex AI. La cabecera consulta el tipo de cambio a yfinance al mostrar la estimación agregada de cuentas EUR y USD. Las consultas de precios de holdings y del tipo de cambio de una transferencia se solicitan desde sus controles; el usuario confirma el cambio usado en una transferencia.
 
 #### Flujo de escritura
 
