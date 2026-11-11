@@ -70,6 +70,7 @@ async function fetchRangeReport<T>(path: string, filter: RangeFilter, extraParam
 
 export async function fetchAccounts(): Promise<AccountSummary[]> {
   const res = await fetch('/api/accounts');
+  if (!res.ok) throw new Error(`GET /api/accounts failed: ${res.status}`);
   return res.json();
 }
 

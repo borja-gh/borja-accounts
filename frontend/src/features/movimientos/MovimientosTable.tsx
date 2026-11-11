@@ -21,7 +21,14 @@ interface Props {
 // TransferBetweenAccountsUseCase) -- ya no hace falta forzar € en una
 // cuenta USD como antes de que existiera esa conversión.
 export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicate, onEdit, onDelete }: Props) {
-  if (!rows.length) return <div className="empty">Sin movimientos.</div>;
+  if (!rows.length) {
+    return (
+      <div className="empty">
+        Sin movimientos visibles. Si la cuenta es nueva o los filtros no coinciden, registra uno con «Añadir
+        movimiento».
+      </div>
+    );
+  }
   const symbol = CURRENCY_SUFFIX[currency] ?? currency;
   return (
     <table>

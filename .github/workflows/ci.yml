@@ -7,20 +7,51 @@ on:
     branches: [main]
 
 jobs:
-  python-sanity:
-    runs-on: ubuntu-latest
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+        python-version: ["3.11", "3.13"]
+    env:
+      ACCOUNTS_ASSISTANT_ENABLED: "0"
+      ACCOUNTS_OPEN_BROWSER: "0"
     steps:
       - uses: actions/checkout@v4
+      - name: Configure temporary state
+        run: |
+          echo "UV_PROJECT_ENVIRONMENT=$RUNNER_TEMP/borja-accounts-venv" >> "$GITHUB_ENV"
+          echo "BORJA_ACCOUNTS_DB=$RUNNER_TEMP/borja-accounts-tests/accounts.db" >> "$GITHUB_ENV"
+      - name: Check runner architecture
+        run: |
+          case "$RUNNER_OS/$RUNNER_ARCH" in
+            Linux/X64|macOS/ARM64) ;;
+            *) exit 1 ;;
+          esac
       - uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
+          python-version: ${{ matrix.python-version }}
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24.15.0"
       - run: npm ci
+        working-directory: frontend
+      - run: npm test
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
-      - run: uv sync
-      - run: uv run python -c "import app.main"
-      - run: uv run pytest tests -v
+      - run: uv sync --frozen
+      - run: mkdir -p "$(dirname "$BORJA_ACCOUNTS_DB")"
+      - run: uv run --frozen python -c "import app.main"
+      - run: uv run --frozen pytest tests/ -q
+      - run: uv run --frozen python scripts/smoke_local_beta.py
+
+  python-sanity:
+    needs: test
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: test '${{ needs.test.result }}' = success
