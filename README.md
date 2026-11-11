@@ -39,7 +39,7 @@ No existe un directorio `backend/`. El layout hexagonal vive en la raíz.
 
 Requisitos: [uv](https://docs.astral.sh/uv/), Bash 3.2 o posterior y Node.js 24.15 o posterior, dentro de la serie 24. `npm` se instala con Node.js; `uv` instala Python 3.13 para la aplicación. No hace falta instalar Google Cloud CLI ni configurar credenciales para el uso básico.
 
-La matriz de CI prevista es Ubuntu 24.04 x86_64 y macOS 15 arm64; ejecuta pruebas backend con Python 3.11 y 3.13 y usa Node.js 24.15.x. El launcher usa Python 3.13, instalado por `uv`; la matriz backend no selecciona ni cambia la versión del launcher. La validación nativa de ambas plataformas sigue pendiente.
+La matriz de CI es Ubuntu 24.04 x86_64 y macOS 15 arm64; ejecuta pruebas backend con Python 3.11 y 3.13, pruebas y build del frontend con Node.js 24.15.0, y un smoke HTTP del launcher con reinicio y recuperación de SQLite. El launcher usa Python 3.13, instalado por `uv`; la matriz backend no selecciona ni cambia la versión del launcher. La CI usa runners sin escritorio y no sustituye la validación visual de un escritorio Linux ni acredita otras versiones o arquitecturas.
 
 Clona el repositorio y arranca desde su raíz:
 

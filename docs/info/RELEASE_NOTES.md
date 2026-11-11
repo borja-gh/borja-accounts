@@ -8,4 +8,4 @@ La beta se instala desde el código fuente y se ejecuta en `127.0.0.1:8001`. El 
 
 ### Estado de distribución
 
-La compatibilidad nativa de esta versión aún no se ha validado en ambas plataformas. La publicación queda bloqueada: el historial Git público contiene datos y referencias privadas que no se pueden retirar sin reescribir historia. No distribuyas el repositorio por clon hasta que el supervisor confirme una vía segura. Esta nota no autoriza una publicación.
+La CI verifica instalación, pruebas, build, arranque HTTP, reinicio y recuperación en Ubuntu 24.04 x86_64 y macOS 15 arm64, sin escritorio. La validación visual de un escritorio Linux y de otros navegadores no está incluida. La publicación queda bloqueada: el historial Git público contiene datos y referencias privadas que no se pueden retirar sin reescribir historia. No distribuyas el repositorio por clon hasta que el supervisor confirme una vía segura. Esta nota no autoriza una publicación.
