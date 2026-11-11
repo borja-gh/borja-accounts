@@ -33,7 +33,6 @@ jobs:
       - uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-          python-version: ${{ matrix.python-version }}
       - uses: actions/setup-node@v4
         with:
           node-version: "24.15.0"
@@ -43,11 +42,11 @@ jobs:
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
-      - run: uv sync --frozen
+      - run: uv sync --frozen --python '${{ matrix.python-version }}'
       - run: mkdir -p "$(dirname "$BORJA_ACCOUNTS_DB")"
-      - run: uv run --frozen python -c "import app.main"
-      - run: uv run --frozen pytest tests/ -q
-      - run: uv run --frozen python scripts/smoke_local_beta.py
+      - run: uv run --frozen --python '${{ matrix.python-version }}' python -c "import sys; print(sys.version); import app.main"
+      - run: uv run --frozen --python '${{ matrix.python-version }}' pytest tests/ -q
+      - run: uv run --frozen --python '${{ matrix.python-version }}' python scripts/smoke_local_beta.py
 
   python-sanity:
     needs: test
