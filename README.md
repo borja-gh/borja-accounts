@@ -33,6 +33,8 @@ borja-accounts/
 
 No existe un directorio `backend/`. El layout hexagonal vive en la raíz.
 
+El [equipo OpenRig de distribución local](docs/info/OPENRIG.md) coordina la preparación de la beta macOS/Linux; su topología vive en `openrig/team/rig.yaml`.
+
 ---
 
 ## Instalar y arrancar
