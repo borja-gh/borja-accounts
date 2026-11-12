@@ -27,3 +27,4 @@ clientportal.gw/
 # node_modules ya está cubierto por frontend/.gitignore, pero dist/ se
 # repite aquí para que no dependa de conocer el gitignore anidado.
 frontend/dist/
+*.local.md
