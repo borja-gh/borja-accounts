@@ -76,7 +76,7 @@ uv run pytest tests/ -q
 
 ## Organización de documentación y prompts
 
-La documentación de arquitectura, infraestructura, negocio y pendientes vive en `docs/info/`; los ADR, en `docs/info/adr/`. Los prompts y plantillas de agentes viven en `docs/prompts/` y se cargan desde esa ruta. `AGENTS.md`, `CLAUDE.md` y los `README.md` de cada directorio son puntos de entrada. La carga de recursos se resuelve en adaptadores o composición, sin introducir acceso a archivos en el dominio. Las ejecuciones conservan su trazabilidad en los registros de runtime; los cambios se explican en commits y PRs.
+La documentación de arquitectura, infraestructura, negocio y pendientes vive en `docs/info/`; los ADR, en `docs/info/adr/`. Los prompts y plantillas de agentes viven en `docs/prompts/` y se cargan desde esa ruta. `AGENTS.md` y los `README.md` de cada directorio son puntos de entrada. La carga de recursos se resuelve en adaptadores o composición, sin introducir acceso a archivos en el dominio. Las ejecuciones conservan su trazabilidad en los registros de runtime; los cambios se explican en commits y PRs.
 
 
 <!-- BEGIN OpenRig MANAGED BLOCK: accounts-team-shared:coordination -->
