@@ -59,8 +59,10 @@ describe('GastosEvolucionSection', () => {
     fireEvent.change(screen.getByLabelText('Concepto'), { target: { value: 'Comida' } });
     vi.mocked(fetchGastosEvolucion).mockResolvedValue({ ...report, gastos: [0, 0, 20], conceptos: [report.conceptos[1]] });
     rerender(<GastosEvolucionSection {...props} reloadToken={1} />);
-    await waitFor(() => expect(screen.getByLabelText('Concepto')).toHaveValue(''));
-    expect(latestTrace().y).toEqual([0, 0, 20]);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Concepto')).toHaveValue('');
+      expect(latestTrace()?.y).toEqual([0, 0, 20]);
+    });
   });
 
   it('descarta respuestas antiguas al cambiar el rango', async () => {
