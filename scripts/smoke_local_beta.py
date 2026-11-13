@@ -25,7 +25,7 @@ def run_command(args):
 
 def print_environment():
     metadata = {
-        "commit": run_command(["git", "rev-parse", "HEAD"]),
+        "commit": run_command(["git", "rev-parse", "HEAD"]) if (ROOT / ".git").exists() else "source-archive",
         "os": platform.platform(),
         "architecture": platform.machine(),
         "python": platform.python_version(),
