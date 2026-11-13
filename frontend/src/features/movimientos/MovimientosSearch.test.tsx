@@ -13,6 +13,18 @@ const rows: Movement[] = [
 ];
 
 describe('MovimientosSearch', () => {
+  it('la vista de inversión permite añadir y duplicar movimientos sin mostrar totales', () => {
+    render(
+      <ToastProvider>
+        <MovimientosSection account="investment" kind="INVESTMENT" currency="EUR" data={rows}
+          visiblePanels={['add_movement', 'movement_total']} onDataChanged={vi.fn()} />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('Añadir movimiento')).toBeInTheDocument();
+    expect(screen.queryByText('Total por tipo y concepto')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Duplicar' })).toHaveLength(rows.length);
+    expect(screen.getAllByRole('button', { name: 'Editar' })).toHaveLength(rows.length);
+  });
   it.each(['15,00', '15.00'])('busca gastos por importe %s y limpia el filtro', (amount) => {
     render(
       <ToastProvider>

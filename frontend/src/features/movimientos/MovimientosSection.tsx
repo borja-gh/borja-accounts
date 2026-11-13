@@ -29,7 +29,7 @@ export function MovimientosSection({ account, kind, currency, data, visiblePanel
   const movs = searchedMovs(data, search);
   const countLabel = isSearchActive(search) ? `${movs.length} resultado(s)` : 'Últimos 20';
   const canAddMovement = visiblePanels.includes('add_movement');
-  const canShowMovementTotal = visiblePanels.includes('movement_total');
+  const canShowMovementTotal = kind === 'CASH' && visiblePanels.includes('movement_total');
   const hasSidePanels = canAddMovement || canShowMovementTotal;
 
   function afterMutation() {

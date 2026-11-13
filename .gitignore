@@ -11,7 +11,15 @@ venv/
 # solo openbank.csv/ibkr.csv (modelo N/M de cuentas).
 *.csv
 !*.example.csv
-accounts.db
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
 backups/
 
 # Client Portal Gateway de IBKR — binario propietario redistribuible (~10MB),
@@ -28,3 +36,10 @@ clientportal.gw/
 # repite aquí para que no dependa de conocer el gitignore anidado.
 frontend/dist/
 *.local.md
+.claude/
+.codex/
+.mcp.json
+.openrig/
+openrig/
+docs/info/OPENRIG.md
+docs/prompts/openrig/

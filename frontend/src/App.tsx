@@ -3,7 +3,7 @@ import { Header } from './components/Header';
 import { Tabs } from './components/Tabs';
 import { ToastProvider } from './components/ToastContext';
 import { fetchAccounts, fetchAssistantStatus } from './api/client';
-import type { AccountId, AccountSummary } from './api/types';
+import type { AccountId, AccountSummary, AssistantStatus } from './api/types';
 import { CashAccountView } from './features/cash/CashAccountView';
 import { InvestmentAccountView } from './features/investment/InvestmentAccountView';
 import { TransferModal } from './features/transferencias/TransferModal';
@@ -12,12 +12,14 @@ import { OnboardingEmptyState } from './components/OnboardingEmptyState';
 import type { AccountViewHandle } from './features/shared/viewHandle';
 import { resolveTheme } from './styles/themes';
 import { AssistantPanel } from './features/asistente/AssistantPanel';
+import { AssistantControl } from './features/asistente/AssistantControl';
 import { defaultVisiblePanels } from './features/accounts/viewPanels';
 import './styles/app.css';
 
 function App() {
   const [accounts, setAccounts] = useState<AccountSummary[] | null>(null);
-  const [assistantEnabled, setAssistantEnabled] = useState(false);
+  const [assistantStatus, setAssistantStatus] = useState<AssistantStatus | null>(null);
+  const assistantEnabled = assistantStatus?.enabled ?? false;
   const [account, setAccount] = useState<AccountId | null>(null);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [createAccountModalOpen, setCreateAccountModalOpen] = useState(false);
@@ -37,7 +39,10 @@ function App() {
 
   useEffect(() => {
     refreshAccounts();
-    fetchAssistantStatus().then(setAssistantEnabled).catch(() => setAssistantEnabled(false));
+    fetchAssistantStatus().then(setAssistantStatus).catch(() => setAssistantStatus({
+      enabled: false, activeProject: null, startupMode: 'disabled', project: '', promptOnStart: false,
+      error: 'No se pudo consultar el estado del asistente. Comprueba la conexión con el servidor local.',
+    }));
   }, [refreshAccounts]);
 
   const selected = accounts?.find((a) => a.id === account) ?? null;
@@ -66,6 +71,7 @@ function App() {
         />
       )}
       <main className="content">
+        {accounts && assistantStatus && <AssistantControl status={assistantStatus} onChanged={setAssistantStatus} />}
         {!accounts && !loadError && (
           <div className="loading" role="status">
             Cargando cuentas…

@@ -1,6 +1,6 @@
 [project]
 name = "borja-accounts"
-version = "0.1.0b1"
+version = "0.1.0b2"
 description = "Panel de control financiero personal — cuentas y cartera de inversión"
 requires-python = ">=3.11,<3.14"
 dependencies = [

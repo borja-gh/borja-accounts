@@ -24,17 +24,6 @@ if ( : > /dev/tcp/127.0.0.1/8001 ) 2>/dev/null; then
 fi
 
 export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$HOME/.venvs/borja-accounts}"
-assistant_requested="${ACCOUNTS_ASSISTANT_ENABLED:-0}"
-export ACCOUNTS_ASSISTANT_ENABLED=0
-
-if [ "$assistant_requested" = 1 ]; then
-  if command -v gcloud >/dev/null 2>&1 && gcloud auth application-default print-access-token >/dev/null 2>&1; then
-    export ACCOUNTS_ASSISTANT_ENABLED=1
-    printf '%s\n' "El asistente envía a Vertex AI el esquema, la pregunta y el scope, además de resultados acotados de consultas; no envía la base de datos completa." >&2
-  else
-    printf '%s\n' "No se pudo validar ADC de Google Cloud; se inicia sin el asistente. Ejecuta gcloud auth application-default login y vuelve a intentarlo para habilitarlo." >&2
-  fi
-fi
 
 db_path="${BORJA_ACCOUNTS_DB:-$ROOT_DIR/accounts.db}"
 case "$db_path" in

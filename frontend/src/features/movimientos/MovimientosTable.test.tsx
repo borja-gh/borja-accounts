@@ -10,11 +10,11 @@ import { fdt } from '../../lib/format';
 const noop = () => {};
 
 describe('MovimientosTable vacío', () => {
-  it('indica que no hay movimientos visibles e invita a añadir uno', () => {
+  it('indica que no hay movimientos visibles sin remitir a un panel que puede estar oculto', () => {
     render(<MovimientosTable rows={[]} currency="EUR" onFilterByConcept={noop} onEdit={noop} onDelete={noop} />);
 
     expect(screen.getByText(/Sin movimientos visibles/)).toBeInTheDocument();
-    expect(screen.getByText(/registra uno con «Añadir\s+movimiento»/)).toBeInTheDocument();
+    expect(screen.queryByText(/Añadir\s+movimiento/)).not.toBeInTheDocument();
   });
 });
 

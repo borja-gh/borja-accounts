@@ -649,15 +649,21 @@
     .gastos-comparison-chip.is-spending-down strong { color: inherit; }
     .gastos-subconcept-comparison { grid-column: 1 / -1; }
     .gastos-subconcept-row.is-current-month .gastos-subconcept-comparison { grid-column: auto; }
-    .expense-recurrence-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 2px 0; border: 0; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
-    .expense-recurrence-toggle-copy { display: grid; gap: 3px; }
+    .expense-recurrence-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+    .expense-recurrence-toggle:hover, .expense-recurrence-toggle[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); }
+    .expense-recurrence-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .expense-recurrence-toggle-copy { display: grid; gap: 3px; min-width: 0; }
     .expense-recurrence-toggle-copy strong { font-size: 14px; }
     .expense-recurrence-toggle-copy > span { color: var(--muted); font-size: 12px; }
-    .expense-recurrence-chevron { color: var(--accent); font-size: 23px; line-height: 1; transform: rotate(0); transition: transform 160ms ease; }
+    .expense-recurrence-chevron { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent); transform: rotate(0); }
+    .expense-recurrence-chevron svg { width: 20px; height: 20px; }
     .expense-recurrence-chevron.is-open { transform: rotate(180deg); }
+    @media (prefers-reduced-motion: no-preference) {
+      .expense-recurrence-chevron { transition: transform 160ms ease; }
+    }
     .expense-recurrence-content { padding-top: 14px; }
     .expense-recurrence-copy { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
-    .expense-recurrence-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+    .expense-recurrence-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 8px; }
     .expense-recurrence-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); }
     .expense-recurrence-item > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
     .expense-recurrence-control { display: inline-flex; align-items: center; gap: 7px; flex: none; color: var(--muted); font-size: 12px; cursor: pointer; }
@@ -846,22 +852,24 @@
 
     /* ── MOVEMENT SEARCH ── */
     .mov-search {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
       gap: 8px;
       padding: 10px 18px;
       border-bottom: 1px solid var(--border);
-      flex-wrap: wrap;
-      align-items: center;
+      align-items: end;
     }
     .mov-search select, .mov-search input {
-      width: auto;
-      flex: 1 1 130px;
-      min-width: 110px;
+      width: 100%;
+      min-width: 0;
+      height: 34px;
       padding: 6px 9px;
       font-size: 12px;
     }
-    .mov-search .ac-wrap { flex: 1 1 130px; min-width: 110px; }
-    .mov-search .fbtn { flex: 0 0 auto; }
+    .mov-search .ac-wrap { width: 100%; min-width: 0; }
+    .mov-search .fbtn { min-height: 34px; justify-self: end; }
+    .mov-search-field { display: grid; gap: 4px; min-width: 0; }
+    .mov-search-field label { margin: 0; color: var(--muted); text-transform: none; letter-spacing: normal; font-size: 11px; }
     .mov-count { font-size: 11px; color: var(--muted); }
 
     /* ── BUTTONS ── */
@@ -995,7 +1003,7 @@
     /* ── BOTTOM GRID ── */
     .bottom-grid {
       display: grid;
-      grid-template-columns: 1fr 400px;
+      grid-template-columns: minmax(0, 1fr) 400px;
       gap: 14px;
       align-items: start;
     }
@@ -1389,7 +1397,37 @@
       letter-spacing: 0.06em;
       margin-right: 4px;
     }
-    .row-actions { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
+    .row-actions { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
+    .movements-table .movement-actions-cell { width: 1%; white-space: nowrap; vertical-align: middle; }
+    .movements-table .row-actions .btn { min-height: 30px; }
+    .portfolio-distribution { min-width: 0; }
+    .charts-grid.single-chart { grid-template-columns: minmax(0, 1fr); }
+    .portfolio-distribution-copy { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .portfolio-distribution-legend { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 10px; color: var(--muted); font-size: 11px; }
+    .portfolio-distribution-scale { width: 64px; height: 8px; border-radius: 2px; }
+    .portfolio-distribution-values { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .assistant-control { margin-bottom: 22px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+    .assistant-control-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
+    .assistant-control-head > div:first-child { display: flex; align-items: baseline; flex-wrap: wrap; gap: 12px; }
+    .assistant-control-head strong { font-size: 13px; }
+    .assistant-control-status { color: var(--muted); font-size: 12px; }
+    .assistant-control-actions, .assistant-session-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .assistant-control-body { display: grid; gap: 16px; padding: 16px; border-top: 1px solid var(--border); }
+    .assistant-control-disclosure { max-width: 85ch; color: var(--muted); font-size: 12px; }
+    .assistant-control .form-error { padding: 10px 12px; border-left: 3px solid var(--red-bright); background: color-mix(in srgb, var(--red-bright) 5%, var(--surface)); color: var(--red-bright); font-size: 12px; }
+    .assistant-start-question { font-weight: 600; }
+    .assistant-control fieldset { min-width: 0; border: 0; }
+    .assistant-control legend { margin-bottom: 10px; font-size: 13px; font-weight: 600; }
+    .assistant-start-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 8px; }
+    .assistant-start-option { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; }
+    .assistant-start-option, .assistant-project-field label { text-transform: none; letter-spacing: normal; color: var(--text); }
+    .assistant-start-option:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+    .assistant-start-option input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--accent); flex: none; cursor: pointer; }
+    .assistant-start-option > span { display: grid; gap: 4px; font-size: 12px; }
+    .assistant-start-option > span > span { color: var(--muted); }
+    .assistant-project-field { display: grid; gap: 6px; max-width: 560px; margin: 16px 0; }
+    .assistant-project-field label { font-size: 12px; font-weight: 600; }
+    .assistant-project-field p, .assistant-session-actions > span { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 
     /* ── RESPONSIVE (mínimo: grids, header, tabs) ── */
     @media (max-width: 1100px) {
@@ -1397,7 +1435,7 @@
       .kpis.kpis-5 { grid-template-columns: repeat(3, 1fr); }
       .kpis-5 .kpi-value { font-size: 22px; }
       .kpis.kpis-6 { grid-template-columns: repeat(3, 1fr); }
-      .bottom-grid { grid-template-columns: 1fr; }
+      .bottom-grid { grid-template-columns: minmax(0, 1fr); }
       .section-kpis { flex-wrap: wrap; }
       .section-kpi { flex: 1 1 40%; min-width: 140px; }
     }

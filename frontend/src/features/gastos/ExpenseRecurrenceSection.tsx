@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { fetchExpenseRecurrences, updateExpenseRecurrence } from '../../api/client';
 import type { ExpenseRecurrenceConcept } from '../../api/types';
 import { useToast } from '../../components/ToastContext';
@@ -16,6 +16,7 @@ export function ExpenseRecurrenceSection({ account, reloadToken, onUpdated }: Pr
   const [savingConcept, setSavingConcept] = useState<string | null>(null);
   const [error, setError] = useState('');
   const showToast = useToast();
+  const contentId = useId();
 
   useEffect(() => {
     if (!expanded) return;
@@ -63,16 +64,21 @@ export function ExpenseRecurrenceSection({ account, reloadToken, onUpdated }: Pr
         className="expense-recurrence-toggle"
         type="button"
         aria-expanded={expanded}
+        aria-controls={contentId}
         onClick={() => setExpanded((current) => !current)}
       >
         <span className="expense-recurrence-toggle-copy">
           <strong>Recurrencia de gastos</strong>
           <span>Clasifica cada concepto como recurrente o puntual</span>
         </span>
-        <span className={`expense-recurrence-chevron ${expanded ? 'is-open' : ''}`} aria-hidden="true">⌄</span>
+        <span className={`expense-recurrence-chevron ${expanded ? 'is-open' : ''}`} aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m7 10 5 5 5-5" />
+          </svg>
+        </span>
       </button>
       {expanded && (
-        <div className="expense-recurrence-content">
+        <div className="expense-recurrence-content" id={contentId}>
           <p className="expense-recurrence-copy">
             En conceptos recurrentes, la media divide entre los meses desde la primera aparición. En puntuales, entre todos los meses del registro.
           </p>

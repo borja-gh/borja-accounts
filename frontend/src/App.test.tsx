@@ -1,10 +1,10 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import App from './App';
-import { fetchAccounts, fetchAssistantStatus } from './api/client';
-import type { AccountSummary } from './api/types';
+import { fetchAccounts, fetchAssistantStatus, setAssistantSession } from './api/client';
+import type { AccountSummary, AssistantStatus } from './api/types';
 
-vi.mock('./api/client', () => ({ fetchAccounts: vi.fn(), fetchAssistantStatus: vi.fn() }));
+vi.mock('./api/client', () => ({ fetchAccounts: vi.fn(), fetchAssistantStatus: vi.fn(), setAssistantSession: vi.fn() }));
 vi.mock('./features/asistente/AssistantPanel', () => ({
   AssistantPanel: () => <div>Asistente financiero</div>,
 }));
@@ -27,11 +27,23 @@ vi.mock('./features/gastos/useGastosMesActual', () => ({
 const ACCOUNT: AccountSummary = {
   id: 'cash1', name: 'Cuenta 1', kind: 'CASH', currency: 'EUR', saldo: 100, visiblePanels: ['assistant'],
 };
+const DISABLED: AssistantStatus = { enabled: false, activeProject: null, startupMode: 'disabled', project: 'synthetic-project', promptOnStart: false, error: null };
+const ENABLED: AssistantStatus = { ...DISABLED, enabled: true };
 
 describe('App', () => {
+  it('activa el panel desde la vista sin reiniciar el servidor', async () => {
+    vi.mocked(fetchAccounts).mockResolvedValue([ACCOUNT]);
+    vi.mocked(fetchAssistantStatus).mockResolvedValue(DISABLED);
+    vi.mocked(setAssistantSession).mockResolvedValue({ ...ENABLED, activeProject: 'synthetic-project' });
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Configurar asistente' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Activar en esta sesión' }));
+    expect(await screen.findByText('Asistente financiero')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Desactivar esta sesión' })).toBeInTheDocument();
+  });
   it('con la BD vacía muestra el onboarding y el CTA abre el modal de alta', async () => {
     vi.mocked(fetchAccounts).mockResolvedValue([]);
-    vi.mocked(fetchAssistantStatus).mockResolvedValue(true);
+    vi.mocked(fetchAssistantStatus).mockResolvedValue(ENABLED);
     render(<App />);
 
     expect(await screen.findByText('Aún no tienes ninguna cuenta')).toBeInTheDocument();
@@ -42,7 +54,7 @@ describe('App', () => {
 
   it('con cuentas existentes no muestra el onboarding', async () => {
     vi.mocked(fetchAccounts).mockResolvedValue([ACCOUNT]);
-    vi.mocked(fetchAssistantStatus).mockResolvedValue(false);
+    vi.mocked(fetchAssistantStatus).mockResolvedValue(DISABLED);
     render(<App />);
 
     await screen.findAllByText(ACCOUNT.name);
@@ -52,7 +64,7 @@ describe('App', () => {
 
   it.each(['CASH', 'INVESTMENT'] as const)('oculta el botón del agente desactivado al arrancar en %s', async (kind) => {
     vi.mocked(fetchAccounts).mockResolvedValue([{ ...ACCOUNT, kind }]);
-    vi.mocked(fetchAssistantStatus).mockResolvedValue(false);
+    vi.mocked(fetchAssistantStatus).mockResolvedValue(DISABLED);
     render(<App />);
 
     await screen.findByRole('heading', { name: ACCOUNT.name });
@@ -64,7 +76,7 @@ describe('App', () => {
     ['CASH', true], ['CASH', false], ['INVESTMENT', true], ['INVESTMENT', false],
   ] as const)('con agente habilitado respeta la visibilidad por cuenta en %s (%s)', async (kind, visible) => {
     vi.mocked(fetchAccounts).mockResolvedValue([{ ...ACCOUNT, kind, visiblePanels: visible ? ['assistant'] : [] }]);
-    vi.mocked(fetchAssistantStatus).mockResolvedValue(true);
+    vi.mocked(fetchAssistantStatus).mockResolvedValue(ENABLED);
     render(<App />);
 
     expect(await screen.findByRole('button', { name: `${visible ? 'Ocultar' : 'Mostrar'} agente para esta cuenta` })).toBeInTheDocument();
@@ -91,7 +103,7 @@ describe('App', () => {
 
   it('muestra un estado de carga mientras llegan las cuentas', async () => {
     vi.mocked(fetchAccounts).mockReturnValue(new Promise(() => {}));
-    vi.mocked(fetchAssistantStatus).mockResolvedValue(false);
+    vi.mocked(fetchAssistantStatus).mockResolvedValue(DISABLED);
     render(<App />);
 
     expect(screen.getByRole('status')).toHaveTextContent('Cargando cuentas');
@@ -101,7 +113,7 @@ describe('App', () => {
   it('si falla la carga muestra un error accionable y permite reintentar', async () => {
     vi.mocked(fetchAccounts).mockRejectedValueOnce(new Error('Connection failed'));
     vi.mocked(fetchAccounts).mockResolvedValue([ACCOUNT]);
-    vi.mocked(fetchAssistantStatus).mockResolvedValue(false);
+    vi.mocked(fetchAssistantStatus).mockResolvedValue(DISABLED);
     render(<App />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo conectar con el servidor local');

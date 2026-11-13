@@ -25,7 +25,7 @@ def run_command(args):
 
 def print_environment():
     metadata = {
-        "commit": run_command(["git", "rev-parse", "HEAD"]),
+        "commit": run_command(["git", "rev-parse", "HEAD"]) if (ROOT / ".git").exists() else "source-archive",
         "os": platform.platform(),
         "architecture": platform.machine(),
         "python": platform.python_version(),
@@ -173,7 +173,7 @@ def verify_empty_start():
     status, accounts = request("/api/accounts")
     assert status == 200 and accounts == [], f"DB nueva no está vacía: {accounts}"
     status, assistant = request("/api/assistant/status")
-    assert status == 200 and assistant == {"enabled": False}, assistant
+    assert status == 200 and assistant["enabled"] is False, assistant
     status, body = request("/")
     assert status == 200 and b"<html" in body.lower()
 

@@ -20,6 +20,8 @@ jobs:
       ACCOUNTS_OPEN_BROWSER: "0"
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Configure temporary state
         run: |
           echo "UV_PROJECT_ENVIRONMENT=$RUNNER_TEMP/borja-accounts-venv" >> "$GITHUB_ENV"
@@ -43,6 +45,7 @@ jobs:
       - run: npm run build
         working-directory: frontend
       - run: uv sync --frozen --python '${{ matrix.python-version }}'
+      - run: uv run --frozen --python '${{ matrix.python-version }}' python scripts/verify_git_history.py
       - run: mkdir -p "$(dirname "$BORJA_ACCOUNTS_DB")"
       - run: uv run --frozen --python '${{ matrix.python-version }}' python -c "import sys; print(sys.version); import app.main"
       - run: uv run --frozen --python '${{ matrix.python-version }}' pytest tests/ -q
