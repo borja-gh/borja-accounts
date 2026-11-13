@@ -9,6 +9,7 @@ ni escriben desde aquí -- import/export vía scripts/migrate_csv_to_sqlite.py.
 import os
 import sys
 from datetime import datetime, timezone
+from typing import Literal
 
 # Garantiza que domain/application/infrastructure (paquetes hermanos de
 # app/, en la raíz del repo) sean importables sin importar cómo se cargue
@@ -20,6 +21,7 @@ if _REPO_ROOT not in sys.path:
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, StrictBool
 
 from application.use_cases.add_movement import AddMovementUseCase
 from application.use_cases.ask_assistant import AskAssistantUseCase
@@ -60,6 +62,7 @@ from domain.services.portfolio_holdings import build_investment_ledger
 from domain.value_objects import AccountKind
 from infrastructure.market_data.yfinance_provider import YFinanceProvider
 from infrastructure.ai.vertex_gemini import VertexGeminiModel
+from infrastructure.ai.assistant_runtime import AssistantRuntime
 from infrastructure.persistence.sqlite.repository import SQLiteMovementRepository
 from infrastructure.persistence.sqlite.query_executor import SQLiteQueryExecutor
 
@@ -74,6 +77,7 @@ DB_PATH = os.environ.get("BORJA_ACCOUNTS_DB", os.path.join(BASE_DIR, "accounts.d
 app = FastAPI()
 
 repository = SQLiteMovementRepository(DB_PATH)
+assistant_runtime = AssistantRuntime(DB_PATH)
 ledger = LedgerService()
 market_data = YFinanceProvider()
 
@@ -131,7 +135,11 @@ def _reference_now() -> datetime:
 
 def _assistant_use_case() -> AskAssistantUseCase:
     return AskAssistantUseCase(
-        VertexGeminiModel.from_environment(), SQLiteQueryExecutor(DB_PATH), repository
+        VertexGeminiModel(
+            project=assistant_runtime.active_project,
+            location=os.environ.get("GOOGLE_CLOUD_LOCATION", "global"),
+            model=os.environ.get("BORJA_ACCOUNTS_LLM_MODEL", "gemini-3.8-flash"),
+        ), SQLiteQueryExecutor(DB_PATH), repository
     )
 
 
@@ -149,7 +157,7 @@ async def _read_json(request: Request):
 async def ask_assistant(request: Request):
     if not assistant_status()["enabled"]:
         return JSONResponse(
-            {"error": "El asistente está desactivado. Actívalo con ACCOUNTS_ASSISTANT_ENABLED=1 al arrancar."},
+            {"error": "El asistente está desactivado. Actívalo para esta sesión desde Asistente IA."},
             status_code=503,
         )
     data, err = await _read_json(request)
@@ -174,7 +182,26 @@ async def ask_assistant(request: Request):
 
 @app.get("/api/assistant/status")
 def assistant_status():
-    return {"enabled": os.environ.get("ACCOUNTS_ASSISTANT_ENABLED", "0") == "1"}
+    return assistant_runtime.status()
+
+
+class AssistantPreferencesRequest(BaseModel):
+    startupMode: Literal["enabled", "disabled", "ask"]
+    project: str
+
+
+class AssistantSessionRequest(BaseModel):
+    enabled: StrictBool
+
+
+@app.put("/api/assistant/preferences")
+def save_assistant_preferences(data: AssistantPreferencesRequest):
+    return assistant_runtime.save_preferences(data.startupMode, data.project)
+
+
+@app.put("/api/assistant/session")
+def set_assistant_session(data: AssistantSessionRequest):
+    return assistant_runtime.set_session(data.enabled)
 
 
 @app.post("/api/assistant/saved")

@@ -25,7 +25,6 @@ export const VIEW_PANELS: Record<AccountKind, ViewPanelOption[]> = {
     { id: 'portfolios', label: 'Capital por cartera' },
     { id: 'holdings', label: 'Inversiones' },
     { id: 'add_movement', label: 'Añadir movimiento' },
-    { id: 'movement_total', label: 'Total por tipo y concepto' },
   ],
 };
 

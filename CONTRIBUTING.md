@@ -26,6 +26,8 @@ uv run --frozen pytest tests/ -q
 
 Los tests deben usar fixtures sintéticos o bases SQLite temporales. No regeneres `tests/snapshot_backend.json` salvo que el cambio financiero sea intencional, esté revisado y se actualice su documentación.
 
+La CI requiere el historial completo y ejecuta `uv run --frozen python scripts/verify_git_history.py`. El verificador inspecciona objetos alcanzables desde todas las referencias locales y `HEAD`, incluidos mensajes de commits y tags y archivos borrados. Los informes muestran categorías, rutas y hashes, sin reproducir valores privados. Los clones shallow se rechazan. Los tests del verificador usan repositorios temporales con canarios sintéticos.
+
 ## Pull requests
 
 Describe el comportamiento que cambia y los comandos ejecutados. Para cambios de interfaz, incluye capturas con datos sintéticos. No incluyas datos financieros, secretos, transcripts ni ficheros generados.

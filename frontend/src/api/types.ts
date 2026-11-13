@@ -435,6 +435,15 @@ export interface DeleteCashBudgetResult {
 
 export type AssistantMode = 'read' | 'write';
 
+export interface AssistantStatus {
+  enabled: boolean;
+  activeProject: string | null;
+  startupMode: 'enabled' | 'disabled' | 'ask';
+  project: string;
+  promptOnStart: boolean;
+  error: string | null;
+}
+
 export interface AssistantScope {
   accountIds: string[];
   from?: string;

@@ -92,6 +92,12 @@ CREATE TABLE IF NOT EXISTS assistant_pending_queries (
 
 CREATE INDEX IF NOT EXISTS idx_assistant_pending_queries_expires
     ON assistant_pending_queries(expires_at);
+
+CREATE TABLE IF NOT EXISTS assistant_preferences (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    startup_mode TEXT NOT NULL CHECK (startup_mode IN ('enabled', 'disabled', 'ask')),
+    project TEXT NOT NULL
+);
 """
 
 def ensure_schema(conn):

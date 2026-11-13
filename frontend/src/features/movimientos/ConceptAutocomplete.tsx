@@ -2,6 +2,7 @@ import { forwardRef, useState, type CSSProperties, type KeyboardEvent } from 're
 import type { ConceptStat } from './autocomplete';
 
 interface Props {
+  id?: string;
   value: string;
   onChange: (v: string) => void;
   suggestions: (query: string) => ConceptStat[];
@@ -18,7 +19,7 @@ interface Props {
  * antes del click), sin necesitar el listener global de pointerdown que
  * usaba la versión vanilla para lidiar con popups nativos de Firefox. */
 export const ConceptAutocomplete = forwardRef<HTMLInputElement, Props>(function ConceptAutocomplete(
-  { value, onChange, suggestions, onPick, placeholder, onEnterWithMeta, style },
+  { id, value, onChange, suggestions, onPick, placeholder, onEnterWithMeta, style },
   ref,
 ) {
   const [open, setOpen] = useState(false);
@@ -72,6 +73,7 @@ export const ConceptAutocomplete = forwardRef<HTMLInputElement, Props>(function 
   return (
     <div className="ac-wrap" style={style}>
       <input
+        id={id}
         ref={ref}
         type="text"
         placeholder={placeholder}

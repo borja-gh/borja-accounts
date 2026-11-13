@@ -33,8 +33,6 @@ borja-accounts/
 
 No existe un directorio `backend/`. El layout hexagonal vive en la raíz.
 
-El [equipo OpenRig de distribución local](docs/info/OPENRIG.md) coordina la preparación de la beta macOS/Linux; su topología vive en `openrig/team/rig.yaml`.
-
 ---
 
 ## Instalar y arrancar
@@ -43,12 +41,12 @@ Requisitos: [uv](https://docs.astral.sh/uv/), Bash 3.2 o posterior y Node.js 24.
 
 La matriz de CI es Ubuntu 24.04 x86_64 y macOS 15 arm64; ejecuta pruebas backend con Python 3.11 y 3.13, pruebas y build del frontend con Node.js 24.15.0, y un smoke HTTP del launcher con reinicio y recuperación de SQLite. El launcher usa Python 3.13, instalado por `uv`; la matriz backend no selecciona ni cambia la versión del launcher. La CI usa runners sin escritorio y no sustituye la validación visual de un escritorio Linux ni acredita otras versiones o arquitecturas.
 
-Descarga el archivo `borja-accounts-0.1.0-beta.1.tar.gz` de la [release](https://github.com/borja-gh/borja-accounts/releases/tag/v0.1.0-beta.1), comprueba su suma con `SHA256SUMS` y descomprímelo:
+Descarga el archivo `borja-accounts-0.1.0-beta.2.tar.gz` de la [release](https://github.com/borja-gh/borja-accounts/releases/tag/v0.1.0-beta.2), comprueba su suma con `SHA256SUMS` y descomprímelo:
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-tar -xzf borja-accounts-0.1.0-beta.1.tar.gz
-cd borja-accounts-0.1.0-beta.1
+tar -xzf borja-accounts-0.1.0-beta.2.tar.gz
+cd borja-accounts-0.1.0-beta.2
 ./run.sh
 ```
 
@@ -56,7 +54,7 @@ En Linux, usa `sha256sum -c SHA256SUMS` en lugar de `shasum -a 256 -c SHA256SUMS
 
 El launcher instala dependencias desde los lockfiles, compila el frontend y sirve la aplicación en **http://127.0.0.1:8001**. Si no hay navegador o escritorio, abre esa URL manualmente; para no intentar abrir el navegador, ejecuta `ACCOUNTS_OPEN_BROWSER=0 ./run.sh`.
 
-En una base vacía, pulsa **+ Crear tu primera cuenta**, elige nombre, tipo (Ahorro o Inversión) y divisa (EUR o USD). El saldo inicial es opcional; si es distinto de cero se registra como movimiento de apertura. El tipo y la divisa no se pueden cambiar después. En la cuenta creada, usa **Añadir movimiento** para registrar el primero. No se cargan datos de ejemplo ni personales automáticamente.
+En una base vacía, pulsa **+ Crear tu primera cuenta**, elige nombre, tipo (Ahorro o Inversión) y divisa (EUR o USD). El saldo inicial es opcional; si es distinto de cero se registra como movimiento de apertura. El tipo y la divisa no se pueden cambiar después. En la cuenta creada, usa **Añadir movimiento** para registrar el primero. En inversión, **+ Holding** permite registrar las posiciones por ticker. No se cargan datos de ejemplo ni personales automáticamente.
 
 Para parar, pulsa Ctrl+C en la terminal donde está ejecutándose el launcher. Al volver a arrancar, las cuentas y movimientos siguen ahí.
 
@@ -72,7 +70,7 @@ BORJA_ACCOUNTS_DB="/ruta/absoluta/accounts.db" ./run.sh
 
 La actualización no modifica intencionadamente la base de datos, pero no crea una copia de seguridad automática. Guarda también los ficheros `-wal` y `-shm` junto a la base si existen. Para recuperar una copia, para la aplicación, guarda aparte la base actual y sus ficheros acompañantes, reemplaza la base por la copia elegida y restaura sus acompañantes; después arranca de nuevo.
 
-La release distribuye un snapshot de fuentes sin historial Git. El historial del repositorio contiene material privado pendiente de saneamiento; usa el archivo de la release para instalar la beta.
+La release distribuye un snapshot de fuentes sin historial Git. Usa el archivo de la release para instalar la beta.
 
 ### Importar un CSV (opcional; no es el arranque)
 
@@ -189,17 +187,25 @@ El asistente consulta la SQLite de la aplicación mediante Vertex AI. En cada pe
 
 #### Activación explícita
 
-El asistente está desactivado por defecto. Para activarlo, instala Google Cloud CLI, configura ADC y define el proyecto de Vertex AI antes de arrancar:
+El asistente está desactivado por defecto. **Configurar asistente**, visible también cuando está desactivado, permite indicar el proyecto de Google Cloud y elegir una preferencia global de arranque:
+
+- **Activar por defecto**: comprueba ADC al abrir la aplicación tras arrancar el servidor; si falla, mantiene el producto básico disponible y muestra cómo configurar las credenciales.
+- **Desactivado**: no consulta credenciales ni contacta con Vertex AI al arrancar.
+- **Preguntar siempre**: al abrir la aplicación tras cada arranque ofrece activarlo o continuar sin asistente, sin pedir credenciales hasta aceptar.
+
+La preferencia y el ID de proyecto se guardan en SQLite; no se guardan claves ni contraseñas. **Guardar preferencia** afecta al próximo arranque. **Activar en esta sesión** y **Desactivar esta sesión** cambian el estado del proceso local sin modificar la preferencia; todas las pestañas comparten esa sesión hasta detener el servidor. Recargar el navegador no inicia otra sesión. La visibilidad del panel dentro de cada cuenta se configura por separado.
+
+Para preparar ADC, instala Google Cloud CLI y ejecuta en Terminal:
 
 ```bash
 gcloud auth application-default login
-export GOOGLE_CLOUD_PROJECT=tu-proyecto
-ACCOUNTS_ASSISTANT_ENABLED=1 ./run.sh
 ```
 
-El launcher comprueba ADC sin iniciar sesión automáticamente. Si no puede validarlo, arranca la aplicación básica con el asistente desactivado. El modelo permanece en `gemini-3.8-flash`.
+Después guarda el ID del proyecto en el formulario y activa la sesión. La aplicación valida ADC sin iniciar un login automáticamente. La comprobación de credenciales no verifica permisos del proyecto ni disponibilidad del modelo; esas condiciones se resuelven al realizar una consulta. El modelo permanece en `gemini-3.8-flash`.
 
-`GET /api/assistant/status` informa si el asistente está habilitado. Si está desactivado, `POST /api/assistant` responde `503` en JSON y no contacta con el proveedor.
+`GOOGLE_CLOUD_PROJECT` proporciona el proyecto inicial si no hay preferencia guardada. `ACCOUNTS_ASSISTANT_ENABLED=0` o `1` fuerza la decisión inicial del proceso sin sobrescribir la preferencia. Si no está definida, se usa el modo guardado.
+
+`GET /api/assistant/status` devuelve `enabled`, `activeProject`, `startupMode`, `project`, `promptOnStart` y `error`. `project` es el proyecto guardado para futuras activaciones; `activeProject` identifica el de la sesión actual. `PUT /api/assistant/preferences` recibe `{ "startupMode": "enabled|disabled|ask", "project": "id-proyecto" }`. `PUT /api/assistant/session` recibe `{ "enabled": true|false }`; si falla ADC, devuelve el estado desactivado y un error accionable. Si está desactivado, `POST /api/assistant` responde `503` en JSON y no construye el proveedor.
 
 #### Flujo de lectura
 
@@ -388,7 +394,7 @@ PeriodSelector: **Mes** / **Trimestre** / **Año** (sin Personalizado). (`KpiCar
 
 #### Rango de desglose y carteras
 
-Un único **RangeFilterBar** (default `Todo`) para el gráfico de capital aportado, el ranking por cartera y Análisis de carteras. No hay sección de Transferencias en esta vista.
+Un único **RangeFilterBar** (default `Todo`) para el gráfico de capital aportado y el historial del análisis de carteras. La distribución del capital y las carteras abiertas muestran el estado actual, independiente del rango. No hay sección de Transferencias en esta vista.
 
 #### Gráfico: Capital aportado · histórico
 
@@ -396,7 +402,9 @@ Serie de `movements.balance` (capital aportado neto), sin media móvil. No es el
 
 #### Gráfico: Capital por cartera
 
-Ranking de `portfolio_holdings` proyectadas a movimientos sintéticos (`GetCarterasRankingUseCase`). **No incluye** el legado que solo vive en `movements` (`Inversión` / `Inversión_r` sin holdings). Incluye lotes ya cerrados (tienen `close_price_usd`). La UI arranca en modo **Total**.
+Barplot horizontal de todas las carteras abiertas, ordenadas por capital a coste, incluidos los conceptos legado abiertos. La longitud de cada barra y su color dentro de una escala de calor representan el importe; los tonos siguen el tema de la cuenta y los mayores importes son más oscuros. Muestra el importe en la divisa de la cuenta. No ofrece selector de total/media mensual ni incluye capital de posiciones cerradas.
+
+La vista INVESTMENT permite añadir, duplicar y editar movimientos. El panel **Añadir movimiento** se configura en **Personalizar vista** y forma parte de la selección predeterminada. **Total por tipo y concepto** no se muestra ni se ofrece entre sus opciones; las selecciones antiguas de ese panel se ignoran.
 
 #### Análisis de carteras
 
@@ -464,6 +472,9 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | DELETE | `/api/accounts/{cuenta}/budget/{id}` | Borra un presupuesto |
 | GET | `/api/accounts/{cuenta}/budget-status` | Gasto real y estado del presupuesto (`period=month\|year`) |
 | POST | `/api/assistant` | Ejecuta function calling iterativo para la petición, el modo y el scope; devuelve respuesta y consultas individuales |
+| GET | `/api/assistant/status` | Estado de sesión, preferencia de arranque, proyecto y error de activación |
+| PUT | `/api/assistant/preferences` | Guarda modo de arranque y proyecto; no modifica la sesión activa |
+| PUT | `/api/assistant/session` | Activa o desactiva el asistente para el proceso local |
 | POST | `/api/assistant/pending/{id}/save` | Guarda una consulta temporal de lectura conservando su ID |
 | POST | `/api/assistant/pending/{id}/execute` | Ejecuta una propuesta de escritura confirmada por la UI |
 | GET | `/api/assistant/saved` | Lista las consultas SQL guardadas |

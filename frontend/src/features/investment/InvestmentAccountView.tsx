@@ -1,7 +1,7 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { AccountMark } from '../../components/AccountMark';
 import { SectionHeading } from '../../components/SectionHeading';
-import { fetchCarteras, fetchSaldoEvolucion, fetchCarterasRanking, refreshHoldingPrices, updateAccountTheme } from '../../api/client';
+import { fetchCarteras, fetchSaldoEvolucion, refreshHoldingPrices, updateAccountTheme } from '../../api/client';
 import { useToast } from '../../components/ToastContext';
 import { ThemePicker } from '../accounts/ThemePicker';
 import { DeleteAccountModal } from '../accounts/DeleteAccountModal';
@@ -21,9 +21,8 @@ import { RangeFilterBar } from '../filters/RangeFilterBar';
 import { useRangeReport } from '../filters/useRangeReport';
 import { SaldoChart } from '../charts/SaldoChart';
 import { CarterasChart } from '../charts/CarterasChart';
-import { RankingModeToggle } from '../charts/RankingModeToggle';
 import type { AccountViewHandle } from '../shared/viewHandle';
-import type { AccountSummary, KpiPeriod, RankingMode } from '../../api/types';
+import type { AccountSummary, KpiPeriod } from '../../api/types';
 
 interface Props {
   account: AccountSummary;
@@ -37,7 +36,6 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
 ) {
   const [period, setPeriod] = useState<KpiPeriod>('mes');
   const [rangeFilter, setRangeFilter] = useState<RangeFilter>(DEFAULT_RANGE_FILTER);
-  const [carterasMode, setCarterasMode] = useState<RankingMode>('total');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [createHoldingOpen, setCreateHoldingOpen] = useState(false);
   const [refreshingPrices, setRefreshingPrices] = useState(false);
@@ -55,24 +53,18 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
     rangeFilter,
     [account.id],
   );
-  const { report: carterasReport, reload: reloadCarterasRanking } = useRangeReport(
-    (f) => fetchCarterasRanking(account.id, f, carterasMode),
-    rangeFilter,
-    [account.id, carterasMode],
-  );
   const { report: carterasDetail, reload: reloadCarterasDetail } = useRangeReport(
     (f) => fetchCarteras(account.id, f),
     rangeFilter,
     [account.id],
   );
   const visiblePanels = new Set(account.visiblePanels ?? defaultVisiblePanels(account.kind));
-  const hasRangePanels = ['investment_balance', 'portfolios', 'holdings'].some((panel) => visiblePanels.has(panel));
+  const hasRangePanels = ['investment_balance', 'holdings'].some((panel) => visiblePanels.has(panel));
 
   function refreshAll() {
     reloadKpis();
     reloadData();
     reloadSaldo();
-    reloadCarterasRanking();
     reloadCarterasDetail();
     onDataChanged();
   }
@@ -191,7 +183,7 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
       {(visiblePanels.has('investment_balance') || visiblePanels.has('portfolios')) && (
         <>
           <SectionHeading title="Desglose" />
-          <div className="charts-grid">
+          <div className={`charts-grid ${visiblePanels.has('investment_balance') && visiblePanels.has('portfolios') ? '' : 'single-chart'}`}>
             {visiblePanels.has('investment_balance') && (
               <div className="chart-card">
                 <div className="chart-label">{`Capital aportado · histórico (${account.currency})`}</div>
@@ -203,12 +195,12 @@ export const InvestmentAccountView = forwardRef<AccountViewHandle, Props>(functi
             {visiblePanels.has('portfolios') && (
               <div className="chart-card">
                 <div className="chart-head">
-                  <div className="chart-label">Capital por cartera</div>
-                  <RankingModeToggle mode={carterasMode} onChange={setCarterasMode} btnClass="carteras-mode-btn" />
+                  <div>
+                    <div className="chart-label">Capital por cartera</div>
+                    <p className="portfolio-distribution-copy">Carteras abiertas · capital a coste</p>
+                  </div>
                 </div>
-                <div className="chart-plot">
-                  {carterasReport && <CarterasChart report={carterasReport} kind={account.kind} theme={account.theme} />}
-                </div>
+                {carterasDetail && <CarterasChart report={carterasDetail} currency={account.currency} kind={account.kind} theme={account.theme} />}
               </div>
             )}
           </div>

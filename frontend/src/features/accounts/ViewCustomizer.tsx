@@ -40,7 +40,9 @@ interface DialogProps extends Props {
 }
 
 function ViewCustomizerDialog({ accountId, kind, visiblePanels, onClose, onSaved }: DialogProps) {
-  const [selected, setSelected] = useState<string[]>(visiblePanels ?? defaultVisiblePanels(kind));
+  const [selected, setSelected] = useState<string[]>(
+    (visiblePanels ?? defaultVisiblePanels(kind)).filter((id) => VIEW_PANELS[kind].some((panel) => panel.id === id)),
+  );
   const [saving, setSaving] = useState(false);
   const showToast = useToast();
 

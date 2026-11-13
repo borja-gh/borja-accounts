@@ -6,6 +6,21 @@ import { ViewCustomizer } from './ViewCustomizer';
 describe('ViewCustomizer', () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  it('permite añadir movimientos en inversión y excluye el panel de totales', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ToastProvider>
+        <ViewCustomizer accountId="investment" kind="INVESTMENT" visiblePanels={['portfolios', 'add_movement', 'movement_total']} onSaved={() => {}} />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Personalizar vista' }));
+    expect(screen.getByRole('checkbox', { name: 'Añadir movimiento' })).toBeChecked();
+    expect(screen.queryByRole('checkbox', { name: 'Total por tipo y concepto' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/accounts/investment/view', expect.objectContaining({ body: JSON.stringify({ visiblePanels: ['portfolios', 'add_movement'] }) })));
+  });
+
   it('guarda una selección de paneles asociada a la cuenta', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
     vi.stubGlobal('fetch', fetchMock);

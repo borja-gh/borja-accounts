@@ -24,14 +24,13 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
   if (!rows.length) {
     return (
       <div className="empty">
-        Sin movimientos visibles. Si la cuenta es nueva o los filtros no coinciden, registra uno con «Añadir
-        movimiento».
+        Sin movimientos visibles. Revisa los filtros o registra actividad en esta cuenta.
       </div>
     );
   }
   const symbol = CURRENCY_SUFFIX[currency] ?? currency;
   return (
-    <table>
+    <table className="movements-table">
       <thead>
         <tr>
           <th>Fecha</th>
@@ -40,7 +39,7 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
           <th>Subconcepto</th>
           <th className="r">Importe</th>
           <th className="r">Saldo</th>
-          <th></th>
+          <th className="r" aria-label="Acciones"></th>
         </tr>
       </thead>
       <tbody>
@@ -66,7 +65,7 @@ export function MovimientosTable({ rows, currency, onFilterByConcept, onDuplicat
               <td>{r.Subconcepto ?? '—'}</td>
               <td className={`r nowrap ${isNeutral ? '' : isNeg ? 'num-neg' : 'num-pos'}`}>{`${isNeutral ? '' : isNeg ? '-' : '+'}${r.Total.toFixed(2)}${symbol}`}</td>
               <td className="r nowrap saldo-cell">{`${r.Saldo.toFixed(2)}${symbol}`}</td>
-              <td className="r">
+              <td className="r movement-actions-cell">
                 {canAct && (
                   <div className="row-actions">
                     {onDuplicate && (

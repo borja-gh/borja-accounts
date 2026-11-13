@@ -42,6 +42,12 @@ class FakeModel:
         return self.conversation
 
 
+@pytest.fixture(autouse=True)
+def fake_vertex_credentials(monkeypatch):
+    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "synthetic-project")
+    monkeypatch.setattr("infrastructure.ai.assistant_runtime.validate_vertex_credentials", lambda project: None)
+
+
 def tool(name, description, sql, call_id=None):
     return AssistantTurn(
         text=None,
@@ -213,10 +219,11 @@ def test_http_assistant_status_refleja_la_configuracion_de_arranque(monkeypatch,
     from fastapi.testclient import TestClient
 
     client = TestClient(module.app)
-    assert client.get("/api/assistant/status").json() == {"enabled": False}
+    assert client.get("/api/assistant/status").json()["enabled"] is False
 
     monkeypatch.setenv("ACCOUNTS_ASSISTANT_ENABLED", "1")
-    assert client.get("/api/assistant/status").json() == {"enabled": True}
+    module.assistant_runtime = module.AssistantRuntime(module.DB_PATH)
+    assert client.get("/api/assistant/status").json()["enabled"] is True
 
 
 @pytest.mark.parametrize("enabled", [None, "0", "true"])
@@ -238,7 +245,7 @@ def test_disabled_assistant_never_constructs_provider(monkeypatch, tmp_path, ena
     from fastapi.testclient import TestClient
 
     client = TestClient(module.app)
-    assert client.get("/api/assistant/status").json() == {"enabled": False}
+    assert client.get("/api/assistant/status").json()["enabled"] is False
     response = client.post("/api/assistant", json={"prompt": "Synthetic test"})
     assert response.status_code == 503
     assert "desactivado" in response.json()["error"]

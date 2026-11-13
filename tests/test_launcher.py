@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 import signal
 import socket
 import subprocess
@@ -25,7 +24,10 @@ def launcher_env(tmp_path):
     for directory in (caller, bin_dir, home, frontend):
         directory.mkdir(parents=True, exist_ok=True)
 
-    shutil.copy2(LAUNCHER, project / "run.sh")
+    with socket.socket() as port_probe:
+        port_probe.bind(("127.0.0.1", 0))
+        port = port_probe.getsockname()[1]
+    (project / "run.sh").write_text(LAUNCHER.read_text().replace("8001", str(port)))
     log_path = tmp_path / "commands.jsonl"
     pid_path = tmp_path / "server.pid"
     worker_pid_path = tmp_path / "worker.pid"
@@ -106,6 +108,7 @@ sys.exit(0)
         "pid": pid_path,
         "worker_pid": worker_pid_path,
         "tmp": tmp_path,
+        "port": port,
     }
 
 
@@ -154,10 +157,10 @@ def test_basic_startup_uses_lockfiles_and_keeps_state_outside_checkout(launcher_
         ("uv", ["sync", "--frozen", "--python", "3.13"]),
         ("npm", ["ci"]),
         ("npm", ["run", "build"]),
-        ("uv", ["run", "--frozen", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8001"]),
+        ("uv", ["run", "--frozen", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(launcher_env["port"])]),
     ]
     assert [call["args"] for call in calls if call["name"] == "node"]
-    assert all(call["assistant"] == "0" for call in calls if call["name"] not in {"dirname", "node", "curl"})
+    assert all(call["assistant"] is None for call in calls if call["name"] not in {"dirname", "node", "curl"})
     assert all(call["database"] == str(launcher_env["tmp"] / "synthetic.sqlite3") for call in calls)
     assert tool_calls[0]["uv_environment"] == str(launcher_env["tmp"] / "venv outside repo")
     assert tool_calls[0]["cwd"] == str(launcher_env["project"])
@@ -174,45 +177,19 @@ def test_missing_gcloud_does_not_block_basic_startup(launcher_env):
     assert [call["name"] for call in command_log(launcher_env) if call["name"] not in {"dirname", "node", "curl"}] == ["uv", "npm", "npm", "uv"]
 
 
-def test_opt_in_without_gcloud_falls_back_without_login(launcher_env):
+@pytest.mark.parametrize("override", ["0", "1"])
+def test_assistant_override_is_forwarded_without_requiring_gcloud(launcher_env, override):
     (launcher_env["tmp"] / "tools" / "gcloud").unlink()
     result = run_launcher(
         launcher_env,
         env={
-            "ACCOUNTS_ASSISTANT_ENABLED": "1",
+            "ACCOUNTS_ASSISTANT_ENABLED": override,
             "PATH": str(launcher_env["tmp"] / "tools"),
         },
     )
 
     assert result.returncode == 0, result.stderr
-    assert "gcloud" in result.stderr.lower() or "auth" in result.stderr.lower() or "credencial" in result.stderr.lower()
-    assert all(call["assistant"] == "0" for call in command_log(launcher_env) if call["name"] == "uv")
-
-
-@pytest.mark.parametrize("gcloud_status", [1, 2])
-def test_opt_in_without_valid_adc_falls_back_without_login(launcher_env, gcloud_status):
-    result = run_launcher(
-        launcher_env,
-        env={"ACCOUNTS_ASSISTANT_ENABLED": "1", "FAKE_GCLOUD_STATUS": str(gcloud_status)},
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert "gcloud" in result.stderr.lower() or "auth" in result.stderr.lower() or "credencial" in result.stderr.lower()
-    calls = command_log(launcher_env)
-    gcloud_calls = [call["args"] for call in calls if call["name"] == "gcloud"]
-    assert gcloud_calls == [["auth", "application-default", "print-access-token"]]
-    assert all(call["assistant"] == "0" for call in calls if call["name"] == "uv")
-
-
-def test_opt_in_with_adc_keeps_assistant_enabled(launcher_env):
-    result = run_launcher(launcher_env, env={"ACCOUNTS_ASSISTANT_ENABLED": "1"})
-
-    assert result.returncode == 0, result.stderr
-    calls = command_log(launcher_env)
-    assert [call["args"] for call in calls if call["name"] == "gcloud"] == [
-        ["auth", "application-default", "print-access-token"]
-    ]
-    assert all(call["assistant"] == "1" for call in calls if call["name"] == "uv")
+    assert all(call["assistant"] == override for call in command_log(launcher_env) if call["name"] == "uv")
 
 
 def test_noninteractive_opt_in_never_launches_interactive_login(launcher_env):
@@ -224,7 +201,7 @@ def test_noninteractive_opt_in_never_launches_interactive_login(launcher_env):
 
     assert result.returncode == 0, result.stderr
     gcloud_calls = [call["args"] for call in command_log(launcher_env) if call["name"] == "gcloud"]
-    assert gcloud_calls == [["auth", "application-default", "print-access-token"]]
+    assert gcloud_calls == []
 
 
 def test_unsupported_node_stops_before_installation(launcher_env):
@@ -256,15 +233,15 @@ def test_headless_startup_without_browser_openers_is_nonfatal(launcher_env):
 def test_occupied_loopback_port_fails_before_dependency_or_server_commands(launcher_env):
     listener = socket.socket()
     try:
-        listener.bind(("127.0.0.1", 8001))
+        listener.bind(("127.0.0.1", launcher_env["port"]))
     except OSError:
         listener.close()
-        pytest.skip("127.0.0.1:8001 ya está ocupado; no se modifica el listener existente")
+        pytest.skip("El puerto temporal ya está ocupado; no se modifica el listener existente")
     listener.listen()
     try:
         result = run_launcher(launcher_env)
         assert result.returncode == 1
-        assert "8001" in result.stderr
+        assert str(launcher_env["port"]) in result.stderr
         assert [call["name"] for call in command_log(launcher_env) if call["name"] != "dirname"] == ["node"]
         assert listener.fileno() >= 0
         listener.settimeout(0.1)

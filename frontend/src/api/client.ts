@@ -44,6 +44,7 @@ import type {
   SaveCashBudgetResult,
   DeleteCashBudgetResult,
   AssistantRequest,
+  AssistantStatus,
   AssistantResult,
   SavedAssistantQuery,
   PendingAssistantQueryResult,
@@ -74,10 +75,30 @@ export async function fetchAccounts(): Promise<AccountSummary[]> {
   return res.json();
 }
 
-export async function fetchAssistantStatus(): Promise<boolean> {
+export async function fetchAssistantStatus(): Promise<AssistantStatus> {
   const res = await fetch('/api/assistant/status');
-  const json = await res.json();
-  return json.enabled === true;
+  if (!res.ok) throw new Error('No se pudo consultar el estado del asistente.');
+  return res.json();
+}
+
+export async function saveAssistantPreferences(startupMode: AssistantStatus['startupMode'], project: string): Promise<AssistantStatus> {
+  const res = await fetch('/api/assistant/preferences', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ startupMode, project }),
+  });
+  if (!res.ok) throw new Error('No se pudo guardar la preferencia del asistente.');
+  return res.json();
+}
+
+export async function setAssistantSession(enabled: boolean): Promise<AssistantStatus> {
+  const res = await fetch('/api/assistant/session', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  });
+  if (!res.ok) throw new Error('No se pudo cambiar el estado del asistente.');
+  return res.json();
 }
 
 export async function createAccount(body: CreateAccountRequest): Promise<CreateAccountResult> {
