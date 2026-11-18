@@ -41,12 +41,12 @@ Requisitos: [uv](https://docs.astral.sh/uv/), Bash 3.2 o posterior y Node.js 24.
 
 La matriz de CI es Ubuntu 24.04 x86_64 y macOS 15 arm64; ejecuta pruebas backend con Python 3.11 y 3.13, pruebas y build del frontend con Node.js 24.15.0, y un smoke HTTP del launcher con reinicio y recuperación de SQLite. El launcher usa Python 3.13, instalado por `uv`; la matriz backend no selecciona ni cambia la versión del launcher. La CI usa runners sin escritorio y no sustituye la validación visual de un escritorio Linux ni acredita otras versiones o arquitecturas.
 
-Descarga el archivo `borja-accounts-0.1.0-beta.2.tar.gz` de la [release](https://github.com/borja-gh/borja-accounts/releases/tag/v0.1.0-beta.2), comprueba su suma con `SHA256SUMS` y descomprímelo:
+Descarga el archivo `borja-accounts-0.1.0-beta.3.tar.gz` de la [release](https://github.com/borja-gh/borja-accounts/releases/tag/v0.1.0-beta.3), comprueba su suma con `SHA256SUMS` y descomprímelo:
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-tar -xzf borja-accounts-0.1.0-beta.2.tar.gz
-cd borja-accounts-0.1.0-beta.2
+tar -xzf borja-accounts-0.1.0-beta.3.tar.gz
+cd borja-accounts-0.1.0-beta.3
 ./run.sh
 ```
 
