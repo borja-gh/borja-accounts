@@ -28,3 +28,31 @@ def parse_fecha(data: dict):
         return pd.to_datetime(data["fecha"]) if data.get("fecha") else datetime.now()
     except Exception:
         raise InvalidDateError("Fecha inválida")
+
+
+def clean_text(raw) -> str:
+    return raw.strip() if isinstance(raw, str) else ""
+
+
+def optional_positive_number(raw, message: str, decimals: int) -> float | None:
+    if raw is None or raw == "":
+        return None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        raise InvalidAmountError(message)
+    if not math.isfinite(value) or value <= 0:
+        raise InvalidAmountError(message)
+    return round(value, decimals)
+
+
+def optional_non_negative_number(raw, message: str) -> float | None:
+    if raw is None or raw == "":
+        return None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        raise InvalidAmountError(message)
+    if not math.isfinite(value) or value < 0:
+        raise InvalidAmountError(message)
+    return round(value, 2)

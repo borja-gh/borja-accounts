@@ -1,5 +1,39 @@
 # Notas de release
 
+## 0.1.0-beta.3
+
+Beta local de borja-accounts para macOS y Linux. No añade tablas ni columnas: la actualización no requiere migración.
+
+### Carteras
+
+- Edición de cada lote: ticker, empresa, títulos, precio medio, invertido, comisión y fecha de compra. Títulos, precio medio e invertido se derivan entre sí: al cambiar títulos o invertido se recalcula el precio medio; al cambiar el precio medio, el invertido. En lotes cerrados solo se editan ticker, empresa y comisión.
+- Renombrado de cartera con todos sus lotes, abiertos y cerrados, y su historial.
+- Las filas del historial de carteras se despliegan para ver los lotes vendidos, con la acción de renombrar.
+
+### Indicadores
+
+- Cabecera con ingresos, gastos y balance entre todas las cuentas, con periodos mensual, trimestral, anual y personalizado, y selección de divisa. Los ingresos suman el resultado realizado de las carteras de inversión y los ingresos de las cuentas cash. Los gastos solo cuentan las cuentas cash.
+- Los periodos trimestrales usan el trimestre natural (ene–mar, abr–jun, jul–sep, oct–dic), tanto en cuentas cash como en inversión.
+
+### API
+
+- `PATCH /api/accounts/{cuenta}/portfolio-holdings/{id}`: edición de características de un lote.
+- `POST /api/accounts/{cuenta}/portfolio-holdings/rename-portfolio`: renombrado de cartera.
+- `GET /api/accounts/{cuenta}/portfolio-holdings/closed`: lotes vendidos.
+- `GET /api/kpis/consolidated`: indicadores entre cuentas.
+
+### Actualización y datos
+
+La actualización no cambia el esquema. Haz una copia de la base antes de actualizar y arranca indicando su ruta con `BORJA_ACCOUNTS_DB`.
+
+### Estado de distribución
+
+La CI verifica instalación, pruebas, build, arranque HTTP, reinicio y recuperación en Ubuntu 24.04 x86_64 y macOS 15 arm64, sin escritorio. La validación visual de un escritorio Linux y de otros navegadores no está incluida.
+
+La distribución es el archivo de fuentes `borja-accounts-0.1.0-beta.3.tar.gz`, acompañado de `SHA256SUMS`. Contiene el código de la versión sin historial Git, datos locales ni configuración OpenRig. Requiere `uv` y Node.js 24.15 o posterior dentro de la serie 24; el launcher instala Python 3.13.
+
+Las referencias y cachés de pull requests de GitHub requieren una purga independiente gestionada por GitHub Support; la comprobación de ramas y tags no acredita esa eliminación del servidor.
+
 ## 0.1.0-beta.2
 
 Beta local de borja-accounts para macOS y Linux. La aplicación almacena las cuentas y movimientos localmente en SQLite, y permite crear una cuenta CASH o INVESTMENT desde la interfaz antes de registrar su primer movimiento. La importación de CSV es opcional.

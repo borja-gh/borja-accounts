@@ -6,6 +6,18 @@ export type Currency = 'EUR' | 'USD';
 export type KpiPeriod = 'mes' | 'trimestre' | 'año';
 export type KpiPeriodType = KpiPeriod | 'custom';
 
+export interface ConsolidatedKpis {
+  currency: 'EUR' | 'USD';
+  ingresos: number;
+  ingresosCash: number;
+  ingresosPnl: number;
+  gastos: number;
+  balance: number;
+  ingresosDelta: Delta;
+  gastosDelta: Delta;
+  balanceDelta: Delta;
+}
+
 export interface KpiPeriodFilter {
   type: KpiPeriodType;
   /** Solo con type: 'custom' -- 'YYYY-MM', ambos inclusive. */
@@ -266,6 +278,49 @@ export interface UpdatePortfolioHoldingResult {
   closePrice: number | null;
   currentPrice: number | null;
   note: string | null;
+  error?: string;
+}
+
+export interface EditPortfolioHoldingRequest {
+  ticker?: string;
+  company?: string;
+  shares?: number;
+  price?: number;
+  capital?: number;
+  fee?: number;
+  contributedAt?: string;
+}
+
+export interface EditPortfolioHoldingResult {
+  ok: boolean;
+  id?: number;
+  error?: string;
+}
+
+export interface ClosedPortfolioHolding {
+  id: number;
+  portfolio: string;
+  ticker: string;
+  company: string;
+  shares: number;
+  avgPrice: number;
+  capital: number;
+  closePrice: number;
+  proceeds: number;
+  pnl: number;
+  pnlPct: number | null;
+  contributedAt: string;
+}
+
+export interface RenamePortfolioRequest {
+  portfolio: string;
+  newName: string;
+}
+
+export interface RenamePortfolioResult {
+  ok: boolean;
+  portfolio?: string;
+  holdings?: number;
   error?: string;
 }
 

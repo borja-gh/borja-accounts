@@ -2,9 +2,9 @@ import type { KpiPeriod, KpiPeriodFilter } from '../../api/types';
 import { MonthRangeChip } from '../filters/MonthRangeChip';
 
 const OPTIONS: { value: KpiPeriod; label: string }[] = [
-  { value: 'mes', label: 'Mes' },
-  { value: 'trimestre', label: 'Trimestre' },
-  { value: 'año', label: 'Año' },
+  { value: 'mes', label: 'Mensual' },
+  { value: 'trimestre', label: 'Trimestral' },
+  { value: 'año', label: 'Anual' },
 ];
 
 interface Props {

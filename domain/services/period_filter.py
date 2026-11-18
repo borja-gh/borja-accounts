@@ -14,7 +14,7 @@ import re
 from datetime import datetime
 
 from domain.exceptions import InvalidDateError
-from domain.services.calendar import calendar_month_start
+from domain.services.calendar import calendar_month_start, month_key
 
 _MONTHS_BACK = {"1m": 0, "3m": 2, "6m": 5}
 YM_RE = re.compile(r"^\d{4}-\d{2}$")
@@ -37,6 +37,19 @@ def shift_ym(ym: str, delta_months: int) -> str:
     year, month = int(ym[:4]), int(ym[5:7])
     total = year * 12 + (month - 1) + delta_months
     return f"{total // 12:04d}-{total % 12 + 1:02d}"
+
+
+def natural_quarter_window(reference_local: datetime) -> tuple[str, str, str]:
+    """(desde, hasta_exclusivo, desde_anterior) del trimestre natural que contiene
+    reference_local, con fechas 'YYYY-MM-DD'. El anterior es el trimestre natural
+    previo y su hasta_exclusivo es el desde del actual."""
+    cur_ym = month_key(reference_local, 0)
+    q_start = shift_ym(cur_ym, -((int(cur_ym[5:7]) - 1) % 3))
+    return (
+        month_start(q_start),
+        month_end_exclusive(shift_ym(q_start, 2)),
+        month_start(shift_ym(q_start, -3)),
+    )
 
 
 def months_between(from_ym: str, to_ym: str) -> int:

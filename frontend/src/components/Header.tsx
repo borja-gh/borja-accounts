@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchFxRate } from '../api/client';
 import { money } from '../lib/format';
+import { HeaderConsolidatedKpis } from './HeaderConsolidatedKpis';
 import type { AccountSummary } from '../api/types';
 
 function totalsByCurrency(accounts: AccountSummary[]): [string, number][] {
@@ -91,6 +92,7 @@ export function Header({ accounts, onOpenTransfer }: { accounts: AccountSummary[
           '—'
         )}
       </div>
+      <HeaderConsolidatedKpis />
       <div className="spacer" />
       {accounts && accounts.length >= 2 && (
         <button className="btn-transfer" onClick={onOpenTransfer}>

@@ -1231,10 +1231,45 @@
     }
     .portfolio-holding-header { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
     .portfolio-holding-details { border-top: 1px solid var(--border); }
+    .header-consolidated {
+      flex: 1 1 100%;
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr);
+      align-items: center;
+      gap: 10px 18px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .header-consolidated .filter-bar { margin: 0; }
+    .header-consolidated select { width: auto; min-width: 0; padding: 6px 10px; }
+    .header-consolidated-metrics { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 10px; }
+    .header-consolidated-metric {
+      display: grid;
+      gap: 2px;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+    }
+    .header-consolidated-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .header-consolidated-value { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .header-consolidated-empty { color: var(--muted); }
     .portfolio-holding-summary { cursor: pointer; list-style: none; font-size: 13px; }
     .portfolio-holding-summary::-webkit-details-marker { display: none; }
     .portfolio-holding-name { font-weight: 600; }
     .portfolio-holding-details[open] .portfolio-holding-summary { background: rgba(0,0,0,.02); }
+    .closed-position-header, .closed-position-summary {
+      display: grid;
+      grid-template-columns: 1.6fr .8fr .8fr .9fr .9fr .9fr .7fr .9fr;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 14px;
+    }
+    .closed-position-summary { cursor: pointer; list-style: none; font-size: 13px; }
+    .closed-position-summary::-webkit-details-marker { display: none; }
+    .closed-position-details[open] .closed-position-summary { background: rgba(0,0,0,.02); }
+    .closed-position-body { padding: 0 14px 12px; }
+    .closed-position-body .hint-total { min-height: 0; margin: 0; }
 
     .soft-alert {
       display: flex;
@@ -1445,6 +1480,8 @@
       .header .spacer { display: none; }
       .btn-transfer { margin-left: auto; }
       .patrimonio-pill { flex-basis: 100%; }
+      .header-consolidated { grid-template-columns: 1fr; }
+      .header-consolidated-metrics { grid-template-columns: 1fr; }
       .tabs { padding: 12px 16px 0; }
       .tab { padding: 8px 12px; font-size: 12px; }
       .content { padding: 16px; }
@@ -1500,6 +1537,8 @@
       .filter-row { justify-content: flex-start; }
       .portfolio-holding-header,
       .portfolio-holding-summary { min-width: 520px; }
+      .closed-position-header,
+      .closed-position-summary { min-width: 720px; }
       .investment-portfolio-heading { padding: 14px; }
       .portfolio-close-heading { align-items: stretch; flex-direction: column; }
       .portfolio-close-heading label { width: 100%; }

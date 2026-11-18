@@ -2,6 +2,7 @@ from dataclasses import replace
 
 from domain.entities import Movement, PortfolioHolding
 from domain.exceptions import InsufficientCashError, InvalidAccountError, InvalidAmountError
+from domain.services.holding_amounts import resolve_new_amounts
 from domain.services.ledger import LedgerService
 from domain.services.portfolio_holdings import (
     build_investment_ledger,
@@ -10,7 +11,7 @@ from domain.services.portfolio_holdings import (
 )
 from domain.value_objects import AccountKind
 
-from .shared import parse_fecha
+from .shared import clean_text, optional_non_negative_number, optional_positive_number, parse_fecha
 
 
 def available_cash(movements, holdings, ledger: LedgerService, account_id: str) -> float:
@@ -24,7 +25,8 @@ def available_cash(movements, holdings, ledger: LedgerService, account_id: str) 
 
 class CreatePortfolioHoldingUseCase:
     """Alta de un lote desde la UI. Persiste la fila y su Inversión a coste
-    (no mueve el saldo). Exige caja disponible ≥ capital."""
+    (no mueve el saldo). Exige caja disponible ≥ capital. Basta con dos de
+    títulos, precio medio e invertido: el tercero se deriva."""
 
     def __init__(self, repository, ledger: LedgerService):
         self.repository = repository
@@ -35,23 +37,20 @@ class CreatePortfolioHoldingUseCase:
         if account.kind != AccountKind.INVESTMENT:
             raise InvalidAccountError("Solo una cuenta de inversión admite holdings")
 
-        portfolio = (data.get("portfolio") or "").strip()
-        ticker = (data.get("ticker") or "").strip().upper()
-        company = (data.get("company") or "").strip() or ticker
+        portfolio = clean_text(data.get("portfolio"))
+        ticker = clean_text(data.get("ticker")).upper()
+        company = clean_text(data.get("company")) or ticker
         if not portfolio:
             raise InvalidAmountError("La cartera no puede estar vacía")
         if not ticker:
             raise InvalidAmountError("El ticker no puede estar vacío")
 
-        shares = _positive_number(data.get("shares"), "Número de títulos inválido", decimals=4)
-        price = _positive_number(data.get("price"), "Precio inválido", decimals=4)
-        raw_capital = data.get("capital")
-        capital = round(shares * price, 2) if raw_capital in (None, "") else _positive_number(
-            raw_capital, "Capital inválido"
+        shares, price, capital = resolve_new_amounts(
+            optional_positive_number(data.get("shares"), "Número de títulos inválido", 4),
+            optional_positive_number(data.get("price"), "Precio inválido", 4),
+            optional_positive_number(data.get("capital"), "Capital inválido", 2),
         )
-        fee = None
-        if data.get("fee") not in (None, ""):
-            fee = _non_negative_number(data.get("fee"), "Comisión inválida")
+        fee = optional_non_negative_number(data.get("fee"), "Comisión inválida")
 
         contributed_at = parse_fecha(data)
         contributed_at_str = contributed_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -89,23 +88,3 @@ class CreatePortfolioHoldingUseCase:
             "capital": capital,
             "caja": round(caja - capital, 2),
         }
-
-
-def _positive_number(raw, message: str, decimals: int = 2) -> float:
-    try:
-        value = float(raw)
-    except (TypeError, ValueError):
-        raise InvalidAmountError(message)
-    if value <= 0:
-        raise InvalidAmountError(message)
-    return round(value, decimals)
-
-
-def _non_negative_number(raw, message: str) -> float:
-    try:
-        value = float(raw)
-    except (TypeError, ValueError):
-        raise InvalidAmountError(message)
-    if value < 0:
-        raise InvalidAmountError(message)
-    return round(value, 2)

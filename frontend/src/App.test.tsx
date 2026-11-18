@@ -14,6 +14,9 @@ vi.mock('./features/kpis/useAccountKpis', () => ({
 vi.mock('./features/kpis/useInvestmentKpis', () => ({
   useInvestmentKpis: () => ({ kpi: null, reload: vi.fn() }),
 }));
+vi.mock('./features/kpis/useConsolidatedKpis', () => ({
+  useConsolidatedKpis: () => null,
+}));
 vi.mock('./features/movimientos/useAccountData', () => ({
   useAccountData: () => ({ data: null, reload: vi.fn() }),
 }));

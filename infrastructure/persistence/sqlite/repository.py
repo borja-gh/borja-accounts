@@ -226,6 +226,29 @@ class SQLiteMovementRepository:
                 (close_price_usd, note, current_price_usd, holding_id),
             )
 
+    def save_holdings_and_movements(self, account_id: str, holdings: list[PortfolioHolding],
+                                    movements: list[Movement]) -> None:
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                for h in holdings:
+                    updated = conn.execute(
+                        "UPDATE portfolio_holdings SET portfolio = ?, ticker = ?, company = ?, shares = ?, "
+                        "price_usd = ?, capital_usd = ?, fee_usd = ?, contributed_at = ?, current_price_usd = ? "
+                        "WHERE id = ? AND account_id = ?",
+                        (h.portfolio, h.ticker, h.company, h.shares, h.price_usd, h.capital_usd,
+                         h.fee_usd, h.contributed_at, h.current_price_usd, h.id, account_id),
+                    )
+                    if updated.rowcount != 1:
+                        raise PortfolioHoldingNotFoundError(f"Holding {h.id} no encontrada en '{account_id}'")
+                self._replace_movements(conn, account_id, movements)
+                backfill_transfer_links(conn)
+            except Exception:
+                conn.execute("ROLLBACK")
+                raise
+            else:
+                conn.execute("COMMIT")
+
     def update_holdings_current_prices(self, updates: dict[int, float]) -> None:
         """Upsert en batch de current_price_usd -- una única transacción
         (usado por RefreshHoldingPricesUseCase tras consultar yfinance)."""
