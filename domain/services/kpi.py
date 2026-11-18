@@ -22,8 +22,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from domain.entities import Movement
-from domain.services.calendar import calendar_month_start, month_key
+from domain.services.calendar import month_key
 from domain.services.period_filter import (
+    natural_quarter_window,
     month_end_exclusive,
     month_start,
     months_between,
@@ -101,10 +102,9 @@ def compute_kpis(movements: list[Movement], kpi_type: str, reference: datetime, 
     reference_local = reference.astimezone(TZ)
 
     if kpi_type == "trimestre":
-        cut = calendar_month_start(reference_local, 2)
-        cut2 = calendar_month_start(reference_local, 5)
-        curr = net_flows(movements, lambda m: _fecha_str(m) >= cut)
-        prv = net_flows(movements, lambda m: cut2 <= _fecha_str(m) < cut)
+        cut, cut_end, prev_cut = natural_quarter_window(reference_local)
+        curr = net_flows(movements, lambda m: cut <= _fecha_str(m) < cut_end)
+        prv = net_flows(movements, lambda m: prev_cut <= _fecha_str(m) < cut)
     elif kpi_type == "año":
         y = str(reference_local.year)
         py = str(reference_local.year - 1)

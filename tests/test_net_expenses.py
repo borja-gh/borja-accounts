@@ -41,7 +41,7 @@ def test_refunds_reconcile_every_report_and_period_without_changing_movements(re
         assert compute_spent(items, "month", 2026, month) == expected[index]
     assert compute_kpis(items, "custom", REFERENCE, "2026-09:2026-10").gastos == 40
     assert compute_kpis(items, "año", REFERENCE).gastos == 40
-    assert compute_kpis(items, "trimestre", REFERENCE).gastos == 40
+    assert compute_kpis(items, "trimestre", REFERENCE).gastos == (0 if refund_month == 9 else -60)
     average = compute_gastos_ranking(items, "all", None, REFERENCE, "media")["entries"][0]
     assert average["valor"] == 20
     assert average["mensual"] == expected

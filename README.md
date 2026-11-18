@@ -300,7 +300,7 @@ Opciones (se ocultan si no hay datos en ese rango): `Todo` / `6 meses` / `3 mese
 
 La tabla de movimientos no usa este rango: tiene su propio buscador.
 
-El selector de KPIs **Trimestre** usa los últimos 3 meses de calendario (no un trimestre fiscal fijo).
+El selector **Trimestral** usa el trimestre natural en curso (ene–mar, abr–jun, jul–sep, oct–dic) frente al trimestre natural anterior. Los selectores **Mensual** y **Anual** siguen el mes y el año naturales, igual que el KPI del periodo.
 
 #### Gráfico: Evolución del saldo
 
@@ -382,6 +382,8 @@ Los campos de importes, precios, títulos y tipo de cambio aceptan coma o punto 
 
 Botón **Precios actuales** (`POST .../portfolio-holdings/refresh-prices`, yfinance) y banner con cuántas posiciones se actualizaron / qué tickers fallaron. Botón **+ Holding** abre el alta de un lote (`POST .../portfolio-holdings`): cartera, ticker, títulos, precio, fecha. Exige caja suficiente (Saldo − En carteras). Si la cuenta no es USD, se puede convertir un precio en USD con **Consultar ahora** (yfinance).
 
+Cada lote tiene **Editar** (`PATCH .../portfolio-holdings/{id}`). Cada cartera abierta tiene **Renombrar cartera**, y cada fila del **Historial de carteras** tiene **Renombrar** (ambas usan `POST .../portfolio-holdings/rename-portfolio`). Ver las reglas en «Títulos, precio medio e invertido» y «Renombrar cartera».
+
 #### KPIs (cinco tarjetas)
 
 PeriodSelector: **Mes** / **Trimestre** / **Año** (sin Personalizado). (`KpiCardsInvestment.tsx`, `domain/services/investment_kpi.py`)
@@ -419,6 +421,24 @@ Cada cartera abierta con holdings es una fila expandible: ticker, empresa, preci
 `POST /api/accounts/{cuenta}/portfolio-holdings/close-position` recibe `{ "portfolio": "Core", "ticker": "AAPL", "closePrice": 125.50, "fecha": "2026-10-13" }`. `closePrice` se aplica a todos los lotes abiertos de ese ticker en esa cartera; la respuesta informa cuántos lotes y acciones se cerraron.
 
 Una cartera legado (sin filas en `portfolio_holdings`, flujo `Inversión`/`Inversión_r` en `movements`) se muestra sin composición por ticker. El historial filtrado por fecha de cierre aplica a ese legado.
+
+#### Títulos, precio medio e invertido
+
+Cada lote cumple `títulos × precio medio ≈ invertido`. La igualdad es aproximada porque el precio medio del broker viene redondeado: la tolerancia es el mayor de 0,01 y el 0,1 % del invertido (`domain/services/holding_amounts.py`).
+
+- **Alta**: basta con dos de los tres datos; el tercero se deriva. Si llegan los tres y no cuadran, se rechaza.
+- **Edición** (`PATCH`): solo cuentan los campos enviados con un valor distinto del guardado.
+  - Cambian títulos o invertido, y el precio medio no: el precio medio se recalcula como invertido ÷ títulos.
+  - Cambia solo el precio medio: el invertido se recalcula como títulos × precio medio.
+  - Cambian dos de los tres: el tercero se deriva (p. ej. títulos y precio → invertido).
+  - Cambian los tres: deben cuadrar o se rechaza.
+- Ampliar el invertido exige caja suficiente, igual que el alta. Si el lote tiene su Inversión persistida, esa fila sigue al invertido y a la fecha de compra.
+- Un lote **cerrado** no admite cambiar títulos, precio medio, invertido ni fecha de compra: esas cifras ya están en su Inversión_r y en el saldo. Sí se pueden cambiar ticker, empresa y comisión.
+- Cambiar el ticker reescribe el concepto de sus Inversión/Inversión_r (`cartera · ticker #id`) y borra el precio actual de mercado, que ya no corresponde.
+
+#### Renombrar cartera
+
+`POST .../portfolio-holdings/rename-portfolio` con `{ "portfolio": "Core", "newName": "Growth" }` cambia la cartera de todos sus lotes, abiertos y cerrados, reescribe sus conceptos persistidos y también el histórico legado sin lotes que usa el mismo nombre, todo en la misma transacción. Los KPIs (saldo, En carteras, caja) y las cifras del historial no cambian. Rechaza un nombre que ya usa otra cartera o un histórico legado, y un nombre con « · », que el historial usa como separador entre cartera y ticker.
 
 Strip de KPIs de sección: capital invertido (abiertas) + historial cerrado.
 
@@ -463,6 +483,7 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | DELETE | `/api/accounts/{cuenta}` | Borra la cuenta y su histórico |
 | GET | `/api/data/{cuenta}` | Movimientos JSON (incluye `_idx` en filas reales; las sintéticas de holdings no tienen `_idx`) |
 | GET | `/api/accounts/{cuenta}/kpis` | KPIs CASH (saldo, ingresos, gastos, balance + deltas). `period=mes\|trimestre\|año\|custom` |
+| GET | `/api/kpis/consolidated` | KPIs entre cuentas en `currency=EUR\|USD`: ingresos = Nómina/Ingreso sin transferencia de cash + PnL realizado de inversión; gastos = Gasto − Devolución solo de cash; balance = ingresos − gastos. `period=mes\|trimestre\|año\|custom` con periodos naturales (trimestre = ene–mar, abr–jun, jul–sep, oct–dic) y `range=YYYY-MM:YYYY-MM`. Convierte cada divisa con un único tipo de cambio al contado |
 | GET | `/api/fx` | Tipo de cambio al contado `base`→`quote` (EUR/USD, yfinance). El usuario confirma |
 | GET | `/api/accounts/{cuenta}/investment-kpis` | KPIs INVESTMENT (saldo, **saldoPreventa**, **caja**, aportado, en carteras, PnL + deltas) |
 | GET | `/api/accounts/{cuenta}/saldo-evolucion` | Serie temporal de saldo |
@@ -482,8 +503,10 @@ Todas las rutas viven en `app/main.py`, que solo enruta y traduce excepciones de
 | PUT | `/api/assistant/saved/{id}` | Renombra una consulta guardada |
 | POST | `/api/assistant/saved/{id}/execute` | Ejecuta una SQL guardada en modo lectura con su scope, sin llamar al LLM |
 | DELETE | `/api/assistant/saved/{id}` | Elimina una consulta guardada |
-| POST | `/api/accounts/{cuenta}/portfolio-holdings` | Alta de un lote (exige caja ≥ capital) |
+| POST | `/api/accounts/{cuenta}/portfolio-holdings` | Alta de un lote con dos de títulos/precio/invertido (exige caja ≥ capital) |
 | PUT | `/api/accounts/{cuenta}/portfolio-holdings/{id}` | Edita `closePrice` / `note` / `currentPrice` (venta: `fecha` opcional) |
+| PATCH | `/api/accounts/{cuenta}/portfolio-holdings/{id}` | Edita `ticker`, `company`, `shares`, `price`, `capital`, `fee`, `contributedAt`; solo los enviados. Títulos, precio, invertido y fecha solo en lotes abiertos |
+| POST | `/api/accounts/{cuenta}/portfolio-holdings/rename-portfolio` | Renombra una cartera (lotes, conceptos y legado): `{ "portfolio", "newName" }` |
 | POST | `/api/accounts/{cuenta}/portfolio-holdings/close-position` | Cierra los lotes abiertos de un ticker, dejando abierta la cartera |
 | POST | `/api/accounts/{cuenta}/portfolio-holdings/close-portfolio` | Cierra todos los lotes abiertos de una cartera |
 | GET | `/api/accounts/{cuenta}/mensual-evolucion` | Ingresos/gastos por mes |

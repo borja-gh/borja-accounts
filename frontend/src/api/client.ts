@@ -30,6 +30,12 @@ import type {
   RefreshHoldingPricesResult,
   UpdatePortfolioHoldingRequest,
   UpdatePortfolioHoldingResult,
+  ClosedPortfolioHolding,
+  ConsolidatedKpis,
+  EditPortfolioHoldingRequest,
+  EditPortfolioHoldingResult,
+  RenamePortfolioRequest,
+  RenamePortfolioResult,
   CreateHoldingRequest,
   CreateHoldingResult,
   ClosePortfolioRequest,
@@ -137,6 +143,16 @@ export async function deleteAccount(cuenta: string): Promise<DeleteAccountResult
   return { ok: res.ok, ...json };
 }
 
+export async function fetchConsolidatedKpis(period: KpiPeriodFilter, currency: string): Promise<ConsolidatedKpis | null> {
+  const params = new URLSearchParams({ period: period.type, currency });
+  if (period.type === 'custom' && period.fromYm && period.toYm) {
+    params.set('range', `${period.fromYm}:${period.toYm}`);
+  }
+  const res = await fetch(`/api/kpis/consolidated?${params}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
 export async function fetchAccountKpis(cuenta: string, period: KpiPeriodFilter): Promise<AccountKpis | null> {
   const params = new URLSearchParams({ period: period.type });
   if (period.type === 'custom' && period.fromYm && period.toYm) {
@@ -206,6 +222,39 @@ export async function updatePortfolioHolding(
 ): Promise<UpdatePortfolioHoldingResult> {
   const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings/${holdingId}`, {
     method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function editPortfolioHolding(
+  cuenta: string,
+  holdingId: number,
+  body: EditPortfolioHoldingRequest,
+): Promise<EditPortfolioHoldingResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings/${holdingId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  return { ok: res.ok, ...json };
+}
+
+export async function fetchClosedPortfolioHoldings(cuenta: string): Promise<ClosedPortfolioHolding[]> {
+  const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings/closed`);
+  if (!res.ok) throw new Error(`GET portfolio-holdings/closed failed: ${res.status}`);
+  return res.json();
+}
+
+export async function renamePortfolio(
+  cuenta: string,
+  body: RenamePortfolioRequest,
+): Promise<RenamePortfolioResult> {
+  const res = await fetch(`/api/accounts/${cuenta}/portfolio-holdings/rename-portfolio`, {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });

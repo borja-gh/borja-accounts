@@ -5,6 +5,7 @@ import type { AccountSummary } from '../api/types';
 import { Header } from './Header';
 
 vi.mock('../api/client', () => ({ fetchFxRate: vi.fn() }));
+vi.mock('../features/kpis/useConsolidatedKpis', () => ({ useConsolidatedKpis: () => null }));
 
 const accounts: AccountSummary[] = [
   { id: 'eur', name: 'EUR account', kind: 'CASH', currency: 'EUR', saldo: 100 },

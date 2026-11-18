@@ -57,6 +57,14 @@ class MovementRepository(Protocol):
         de mercado actual, o anotación libre)."""
         ...
 
+    def save_holdings_and_movements(self, account_id: str, holdings: list[PortfolioHolding],
+                                    movements: list[Movement]) -> None:
+        """Actualiza las características (cartera, ticker, empresa, títulos,
+        precio medio, invertido, comisión, fecha, precio actual) de las
+        holdings dadas y reemplaza los movimientos de la cuenta, en una única
+        transacción. Cierre y nota no se tocan aquí."""
+        ...
+
     def update_holdings_current_prices(self, updates: dict[int, float]) -> None:
         """Upsert en batch de current_price_usd (id de holding -> precio),
         usado por el refresco masivo vía yfinance."""

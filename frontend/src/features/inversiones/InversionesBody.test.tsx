@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PortfolioReport } from '../../api/types';
 import { ToastProvider } from '../../components/ToastContext';
@@ -63,7 +63,7 @@ describe('InversionesBody', () => {
     const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
 
     expect(aaplRow.textContent).toContain('—');
-    expect(screen.getByText('Cartera Prueba · MSFT').closest('tr')?.textContent).toContain('-100,00$');
+    expect(screen.getByText('Cartera Prueba · MSFT').closest('.closed-position-summary')?.textContent).toContain('-100,00$');
     // La cartera en su conjunto tampoco muestra PnL porque no todos sus holdings están cerrados.
     expect(screen.getAllByText('—').length).toBeGreaterThan(0);
   });
@@ -202,5 +202,54 @@ describe('InversionesBody', () => {
     const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('.holdings-table tbody tr'));
     const aaplRow = rows.find((r) => r.textContent?.includes('AAPL'))!;
     expect(aaplRow.textContent).toContain('68,0740$');
+  });
+  it('renombra desde el historial una cartera legada cerrada', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true, portfolio: 'Tech Nueva', holdings: 0 }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const onSaved = vi.fn();
+    const report = backendFixture.investment1_carteras_report_3m;
+    const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved });
+
+    const history = container.querySelector('.investment-portfolio-history') as HTMLElement;
+    const row = within(history).getByText('Cartera Tech').closest('.closed-position-details') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Renombrar' }));
+    fireEvent.change(screen.getByDisplayValue('Cartera Tech'), { target: { value: 'Tech Nueva' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar nombre' }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ portfolio: 'Cartera Tech', newName: 'Tech Nueva' });
+  });
+
+  it('en un cierre parcial propone el nombre de la cartera, sin el ticker', () => {
+    const report = backendFixture.investment1_carteras_report_3m;
+    const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
+
+    const history = container.querySelector('.investment-portfolio-history') as HTMLElement;
+    const row = within(history).getByText('Cartera Prueba · MSFT').closest('.closed-position-details') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Renombrar' }));
+
+    expect(screen.getByDisplayValue('Cartera Prueba')).toBeInTheDocument();
+  });
+
+  it('al desplegar una cartera cerrada muestra solo los lotes vendidos de su ticker', async () => {
+    const lots = [
+      { id: 2, portfolio: 'Cartera Prueba', ticker: 'MSFT', company: 'Microsoft Corp.', shares: 5, avgPrice: 200, capital: 1000,
+        closePrice: 180, proceeds: 900, pnl: -100, pnlPct: -10, contributedAt: '2026-05-01' },
+      { id: 1, portfolio: 'Cartera Prueba', ticker: 'AAPL', company: 'Apple Inc.', shares: 10, avgPrice: 100, capital: 1000,
+        closePrice: 150, proceeds: 1500, pnl: 500, pnlPct: 50, contributedAt: '2026-05-01' },
+    ];
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => lots });
+    vi.stubGlobal('fetch', fetchMock);
+    const report = backendFixture.investment1_carteras_report_3m;
+    const { container } = renderBody({ account: 'investment1', report, currency: 'USD', onSaved: () => {} });
+
+    const history = container.querySelector('.investment-portfolio-history') as HTMLElement;
+    const details = within(history).getByText('Cartera Prueba · MSFT').closest('details') as HTMLDetailsElement;
+    details.open = true;
+    fireEvent(details, new Event('toggle'));
+
+    expect(await within(details).findByText('Microsoft Corp.')).toBeInTheDocument();
+    expect(within(details).queryByText('Apple Inc.')).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/accounts/investment1/portfolio-holdings/closed');
   });
 });

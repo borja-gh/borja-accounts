@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
-import { closePortfolio, closePortfolioPosition, updatePortfolioHolding } from '../../api/client';
-import type { AccountId, ClosedInvestPosition, OpenInvestPosition, PortfolioHoldingDetail, PortfolioReport } from '../../api/types';
-import { DataTable, type Column } from '../../components/DataTable';
+import { useEffect, useState, type SyntheticEvent } from 'react';
+import { closePortfolio, closePortfolioPosition, fetchClosedPortfolioHoldings, updatePortfolioHolding } from '../../api/client';
+import type { AccountId, ClosedInvestPosition, ClosedPortfolioHolding, OpenInvestPosition, PortfolioHoldingDetail, PortfolioReport } from '../../api/types';
 import { DateTimeField } from '../../components/DateTimeField';
 import { SectionKpis, type SectionKpiItem } from '../../components/SectionKpis';
 import { useToast } from '../../components/ToastContext';
 import { fd, money, priceInputValue, localISODateTime } from '../../lib/format';
 import { parseDecimal } from '../../lib/math';
+import { EditHoldingModal } from './EditHoldingModal';
+import { RenamePortfolioModal } from './RenamePortfolioModal';
 
 function pnlClass(v: number | null): string {
   if (v === null) return '';
@@ -33,6 +34,7 @@ function HoldingRow({
   holding,
   currency,
   onSaved,
+  onEdit,
   canClosePosition,
   isClosingPosition,
   closePositionMessage,
@@ -48,6 +50,7 @@ function HoldingRow({
   holding: PortfolioHoldingDetail;
   currency: string;
   onSaved: () => void;
+  onEdit: (holding: PortfolioHoldingDetail) => void;
   canClosePosition: boolean;
   onClosePosition: (ticker: string) => void;
   isClosingPosition: boolean;
@@ -150,6 +153,9 @@ function HoldingRow({
               )}
             </div>
           )}
+          <button className="btn btn-ghost btn-compact holding-edit-trigger" onClick={() => onEdit(holding)}>
+            Editar
+          </button>
         </td>
         <td>
           <input
@@ -200,13 +206,15 @@ function HoldingRow({
   );
 }
 
-function OpenPortfolioRow({ account, p, currency, onSaved }: {
+function OpenPortfolioRow({ account, p, currency, onSaved, onRename }: {
   account: AccountId;
   p: OpenInvestPosition;
   currency: string;
   onSaved: () => void;
+  onRename: (portfolio: string) => void;
 }) {
   const openHoldings = p.holdings.filter((holding) => holding.closePrice === null);
+  const [editingHolding, setEditingHolding] = useState<PortfolioHoldingDetail | null>(null);
   const [closing, setClosing] = useState(false);
   const [closeDate, setCloseDate] = useState(localISODateTime());
   const [closePrices, setClosePrices] = useState<Record<number, string>>({});
@@ -337,6 +345,7 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
                   holding={h}
                   currency={currency}
                   onSaved={onSaved}
+                  onEdit={setEditingHolding}
                   canClosePosition={firstOpenLotByTicker.get(h.ticker) === h.id}
                   onClosePosition={startClosePosition}
                   isClosingPosition={firstOpenLotByTicker.get(h.ticker) === h.id && closingTicker === h.ticker}
@@ -361,6 +370,9 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
       )}
       {openHoldings.length > 0 && (
         <div className="portfolio-close-area">
+          <button className="btn btn-ghost btn-compact portfolio-rename-trigger" onClick={() => onRename(p.concepto)}>
+            Renombrar cartera
+          </button>
           {closing ? (
             <div className="portfolio-close-panel">
               <div className="portfolio-close-heading">
@@ -403,28 +415,129 @@ function OpenPortfolioRow({ account, p, currency, onSaved }: {
           )}
         </div>
       )}
+      {editingHolding && (
+        <EditHoldingModal
+          key={editingHolding.id}
+          account={account}
+          currency={currency}
+          holding={editingHolding}
+          onClose={() => setEditingHolding(null)}
+          onSaved={onSaved}
+        />
+      )}
     </details>
   );
 }
 
-function buildClosedColumns(currency: string): Column<ClosedInvestPosition>[] {
-  return [
-    { header: 'Cartera', render: (r) => r.Concepto, cellClass: () => 'nowrap' },
-    { header: 'Inicio', render: (r) => fd(r.fi), cellClass: () => 'nowrap' },
-    { header: 'Cierre', render: (r) => fd(r.fr), cellClass: () => 'nowrap' },
-    { header: 'Capital', headerClass: 'r', render: (r) => money(r.invertido, currency), cellClass: () => 'r' },
-    { header: 'Devuelto', headerClass: 'r', render: (r) => money(r.devuelto, currency), cellClass: () => 'r' },
-    {
-      header: 'Balance', headerClass: 'r', render: (r) => money(r.bal, currency),
-      cellClass: (r) => `r ${r.bal >= 0 ? 'num-pos' : 'num-neg'}`,
-    },
-    {
-      header: 'ROI',
-      headerClass: 'r',
-      render: (r) => `${r.roi.toFixed(2)}%`,
-      cellClass: (r) => `r ${r.roi >= 0 ? 'num-pos' : 'num-neg'}`,
-    },
-  ];
+/** Concepto del historial: «Cartera», «Cartera · TICKER» (cierre parcial,
+ * con sufijo «· cierre parcial») o el legado sin lotes. El nombre de cartera
+ * es siempre el primer segmento: el backend rechaza nombres con « · ». */
+function portfolioOfClosedRow(concepto: string): string {
+  return concepto.replace(/ · cierre parcial$/, '').split(' · ')[0];
+}
+
+function tickerOfClosedRow(concepto: string): string | null {
+  const segments = concepto.replace(/ · cierre parcial$/, '').split(' · ');
+  return segments.length > 1 ? segments[1] : null;
+}
+
+function ClosedPositionRow({ account, row, currency, onRename }: {
+  account: AccountId;
+  row: ClosedInvestPosition;
+  currency: string;
+  onRename: (portfolio: string) => void;
+}) {
+  const portfolio = portfolioOfClosedRow(row.Concepto);
+  const ticker = tickerOfClosedRow(row.Concepto);
+  const [lots, setLots] = useState<ClosedPortfolioHolding[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  function handleToggle(event: SyntheticEvent<HTMLDetailsElement>) {
+    if (!event.currentTarget.open || lots !== null || failed) return;
+    fetchClosedPortfolioHoldings(account)
+      .then((all) => setLots(all.filter((h) => h.portfolio === portfolio && (ticker === null || h.ticker === ticker))))
+      .catch(() => setFailed(true));
+  }
+
+  return (
+    <details className="portfolio-holding-details closed-position-details" onToggle={handleToggle}>
+      <summary className="closed-position-summary">
+        <span className="portfolio-holding-name">{row.Concepto}</span>
+        <span className="nowrap">{fd(row.fi)}</span>
+        <span className="nowrap">{fd(row.fr)}</span>
+        <span className="r">{money(row.invertido, currency)}</span>
+        <span className="r">{money(row.devuelto, currency)}</span>
+        <span className={`r ${row.bal >= 0 ? 'num-pos' : 'num-neg'}`}>{money(row.bal, currency)}</span>
+        <span className={`r ${row.roi >= 0 ? 'num-pos' : 'num-neg'}`}>{`${row.roi.toFixed(2)}%`}</span>
+        <span className="r">
+          <button
+            className="btn btn-ghost btn-compact portfolio-rename-trigger"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onRename(portfolio);
+            }}
+          >
+            Renombrar
+          </button>
+        </span>
+      </summary>
+      <div className="closed-position-body">
+        {failed && <p className="hint-total">No se pudieron cargar las posiciones.</p>}
+        {!failed && lots === null && <p className="hint-total">Cargando posiciones…</p>}
+        {lots !== null && lots.length === 0 && (
+          <p className="hint-total">Sin lotes por ticker: histórico legado.</p>
+        )}
+        {lots !== null && lots.length > 0 && (
+          <div className="holdings-scroll">
+            <table className="holdings-table">
+              <colgroup>
+                <col className="col-ticker" />
+                <col className="col-shares" />
+                <col className="col-company" />
+                <col className="col-num" />
+                <col className="col-num" />
+                <col className="col-num" />
+                <col className="col-num" />
+                <col className="col-pnl" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Ticker</th>
+                  <th className="r">Acciones</th>
+                  <th>Empresa</th>
+                  <th className="r">Medio</th>
+                  <th className="r">Invertido</th>
+                  <th className="r">Cierre</th>
+                  <th className="r">Devuelto</th>
+                  <th className="r">PnL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lots.map((lot) => (
+                  <tr key={lot.id}>
+                    <td><b>{lot.ticker}</b></td>
+                    <td className="r">{lot.shares}</td>
+                    <td className="holdings-company" title={lot.company}>{lot.company}</td>
+                    <td className="r">{money(lot.avgPrice, currency, 4)}</td>
+                    <td className="r">{money(lot.capital, currency)}</td>
+                    <td className="r">{money(lot.closePrice, currency)}</td>
+                    <td className="r">{money(lot.proceeds, currency)}</td>
+                    <td className={`r ${pnlClass(lot.pnl)}`}>
+                      <span className="pnl-stack">
+                        <span>{money(lot.pnl, currency)}</span>
+                        {lot.pnlPct != null && <span className="pnl-pct">{lot.pnlPct.toFixed(2)}%</span>}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </details>
+  );
 }
 
 interface Props {
@@ -443,6 +556,7 @@ interface Props {
  * incluido el historial legado (Cartera 1, sin CSV) -- ver
  * scripts/backfill_exchange_rates.py. */
 export function InversionesBody({ account, report, currency, onSaved }: Props) {
+  const [renamingPortfolio, setRenamingPortfolio] = useState<string | null>(null);
   if (!report.openCount && !report.closedCount) {
     return <div className="empty">No hay carteras registradas todavía.</div>;
   }
@@ -468,7 +582,14 @@ export function InversionesBody({ account, report, currency, onSaved }: Props) {
             <span className="r"></span>
           </div>
           {report.openPositions.map((p) => (
-            <OpenPortfolioRow key={p.concepto} account={account} p={p} currency={currency} onSaved={onSaved} />
+            <OpenPortfolioRow
+              key={p.concepto}
+              account={account}
+              p={p}
+              currency={currency}
+              onSaved={onSaved}
+              onRename={setRenamingPortfolio}
+            />
           ))}
         </section>
       )}
@@ -483,8 +604,35 @@ export function InversionesBody({ account, report, currency, onSaved }: Props) {
             </div>
             <span className="investment-portfolio-count">{report.closedPositions.length}</span>
           </header>
-          <DataTable columns={buildClosedColumns(currency)} rows={report.closedPositions} rowKey={(r, i) => `${r.Concepto}-${i}`} />
+          <div className="portfolio-holding-header closed-position-header">
+            <span>Cartera</span>
+            <span>Inicio</span>
+            <span>Cierre</span>
+            <span className="r">Capital</span>
+            <span className="r">Devuelto</span>
+            <span className="r">Balance</span>
+            <span className="r">ROI</span>
+            <span className="r"></span>
+          </div>
+          {report.closedPositions.map((row, index) => (
+            <ClosedPositionRow
+              key={`${row.Concepto}-${index}`}
+              account={account}
+              row={row}
+              currency={currency}
+              onRename={setRenamingPortfolio}
+            />
+          ))}
         </section>
+      )}
+      {renamingPortfolio && (
+        <RenamePortfolioModal
+          key={renamingPortfolio}
+          account={account}
+          portfolio={renamingPortfolio}
+          onClose={() => setRenamingPortfolio(null)}
+          onRenamed={onSaved}
+        />
       )}
     </>
   );

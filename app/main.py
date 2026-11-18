@@ -34,6 +34,7 @@ from application.use_cases.delete_account import DeleteAccountUseCase
 from application.use_cases.delete_movement import DeleteMovementUseCase
 from application.use_cases.edit_movement import EditMovementUseCase
 from application.use_cases.get_account_kpis import GetAccountKPIsUseCase
+from application.use_cases.get_consolidated_kpis import GetConsolidatedKPIsUseCase
 from application.use_cases.get_betting_report import GetBettingReportUseCase
 from application.use_cases.cash_budgets import (
     DeleteCashBudgetUseCase,
@@ -51,7 +52,10 @@ from application.use_cases.get_gastos_ranking import GetGastosRankingUseCase
 from application.use_cases.get_gastos_evolucion import GetGastosEvolucionUseCase
 from application.use_cases.manage_expense_recurrence import ManageExpenseRecurrenceUseCase
 from application.use_cases.get_transfers_report import GetTransfersReportUseCase
+from application.use_cases.edit_portfolio_holding import EditPortfolioHoldingUseCase
+from application.use_cases.list_closed_portfolio_holdings import ListClosedPortfolioHoldingsUseCase
 from application.use_cases.refresh_holding_prices import RefreshHoldingPricesUseCase
+from application.use_cases.rename_portfolio import RenamePortfolioUseCase
 from application.use_cases.transfer_between_accounts import TransferBetweenAccountsUseCase
 from application.use_cases.update_account_theme import UpdateAccountThemeUseCase
 from application.use_cases.update_account_view import UpdateAccountViewUseCase
@@ -410,6 +414,20 @@ def get_data(cuenta: str):
     ]
 
 
+@app.get("/api/kpis/consolidated")
+def get_consolidated_kpis(period: str = "mes", range: str | None = None, currency: str = "EUR"):
+    result, err = _run(GetConsolidatedKPIsUseCase(repository, market_data).execute, currency, period, _reference_now(), range)
+    if err:
+        return err
+    return {
+        "currency": result.currency,
+        "ingresos": result.ingresos, "ingresosCash": result.ingresos_cash, "ingresosPnl": result.ingresos_pnl,
+        "ingresosDelta": {"diff": result.ingresos_delta},
+        "gastos": result.gastos, "gastosDelta": {"diff": result.gastos_delta},
+        "balance": result.balance, "balanceDelta": {"diff": result.balance_delta},
+    }
+
+
 @app.get("/api/accounts/{cuenta}/kpis")
 def get_account_kpis(cuenta: str, period: str = "mes", year: str | None = None):
     if cuenta not in _known_account_ids():
@@ -646,6 +664,39 @@ async def update_portfolio_holding(cuenta: str, holding_id: int, request: Reques
     if err:
         return err
     result, err = _run(UpdatePortfolioHoldingUseCase(repository, ledger).execute, cuenta, holding_id, data)
+    if err:
+        return err
+    return result
+
+
+@app.get("/api/accounts/{cuenta}/portfolio-holdings/closed")
+def list_closed_portfolio_holdings(cuenta: str):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    return ListClosedPortfolioHoldingsUseCase(repository).execute(cuenta)
+
+
+@app.patch("/api/accounts/{cuenta}/portfolio-holdings/{holding_id}")
+async def edit_portfolio_holding(cuenta: str, holding_id: int, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    result, err = _run(EditPortfolioHoldingUseCase(repository, ledger).execute, cuenta, holding_id, data)
+    if err:
+        return err
+    return result
+
+
+@app.post("/api/accounts/{cuenta}/portfolio-holdings/rename-portfolio")
+async def rename_portfolio(cuenta: str, request: Request):
+    if cuenta not in _known_account_ids():
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    data, err = await _read_json(request)
+    if err:
+        return err
+    result, err = _run(RenamePortfolioUseCase(repository, ledger).execute, cuenta, data)
     if err:
         return err
     return result

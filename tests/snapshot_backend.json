@@ -268,17 +268,17 @@
       "saldo": 8655.0
     },
     "trimestre": {
-      "balance": 1805.0,
+      "balance": 665.0,
       "balanceDelta": {
-        "diff": -15.0
+        "diff": -1045.0
       },
-      "gastos": 3595.0,
+      "gastos": 1135.0,
       "gastosDelta": {
-        "diff": -135.0
+        "diff": -2555.0
       },
-      "ingresos": 5400.0,
+      "ingresos": 1800.0,
       "ingresosDelta": {
-        "diff": -150.0
+        "diff": -3600.0
       },
       "saldo": 8655.0
     }
@@ -1684,16 +1684,16 @@
       "saldoPreventa": 1355.0
     },
     "trimestre": {
-      "aportado": 400.0,
+      "aportado": 0,
       "aportadoDelta": {
-        "diff": 400.0
+        "diff": -400.0
       },
       "caja": 105.0,
       "enCarteras": 1250.0,
       "enCarterasCount": 2,
-      "pnl": -50.0,
+      "pnl": 0,
       "pnlDelta": {
-        "diff": -50.0
+        "diff": 50.0
       },
       "saldo": 1355.0,
       "saldoPreventa": 1355.0
